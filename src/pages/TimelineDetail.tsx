@@ -1,426 +1,330 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
-  ArrowLeft, 
-  MessageSquare, 
-  Send, 
-  TrendingUp, 
-  Users, 
-  Star, 
+  ArrowLeft,
   GitBranch,
-  DollarSign,
   Target,
   BarChart3,
-  Share,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  FileText,
+  Star,
+  Shield,
+  UserCheck,
+  DollarSign,
+  History,
+  Calculator,
   Settings,
-  Paperclip,
-  Play,
-  Eye,
   Share2,
+  Eye,
+  ThumbsUp,
   Plus
 } from 'lucide-react';
-import { mockTimelines, mockChatMessages, mockContributions, mockOutcomes, mockUser } from '@/data/mockData';
-import { InvestmentModal } from '@/components/timeline/InvestmentModal';
-import { FileAttachments } from '@/components/timeline/FileAttachments';
-import { MatchingSystem } from '@/components/timeline/MatchingSystem';
-import { OutcomeSharing } from '@/components/outcome/OutcomeSharing';
-import { CapitalFlow } from '@/components/timeline/CapitalFlow';
-import { FinancialTransactions } from '@/components/timeline/FinancialTransactions';
-import { TimelineCustomization } from '@/components/timeline/TimelineCustomization';
+import { mockTimelines } from '@/data/mockData';
+import { Timeline } from '@/types/timeline';
+import { TimelineCard } from '@/components/timeline/TimelineCard';
+import { MatchedTimelines } from '@/components/dashboard/MatchedTimelines';
+import { SortOptions } from '@/components/timeline/SortOptions';
 
 export const TimelineDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState(mockChatMessages);
-  const [showInvestmentModal, setShowInvestmentModal] = useState(false);
-
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('subtimelines');
+  const [sortBy, setSortBy] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [filters, setFilters] = useState<any>({});
+  
   const timeline = mockTimelines.find(t => t.id === id);
+  
+  useEffect(() => {
+    if (!timeline) {
+      navigate('/');
+    }
+  }, [timeline, navigate]);
 
   if (!timeline) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Timeline Not Found</h1>
-          <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
-        </div>
-      </div>
-    );
+    return <div>Timeline not found</div>;
   }
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  // Mock data for timeline tabs
+  const mockSubtimelines = mockTimelines.slice(1, 4);
+  const mockMatchedOpportunities = mockTimelines.slice(4, 7);
+  const mockInvestedUsers = [
+    { id: '1', name: 'John Doe', investment: 5000, timeline: mockTimelines[0] },
+    { id: '2', name: 'Jane Smith', investment: 3500, timeline: mockTimelines[1] },
+    { id: '3', name: 'Mike Johnson', investment: 7200, timeline: mockTimelines[2] },
+  ];
 
-    const newMessage = {
-      id: Date.now().toString(),
-      content: message,
-      sender: 'user' as const,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages([...messages, newMessage]);
-    setMessage('');
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: (Date.now() + 1).toString(),
-        content: `I've analyzed your query about "${timeline.title}". Based on current data, this timeline shows strong performance with ${timeline.changePercent}% growth. Would you like me to provide specific recommendations for optimizing returns?`,
-        sender: 'ai' as const,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+  const handleInvest = () => {
+    // TODO: Open investment modal
+    console.log('Opening investment modal');
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: timeline.currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+  const handleFollow = () => {
+    // TODO: Implement follow functionality
+    console.log('Following timeline');
   };
+
+  const handleShare = () => {
+    // TODO: Implement share functionality
+    console.log('Sharing timeline');
+  };
+
+  const tabs = [
+    { id: 'subtimelines', label: 'Subtimelines', icon: GitBranch },
+    { id: 'matched', label: 'Matched Opportunities', icon: Target },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'invested-users', label: 'Invested Users', icon: Users },
+    { id: 'followups', label: 'Followups', icon: MessageSquare },
+    { id: 'trading', label: 'Trading', icon: TrendingUp },
+    { id: 'files', label: 'Files', icon: FileText },
+    { id: 'ratings', label: 'Ratings', icon: Star },
+    { id: 'rules', label: 'Rules & Terms', icon: Shield },
+    { id: 'admin', label: 'Admin', icon: UserCheck },
+    { id: 'capital-flow', label: 'Capital Flow', icon: DollarSign },
+    { id: 'transactions', label: 'Transactions', icon: History },
+    { id: 'valuation', label: 'Valuation', icon: Calculator },
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-6 pb-20 lg:pb-6">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <ArrowLeft className="h-5 w-5" />
+    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6">
+      {/* Header with Back Button */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button 
+          variant="outline" 
+          size={isMobile ? "sm" : "default"}
+          onClick={() => navigate(-1)}
+          className="touch-manipulation"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {!isMobile && <span className="ml-2">Back</span>}
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold">{timeline.title}</h1>
-            <Badge variant="outline" className="capitalize">{timeline.type}</Badge>
-            <Badge variant={timeline.status === 'active' ? 'default' : 'secondary'}>
-              {timeline.status}
-            </Badge>
-          </div>
-          <p className="text-muted-foreground">{timeline.description}</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold truncate">{timeline.title}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Timeline Detail</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon">
-            <Share className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"}
+            onClick={handleShare}
+            className="touch-manipulation"
+          >
+            <Share2 className="h-4 w-4" />
+            {!isMobile && <span className="ml-2">Share</span>}
           </Button>
-          <Button variant="outline" size="icon">
-            <Settings className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size={isMobile ? "sm" : "default"}
+            onClick={handleFollow}
+            className="touch-manipulation"
+          >
+            <ThumbsUp className="h-4 w-4" />
+            {!isMobile && <span className="ml-2">Follow</span>}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{formatCurrency(timeline.value)}</div>
-                <div className="text-sm text-muted-foreground">Current Value</div>
-                <div className={`text-sm flex items-center justify-center gap-1 mt-1 ${
-                  timeline.change >= 0 ? 'text-success' : 'text-destructive'
-                }`}>
-                  <TrendingUp className="h-3 w-3" />
-                  {timeline.changePercent > 0 ? '+' : ''}{timeline.changePercent}%
+      {/* Timeline Summary Card */}
+      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+        <CardHeader className="p-4 sm:pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                <CardTitle className="text-xl sm:text-2xl font-bold">{timeline.title}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs sm:text-sm">
+                    {timeline.type} Timeline
+                  </Badge>
+                  <Badge variant={timeline.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                    {timeline.status}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{timeline.subtimelines.length}</div>
-                <div className="text-sm text-muted-foreground">Sub-timelines</div>
-                <div className="text-sm text-primary mt-1">
-                  <GitBranch className="h-3 w-3 inline mr-1" />
-                  Active
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{timeline.rating}</div>
-                <div className="text-sm text-muted-foreground">Rating</div>
-                <div className="text-sm text-accent mt-1">
-                  <Star className="h-3 w-3 inline mr-1 fill-current" />
-                  Top tier
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{timeline.investedMembers}</div>
-                <div className="text-sm text-muted-foreground">Investors</div>
-                <div className="text-sm text-primary mt-1">
-                  <Users className="h-3 w-3 inline mr-1" />
-                  Growing
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+              <p className="text-muted-foreground text-sm sm:text-base line-clamp-3">{timeline.description}</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:min-w-[200px]">
+              <Button 
+                onClick={handleInvest}
+                size={isMobile ? "sm" : "default"}
+                className="w-full touch-manipulation"
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Invest Now
+              </Button>
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
+                <span>{timeline.investedMembers} investors</span>
+                <span>{timeline.views} views</span>
+              </div>
+            </div>
           </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
+              <div className="text-lg sm:text-2xl font-bold text-primary">
+                {timeline.currency === 'USD' ? '$' : ''}{timeline.value.toLocaleString()}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Current Value</div>
+            </div>
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">
+                +{timeline.changePercent}%
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Growth</div>
+            </div>
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">{timeline.rating}/5</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Rating</div>
+            </div>
+            <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
+              <div className="text-lg sm:text-2xl font-bold text-orange-600">{timeline.subtimelines?.length || 0}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Subtimelines</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Tabs Content */}
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-7 overflow-x-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="subtimelines">Sub-timelines</TabsTrigger>
-              <TabsTrigger value="capital">Capital Flow</TabsTrigger>
-              <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              <TabsTrigger value="customize">Customize</TabsTrigger>
-              <TabsTrigger value="matching">Matching</TabsTrigger>
-              <TabsTrigger value="files">Files</TabsTrigger>
-            </TabsList>
+      {/* Horizontal Scrollable Tabs - Same Structure as Portfolio */}
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 sm:py-4 gap-3">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <h2 className="text-lg sm:text-xl font-semibold">Timeline Details</h2>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <SortOptions />
+            <Button variant="outline" size="sm" className="whitespace-nowrap touch-manipulation">
+              <Settings className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Manage</span>
+              <span className="sm:hidden">Edit</span>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="px-3 sm:px-6 border-b">
+              <ScrollArea className="w-full">
+                <TabsList className="inline-flex h-10 sm:h-12 items-center justify-start rounded-none bg-transparent p-0 gap-3 sm:gap-6 touch-manipulation">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <TabsTrigger 
+                        key={tab.id}
+                        value={tab.id}
+                        className="relative h-10 sm:h-12 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2 sm:pb-3 pt-2 font-medium sm:font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none text-xs sm:text-sm whitespace-nowrap touch-manipulation"
+                      >
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        {isMobile ? tab.label.split(' ')[0] : tab.label}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
 
-            <TabsContent value="overview" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Timeline Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-accent/50 rounded-lg">
-                        <h4 className="font-medium mb-2">Progress Status</h4>
-                        <div className="text-2xl font-bold text-primary">{timeline.status}</div>
-                        <div className="text-sm text-muted-foreground">Current Phase</div>
-                      </div>
-                      <div className="p-4 bg-accent/50 rounded-lg">
-                        <h4 className="font-medium mb-2">Performance</h4>
-                        <div className="text-2xl font-bold text-success">+{timeline.changePercent}%</div>
-                        <div className="text-sm text-muted-foreground">Overall Growth</div>
-                      </div>
-                      <div className="p-4 bg-accent/50 rounded-lg">
-                        <h4 className="font-medium mb-2">Members</h4>
-                        <div className="text-2xl font-bold text-primary">{timeline.investedMembers}</div>
-                        <div className="text-sm text-muted-foreground">Active Contributors</div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Description</h4>
-                      <p className="text-muted-foreground">{timeline.description}</p>
-                    </div>
-                    
-                    {timeline.tags && (
-                      <div>
-                        <h4 className="font-medium mb-2">Tags</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {timeline.tags.map((tag) => (
-                            <Badge key={tag} variant="outline">{tag}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="subtimelines" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GitBranch className="h-5 w-5" />
-                    Sub-timelines ({timeline.subtimelines.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="text-xl">🔗</div>
-                          <div>
-                            <div className="font-medium">Sub-timeline {i}</div>
-                            <div className="text-sm text-muted-foreground">Connected project component</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">Active</Badge>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 text-center">
-                    <Button variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Sub-timeline
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="capital">
-              <CapitalFlow />
-            </TabsContent>
-
-            <TabsContent value="transactions">
-              <FinancialTransactions />
-            </TabsContent>
-
-            <TabsContent value="customize">
-              <TimelineCustomization />
-            </TabsContent>
-
-            <TabsContent value="files" className="space-y-4">
-              <FileAttachments 
-                attachments={timeline.attachments}
-                recordings={timeline.recordings}
-              />
-            </TabsContent>
-
-            <TabsContent value="matching" className="space-y-4">
-              <MatchingSystem currentTimeline={timeline} />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Investment Panel */}
-          {timeline.invested ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-success">Investment Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Invested Amount:</span>
-                    <span className="font-semibold">{formatCurrency(timeline.investedAmount || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Current Value:</span>
-                    <span className="font-semibold">{formatCurrency(timeline.value)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Returns:</span>
-                    <span className="font-semibold text-success">
-                      +{formatCurrency(timeline.change)}
-                    </span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-sm">ROI:</span>
-                    <span className="font-semibold text-success">
-                      {timeline.changePercent}%
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full">
-                    Increase Investment
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Withdraw Profits
+            <div className="p-3 sm:p-6">
+              <TabsContent value="subtimelines" className="m-0 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Subtimelines ({mockSubtimelines.length})</h3>
+                  <Button size="sm" className="touch-manipulation">
+                    <GitBranch className="h-4 w-4 mr-2" />
+                    Create Subtimeline
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Investment Opportunity</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Current Valuation:</span>
-                    <span className="font-semibold">{formatCurrency(timeline.value)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Min Investment:</span>
-                    <span className="font-semibold">$1,000</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Expected ROI:</span>
-                    <span className="font-semibold text-success">15-25%</span>
-                  </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {mockSubtimelines.map((subtimeline) => (
+                    <TimelineCard 
+                      key={subtimeline.id} 
+                      timeline={subtimeline}
+                    />
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <Button 
-                    className="w-full"
-                    onClick={() => setShowInvestmentModal(true)}
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Invest Now
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </TabsContent>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <GitBranch className="h-4 w-4 mr-2" />
-                View Sub-timelines
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="h-4 w-4 mr-2" />
-                Manage Members
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Paperclip className="h-4 w-4 mr-2" />
-                Add Attachment
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Share className="h-4 w-4 mr-2" />
-                Share Timeline
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Related Timelines */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Related Timelines</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {mockTimelines.slice(0, 3).map((related) => (
-                <div 
-                  key={related.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
-                  onClick={() => navigate(`/timeline/${related.id}`)}
-                >
-                  <div className="text-lg">{related.type === 'project' ? '🚀' : '👤'}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{related.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatCurrency(related.value)}
-                    </p>
-                  </div>
+              <TabsContent value="matched" className="m-0 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Matched Opportunities ({mockMatchedOpportunities.length})</h3>
                 </div>
+                <MatchedTimelines />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="m-0 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Performance Analytics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Detailed analytics and reports will be displayed here.
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Growth Metrics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Growth metrics and trending data visualization.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="invested-users" className="m-0 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Invested Users ({mockInvestedUsers.length})</h3>
+                </div>
+                <div className="space-y-3">
+                  {mockInvestedUsers.map((user) => (
+                    <Card key={user.id} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">{user.name}</h4>
+                          <p className="text-sm text-muted-foreground">Investment: ${user.investment.toLocaleString()}</p>
+                        </div>
+                        <Button variant="outline" size="sm" className="touch-manipulation">
+                          View Profile
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* Placeholder content for other tabs */}
+              {tabs.slice(4).map((tab) => (
+                <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <tab.icon className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">{tab.label}</h3>
+                  </div>
+                  <Card>
+                    <CardContent className="p-6">
+                      <p className="text-muted-foreground">
+                        {tab.label} content will be implemented here. This section will contain
+                        detailed information and functionality related to {tab.label.toLowerCase()}.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
               ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Investment Modal */}
-      <InvestmentModal 
-        timeline={timeline}
-        isOpen={showInvestmentModal}
-        onClose={() => setShowInvestmentModal(false)}
-      />
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

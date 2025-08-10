@@ -1,31 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ArrowLeft, 
   ArrowRight, 
-  Eye, 
-  EyeOff, 
-  Users, 
-  DollarSign,
-  Settings,
-  CheckCircle,
-  FileText,
+  Settings, 
+  DollarSign, 
+  BarChart3, 
+  Share2, 
+  GitBranch,
   Calendar,
-  Target,
-  TrendingUp,
-  Shield
+  Users,
+  Shield,
+  Plus,
+  X,
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { TimelineType, ContributionType } from '@/types/timeline';
+import { OfflineStorage } from '@/lib/storage';
 
 interface SharedCreationFlowProps {
   selectedType: TimelineType;
@@ -33,102 +38,93 @@ interface SharedCreationFlowProps {
   onBack: () => void;
 }
 
-interface TimelineFormData {
-  // Step 1: Basic Identity
-  title: string;
-  description: string;
-  visibility: 'public' | 'private' | 'invite-only';
-  
-  // Step 2: Purpose & Scope
-  purpose: string;
-  scope: string;
-  startDate: string;
-  endDate: string;
-  milestones: string[];
-  
-  // Step 3: Contribution Rules
-  allowedContributionTypes: ContributionType[];
-  
-  // Step 4: Valuation Configuration
-  valuationModel: 'fixed' | 'hourly' | 'market' | 'outcome' | 'hybrid' | 'custom';
-  baseUnit: 'USD' | 'token' | 'credits';
-  
-  // Step 5: Tracking Configuration
-  trackingInputs: ('manual' | 'files' | 'api')[];
-  verificationMethod: 'self' | 'owner' | 'third-party' | 'smart-contract';
-  
-  // Step 6: Outcome Sharing
-  rewardTypes: ('profit' | 'equity' | 'royalties' | 'credits' | 'access' | 'badges')[];
-  distributionModel: 'pro-rata' | 'tiered' | 'milestone' | 'custom';
-  payoutTriggers: string[];
-  
-  // Step 7: Subtimeline Rules
-  allowSubtimelines: boolean;
-  subtimelineCreation: 'auto' | 'template' | 'manual' | 'conditional';
-  subtimelineInheritance: boolean;
-  
-  // Step 8: Governance
-  approvalRequired: boolean;
-  kycRequired: boolean;
-  kycThreshold: number;
-}
-
-const totalSteps = 9;
-
-export const SharedCreationFlow = ({ selectedType, onComplete, onBack }: SharedCreationFlowProps) => {
+export const SharedCreationFlow: React.FC<SharedCreationFlowProps> = ({
+  selectedType,
+  onComplete,
+  onBack
+}) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<TimelineFormData>({
-    title: '',
+  const isMobile = useIsMobile();
+  const [formData, setFormData] = useState<any>({
+    // Basic Identity & Visibility (Step 2)
+    name: '',
     description: '',
     visibility: 'public',
-    purpose: '',
-    scope: '',
+    
+    // Purpose & Scope (Step 3)
+    mainGoal: '',
     startDate: '',
     endDate: '',
     milestones: [],
-    allowedContributionTypes: [],
+    
+    // Contribution Rules (Step 4)
+    allowedContributions: [],
+    customFields: {},
+    
+    // Valuation Configuration (Step 5)
     valuationModel: 'fixed',
     baseUnit: 'USD',
-    trackingInputs: ['manual'],
-    verificationMethod: 'self',
+    conversionRules: {},
+    
+    // Tracking Configuration (Step 6)
+    trackingInputs: [],
+    verificationMethod: 'self-attest',
+    
+    // Outcome Sharing Configuration (Step 7)
     rewardTypes: [],
     distributionModel: 'pro-rata',
     payoutTriggers: [],
-    allowSubtimelines: true,
+    
+    // Subtimeline Rules (Step 8)
+    allowSubtimelines: false,
     subtimelineCreation: 'manual',
-    subtimelineInheritance: true,
-    approvalRequired: false,
+    inheritRules: true,
+    
+    // Governance & Compliance (Step 9)
+    approvalProcess: 'owner',
     kycRequired: false,
-    kycThreshold: 10000
+    kycThreshold: 1000
   });
 
-  const progress = (currentStep / totalSteps) * 100;
-
-  const contributionTypesByTimeline = {
-    project: ['cash', 'hours', 'assets', 'timeline'],
-    profile: ['cash', 'timeline'],
-    financial: ['cash', 'crypto', 'debt', 'pledge', 'equity'],
-    followup: ['hours', 'maintenance', 'support'],
-    intellectual: ['consulting', 'deliverable', 'royalty', 'ip'],
-    network: ['referral', 'campaign', 'event', 'content'],
-    assets: ['land', 'building', 'equipment', 'digital'],
-    custom: ['cash', 'hours', 'assets', 'timeline', 'consulting', 'referral']
-  };
-
-  const stepTitles = [
-    'Basic Identity & Visibility',
-    'Purpose & Scope',
-    'Contribution Rules',
-    'Valuation Configuration',
-    'Tracking Configuration',
-    'Outcome Sharing',
-    'Subtimeline Rules',
-    'Governance & Compliance',
-    'Preview & Publish'
+  const steps = [
+    { id: 1, title: 'Timeline Type', description: 'Selected type and overview' },
+    { id: 2, title: 'Basic Info', description: 'Name, description and visibility' },
+    { id: 3, title: 'Purpose', description: 'Goals, dates and milestones' },
+    { id: 4, title: 'Contributions', description: 'What you accept' },
+    { id: 5, title: 'Valuation', description: 'How contributions are valued' },
+    { id: 6, title: 'Tracking', description: 'Evidence and verification' },
+    { id: 7, title: 'Outcomes', description: 'Rewards and distribution' },
+    { id: 8, title: 'Subtimelines', description: 'Nested timeline rules' },
+    { id: 9, title: 'Governance', description: 'Approval and compliance' },
+    { id: 10, title: 'Preview', description: 'Review and publish' }
   ];
 
+  const progressPercentage = (currentStep / steps.length) * 100;
+
+  const contributionTypes = [
+    'financial', 'intellectual', 'marketing', 'assets', 'followup'
+  ];
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayAdd = (field: string, item: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...(prev[field] || []), item]
+    }));
+  };
+
+  const handleArrayRemove = (field: string, index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index)
+    }));
+  };
+
   const nextStep = () => {
-    if (currentStep < totalSteps) {
+    if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -139,13 +135,18 @@ export const SharedCreationFlow = ({ selectedType, onComplete, onBack }: SharedC
     }
   };
 
-  const addMilestone = () => {
-    const milestone = prompt('Enter milestone description:');
-    if (milestone) {
-      setFormData(prev => ({
-        ...prev,
-        milestones: [...prev.milestones, milestone]
-      }));
+  const canProceed = () => {
+    switch (currentStep) {
+      case 2:
+        return formData.name && formData.description;
+      case 3:
+        return formData.mainGoal;
+      case 4:
+        return formData.allowedContributions.length > 0;
+      case 5:
+        return formData.valuationModel && formData.baseUnit;
+      default:
+        return true;
     }
   };
 
@@ -153,548 +154,432 @@ export const SharedCreationFlow = ({ selectedType, onComplete, onBack }: SharedC
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="title">Timeline Title *</Label>
-              <Input
-                id="title"
-                placeholder="Enter a descriptive title for your timeline"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe what this timeline is about and its main objectives"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={4}
-              />
-            </div>
-            
-            <div>
-              <Label>Visibility</Label>
-              <Select 
-                value={formData.visibility} 
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, visibility: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      Public - Anyone can discover and view
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="private">
-                    <div className="flex items-center gap-2">
-                      <EyeOff className="h-4 w-4" />
-                      Private - Only you can access
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="invite-only">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Invite Only - Specific members only
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" />
+                {selectedType} Timeline Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <h4 className="font-semibold mb-2">Timeline Type: {selectedType}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {getTimelineTypeDescription(selectedType)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-medium">What you'll configure:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <li>• Basic information and visibility settings</li>
+                  <li>• Purpose, goals, and timeline scope</li>
+                  <li>• Contribution types and custom capture forms</li>
+                  <li>• Valuation methods and outcome sharing</li>
+                  <li>• Tracking, verification, and governance rules</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
         );
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="purpose">Main Purpose *</Label>
-              <Textarea
-                id="purpose"
-                placeholder="What is the main goal of this timeline?"
-                value={formData.purpose}
-                onChange={(e) => setFormData(prev => ({ ...prev, purpose: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="scope">Scope</Label>
-              <Textarea
-                id="scope"
-                placeholder="Define the scope and boundaries of this timeline"
-                value={formData.scope}
-                onChange={(e) => setFormData(prev => ({ ...prev, scope: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date</Label>
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Identity & Visibility</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Timeline Name *</Label>
                 <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Enter timeline name"
+                  className="touch-manipulation"
                 />
               </div>
-              <div>
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe your timeline's purpose and goals"
+                  rows={isMobile ? 3 : 4}
+                  className="touch-manipulation resize-none"
                 />
               </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <Label>Milestones</Label>
-                <Button onClick={addMilestone} variant="outline" size="sm">
-                  <Target className="h-4 w-4 mr-2" />
-                  Add Milestone
-                </Button>
+
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select value={formData.visibility} onValueChange={(value) => handleInputChange('visibility', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public - Anyone can view and contribute</SelectItem>
+                    <SelectItem value="private">Private - Only you can manage</SelectItem>
+                    <SelectItem value="invite-only">Invite Only - Controlled access</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {formData.milestones.length > 0 ? (
-                <div className="space-y-2">
-                  {formData.milestones.map((milestone, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-2 bg-muted rounded">
-                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{milestone}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No milestones added yet</p>
-              )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-medium">Allowed Contribution Types</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Select what types of contributions this timeline will accept
-              </p>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {(contributionTypesByTimeline[selectedType] || []).map((type) => (
-                  <div key={type} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={type}
-                      checked={formData.allowedContributionTypes.includes(type as ContributionType)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedContributionTypes: [...prev.allowedContributionTypes, type as ContributionType]
-                          }));
-                        } else {
-                          setFormData(prev => ({
-                            ...prev,
-                            allowedContributionTypes: prev.allowedContributionTypes.filter(t => t !== type)
-                          }));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={type} className="text-sm capitalize">
-                      {type.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                    </Label>
-                  </div>
-                ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Purpose & Scope</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mainGoal">Main Goal *</Label>
+                <Textarea
+                  id="mainGoal"
+                  value={formData.mainGoal}
+                  onChange={(e) => handleInputChange('mainGoal', e.target.value)}
+                  placeholder="What is the primary objective of this timeline?"
+                  rows={isMobile ? 3 : 4}
+                  className="touch-manipulation resize-none"
+                />
               </div>
-            </div>
-          </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => handleInputChange('startDate', e.target.value)}
+                    className="touch-manipulation"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => handleInputChange('endDate', e.target.value)}
+                    className="touch-manipulation"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Key Milestones</Label>
+                <div className="space-y-2">
+                  {formData.milestones.map((milestone, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={milestone}
+                        onChange={(e) => {
+                          const newMilestones = [...formData.milestones];
+                          newMilestones[index] = e.target.value;
+                          handleInputChange('milestones', newMilestones);
+                        }}
+                        placeholder="Milestone description"
+                        className="flex-1 touch-manipulation"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleArrayRemove('milestones', index)}
+                        className="touch-manipulation"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => handleArrayAdd('milestones', '')}
+                    className="w-full touch-manipulation"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Milestone
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         );
 
       case 4:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label>Valuation Model</Label>
-              <Select
-                value={formData.valuationModel}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, valuationModel: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">Fixed Unit - Set price per contribution</SelectItem>
-                  <SelectItem value="hourly">Hourly Rate - Time-based valuation</SelectItem>
-                  <SelectItem value="market">Market Index - Dynamic market-based pricing</SelectItem>
-                  <SelectItem value="outcome">Outcome-based - Value based on results</SelectItem>
-                  <SelectItem value="hybrid">Hybrid - Combination of methods</SelectItem>
-                  <SelectItem value="custom">Custom Formula - Define your own rules</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label>Base Unit</Label>
-              <Select
-                value={formData.baseUnit}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, baseUnit: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD - US Dollar</SelectItem>
-                  <SelectItem value="token">Token - Custom timeline tokens</SelectItem>
-                  <SelectItem value="credits">Credits - Point-based system</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution Rules</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label>Allowed Contribution Types *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {contributionTypes.map((type) => (
+                    <div key={type} className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <Checkbox
+                        id={type}
+                        checked={formData.allowedContributions.includes(type)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            handleInputChange('allowedContributions', [...formData.allowedContributions, type]);
+                          } else {
+                            handleInputChange('allowedContributions', formData.allowedContributions.filter(t => t !== type));
+                          }
+                        }}
+                        className="touch-manipulation"
+                      />
+                      <Label htmlFor={type} className="capitalize cursor-pointer flex-1">
+                        {type} Contributions
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {formData.allowedContributions.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Custom Capture Fields</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Define additional fields contributors will fill for each contribution type.
+                  </p>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm">Custom fields configuration will be added based on selected contribution types.</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         );
 
       case 5:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-medium">Evidence Inputs</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                How will contributions be tracked and evidenced?
-              </p>
-              
-              <div className="space-y-3">
-                {[
-                  { key: 'manual', label: 'Manual Logs', desc: 'Contributors manually log their contributions' },
-                  { key: 'files', label: 'File Uploads', desc: 'Require file attachments as proof' },
-                  { key: 'api', label: 'API Integration', desc: 'Connect external services for automatic tracking' }
-                ].map((input) => (
-                  <div key={input.key} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={input.key}
-                      checked={formData.trackingInputs.includes(input.key as any)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            trackingInputs: [...prev.trackingInputs, input.key as any]
-                          }));
-                        } else {
-                          setFormData(prev => ({
-                            ...prev,
-                            trackingInputs: prev.trackingInputs.filter(t => t !== input.key)
-                          }));
-                        }
-                      }}
-                    />
-                    <div>
-                      <Label htmlFor={input.key} className="text-sm font-medium">{input.label}</Label>
-                      <p className="text-xs text-muted-foreground">{input.desc}</p>
-                    </div>
-                  </div>
-                ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Valuation Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Valuation Model *</Label>
+                <Select value={formData.valuationModel} onValueChange={(value) => handleInputChange('valuationModel', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fixed Unit - Set rates per contribution</SelectItem>
+                    <SelectItem value="hourly">Hourly Rate - Time-based valuation</SelectItem>
+                    <SelectItem value="market">Market Index - External price feeds</SelectItem>
+                    <SelectItem value="outcome">Outcome-based - Results-driven valuation</SelectItem>
+                    <SelectItem value="hybrid">Hybrid - Multiple methods combined</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            
-            <div>
-              <Label>Verification Method</Label>
-              <Select
-                value={formData.verificationMethod}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, verificationMethod: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="self">Self-attest - Contributors verify their own work</SelectItem>
-                  <SelectItem value="owner">Owner-approved - Timeline owner reviews contributions</SelectItem>
-                  <SelectItem value="third-party">Third-party - External auditor verification</SelectItem>
-                  <SelectItem value="smart-contract">Smart Contract - Automated blockchain verification</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+
+              <div className="space-y-2">
+                <Label>Base Unit *</Label>
+                <Select value={formData.baseUnit} onValueChange={(value) => handleInputChange('baseUnit', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - US Dollars</SelectItem>
+                    <SelectItem value="EUR">EUR - Euros</SelectItem>
+                    <SelectItem value="TOKEN">TOKEN - Custom tokens</SelectItem>
+                    <SelectItem value="CREDITS">CREDITS - Internal credits</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Conversion Rules</Label>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Conversion rules will be configured based on your valuation model selection.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         );
 
-      case 6:
+      case 10:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-medium">Reward Types</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                What types of rewards will contributors receive?
-              </p>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { key: 'profit', label: 'Profit Share' },
-                  { key: 'equity', label: 'Equity Stake' },
-                  { key: 'royalties', label: 'Royalties' },
-                  { key: 'credits', label: 'Credits/Points' },
-                  { key: 'access', label: 'Access Rights' },
-                  { key: 'badges', label: 'Badges/Recognition' }
-                ].map((reward) => (
-                  <div key={reward.key} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={reward.key}
-                      checked={formData.rewardTypes.includes(reward.key as any)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFormData(prev => ({
-                            ...prev,
-                            rewardTypes: [...prev.rewardTypes, reward.key as any]
-                          }));
-                        } else {
-                          setFormData(prev => ({
-                            ...prev,
-                            rewardTypes: prev.rewardTypes.filter(t => t !== reward.key)
-                          }));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={reward.key} className="text-sm">{reward.label}</Label>
-                  </div>
-                ))}
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview & Publish</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <h3 className="font-semibold text-lg mb-2">{formData.name}</h3>
+                <p className="text-muted-foreground mb-3">{formData.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">{selectedType} Timeline</Badge>
+                  <Badge variant="outline">{formData.visibility}</Badge>
+                  <Badge variant="outline">{formData.valuationModel} valuation</Badge>
+                </div>
               </div>
-            </div>
-            
-            <div>
-              <Label>Distribution Model</Label>
-              <Select
-                value={formData.distributionModel}
-                onValueChange={(value: any) => setFormData(prev => ({ ...prev, distributionModel: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pro-rata">Pro-rata - Proportional to contribution</SelectItem>
-                  <SelectItem value="tiered">Tiered - Different rates for different levels</SelectItem>
-                  <SelectItem value="milestone">Milestone-based - Rewards tied to achievements</SelectItem>
-                  <SelectItem value="custom">Custom - Define your own distribution logic</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
 
-      case 7:
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-medium">Allow Subtimelines</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable contributors to create subtimelines under this timeline
-                </p>
-              </div>
-              <Switch
-                checked={formData.allowSubtimelines}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, allowSubtimelines: checked }))}
-              />
-            </div>
-            
-            {formData.allowSubtimelines && (
-              <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Subtimeline Creation</Label>
-                  <Select
-                    value={formData.subtimelineCreation}
-                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, subtimelineCreation: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto - Each contribution spawns a subtimeline</SelectItem>
-                      <SelectItem value="template">Template - Use preset subtimeline templates</SelectItem>
-                      <SelectItem value="manual">Manual - Owner creates subtimelines on demand</SelectItem>
-                      <SelectItem value="conditional">Conditional - Auto-create when conditions are met</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base font-medium">Inherit Parent Rules</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Should subtimelines inherit this timeline's configuration?
-                    </p>
-                  </div>
-                  <Switch
-                    checked={formData.subtimelineInheritance}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, subtimelineInheritance: checked }))}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        );
-
-      case 8:
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-medium">Require Approval</Label>
-                <p className="text-sm text-muted-foreground">
-                  Should contributions need approval before being accepted?
-                </p>
-              </div>
-              <Switch
-                checked={formData.approvalRequired}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, approvalRequired: checked }))}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-medium">KYC Required</Label>
-                <p className="text-sm text-muted-foreground">
-                  Require identity verification for contributors
-                </p>
-              </div>
-              <Switch
-                checked={formData.kycRequired}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, kycRequired: checked }))}
-              />
-            </div>
-            
-            {formData.kycRequired && (
-              <div>
-                <Label htmlFor="kycThreshold">KYC Threshold ({formData.baseUnit})</Label>
-                <Input
-                  id="kycThreshold"
-                  type="number"
-                  placeholder="Minimum contribution value requiring KYC"
-                  value={formData.kycThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, kycThreshold: Number(e.target.value) }))}
-                />
-              </div>
-            )}
-          </div>
-        );
-
-      case 9:
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold">Preview Your Timeline</h3>
-              <p className="text-sm text-muted-foreground">
-                Review your timeline configuration before publishing
-              </p>
-            </div>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize">{selectedType}</Badge>
-                  {formData.title}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{formData.description}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Visibility:</span> {formData.visibility}
-                  </div>
-                  <div>
-                    <span className="font-medium">Valuation:</span> {formData.valuationModel} in {formData.baseUnit}
-                  </div>
-                  <div>
-                    <span className="font-medium">Contributions:</span> {formData.allowedContributionTypes.length} types
-                  </div>
-                  <div>
-                    <span className="font-medium">Rewards:</span> {formData.rewardTypes.length} types
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-2">
-                  <h4 className="font-medium">Key Features:</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {formData.allowSubtimelines && <li>• Subtimelines enabled</li>}
-                    {formData.approvalRequired && <li>• Requires approval for contributions</li>}
-                    {formData.kycRequired && <li>• KYC verification required</li>}
-                    <li>• {formData.trackingInputs.length} tracking method(s)</li>
-                    <li>• {formData.verificationMethod} verification</li>
+                  <h4 className="font-medium mb-2">Contribution Types</h4>
+                  <ul className="text-sm space-y-1">
+                    {formData.allowedContributions.map((type, index) => (
+                      <li key={index} className="capitalize">• {type}</li>
+                    ))}
                   </ul>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div>
+                  <h4 className="font-medium mb-2">Configuration</h4>
+                  <ul className="text-sm space-y-1">
+                    <li>• Base Unit: {formData.baseUnit}</li>
+                    <li>• Verification: {formData.verificationMethod}</li>
+                    <li>• Subtimelines: {formData.allowSubtimelines ? 'Enabled' : 'Disabled'}</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <Switch
+                  checked={true}
+                  disabled
+                />
+                <Label className="text-sm">Ready to publish timeline</Label>
+              </div>
+            </CardContent>
+          </Card>
         );
 
       default:
-        return null;
+        return (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">Step {currentStep}</h3>
+                <p className="text-muted-foreground">
+                  {steps[currentStep - 1]?.description} configuration will be implemented here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.title.trim() && formData.description.trim();
-      case 2:
-        return formData.purpose.trim();
-      case 3:
-        return formData.allowedContributionTypes.length > 0;
-      default:
-        return true;
-    }
+  const getTimelineTypeDescription = (type: TimelineType): string => {
+    const descriptions = {
+      project: 'Manage deliverables, milestones, and project-specific contributions with team collaboration.',
+      followup: 'Track ongoing activities, client interactions, and recurring tasks with systematic follow-up.',
+      profile: 'Personal or professional profile that can accept sponsorships and manage reputation.',
+      financial: 'Handle various financial contributions including cash, crypto, loans, and equity investments.',
+      marketing: 'Manage marketing campaigns, referrals, events, and content creation with performance tracking.',
+      intellectual: 'Manage intellectual property contributions including consulting, deliverables, and IP licensing.',
+      assets: 'Track and manage physical or digital asset contributions including land, equipment, and licenses.'
+    };
+    return descriptions[type] || 'Custom timeline configuration for specialized use cases.';
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Create {selectedType} Timeline</h2>
-          <Badge variant="outline">{currentStep} of {totalSteps}</Badge>
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+      {/* Mobile-optimized Progress Header */}
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-semibold">
+            Step {currentStep} of {steps.length}
+          </h2>
+          <Badge variant="outline" className="text-xs sm:text-sm">
+            {Math.round(progressPercentage)}% Complete
+          </Badge>
         </div>
         
-        <Progress value={progress} className="mb-4" />
-        
-        <h3 className="text-lg font-medium">{stepTitles[currentStep - 1]}</h3>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="font-medium">{steps[currentStep - 1]?.title}</span>
+            <span className="text-muted-foreground">{steps[currentStep - 1]?.description}</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Mobile-friendly step indicators */}
+        {!isMobile && (
+          <ScrollArea className="w-full">
+            <div className="flex items-center space-x-2 pb-2">
+              {steps.map((step, index) => (
+                <div
+                  key={step.id}
+                  className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs whitespace-nowrap ${
+                    currentStep === step.id
+                      ? 'bg-primary text-primary-foreground'
+                      : currentStep > step.id
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  <span className="font-medium">{step.id}</span>
+                  <span>{step.title}</span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
       </div>
 
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          {renderStepContent()}
-        </CardContent>
-      </Card>
+      {/* Step Content */}
+      <div className="touch-manipulation">
+        {renderStepContent()}
+      </div>
 
-      <div className="flex justify-between">
-        <Button 
-          onClick={currentStep === 1 ? onBack : prevStep} 
-          variant="outline"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {currentStep === 1 ? 'Back to Type Selection' : 'Previous'}
-        </Button>
-        
-        {currentStep === totalSteps ? (
+      {/* Mobile-optimized Navigation */}
+      <div className="flex items-center justify-between gap-3 pt-4 border-t">
+        {currentStep === 1 ? (
           <Button 
-            onClick={() => onComplete(formData)}
-            className="bg-primary hover:bg-primary/90"
+            variant="outline" 
+            onClick={onBack}
+            size={isMobile ? "sm" : "default"}
+            className="touch-manipulation"
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Publish Timeline
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Types
           </Button>
         ) : (
           <Button 
-            onClick={nextStep}
-            disabled={!canProceed()}
+            variant="outline" 
+            onClick={prevStep}
+            size={isMobile ? "sm" : "default"}
+            className="touch-manipulation"
           >
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
           </Button>
         )}
+
+        <div className="flex items-center gap-2">
+          {currentStep < steps.length ? (
+            <Button 
+              onClick={nextStep}
+              disabled={!canProceed()}
+              size={isMobile ? "sm" : "default"}
+              className="touch-manipulation"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => onComplete(formData)}
+              disabled={!canProceed()}
+              size={isMobile ? "sm" : "default"}
+              className="touch-manipulation"
+            >
+              Create Timeline
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
