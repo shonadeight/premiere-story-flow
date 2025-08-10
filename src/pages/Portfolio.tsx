@@ -29,9 +29,13 @@ import { mockUser, mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
 import { TimelineCard } from '@/components/timeline/TimelineCard';
 import { MatchedTimelines } from '@/components/dashboard/MatchedTimelines';
+import { SortOptions } from '@/components/timeline/SortOptions';
 
 export const Portfolio = () => {
   const [activeTab, setActiveTab] = useState('my-timelines');
+  const [sortBy, setSortBy] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [filters, setFilters] = useState<any>({});
   
   // Check if this is the root timeline (profile)
   const isRootTimeline = true; // In real app, this would be determined by route/context
@@ -144,14 +148,15 @@ export const Portfolio = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-                <Button variant="outline" size="sm">
-                  <SortAsc className="h-4 w-4 mr-2" />
-                  Sort
-                </Button>
+                <SortOptions
+                  onSortChange={(field, order) => {
+                    setSortBy(field);
+                    setSortOrder(order);
+                  }}
+                  onFilterChange={setFilters}
+                  currentSort={sortBy}
+                  currentFilters={filters}
+                />
               </div>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,19 +14,35 @@ import {
   DollarSign,
   Play,
   Pause,
-  CheckCircle2
+  CheckCircle2,
+  Settings,
+  Edit,
+  MoreHorizontal
 } from 'lucide-react';
 import { Timeline } from '@/types/timeline';
+import { TimelineEditModal } from './TimelineEditModal';
 import { useNavigate } from 'react-router-dom';
 import { ContributionBreakdown } from './ContributionBreakdown';
 
 interface TimelineCardProps {
   timeline: Timeline;
   view?: 'grid' | 'list';
+  onTimelineClick?: (timeline: Timeline) => void;
 }
 
-export const TimelineCard = ({ timeline, view = 'grid' }: TimelineCardProps) => {
+export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: TimelineCardProps) => {
   const navigate = useNavigate();
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleEditTimeline = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowEditModal(true);
+  };
+
+  const handleSaveTimeline = (updatedTimeline: Timeline) => {
+    // In real app, this would save to database
+    console.log('Saving timeline:', updatedTimeline);
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -200,12 +217,29 @@ export const TimelineCard = ({ timeline, view = 'grid' }: TimelineCardProps) => 
               <Star className="h-4 w-4 fill-current text-accent" />
               <span>{timeline.rating}</span>
             </div>
-            <Button variant="ghost" size="sm" className="h-8 px-2">
-              <MessageSquare className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2"
+                onClick={handleEditTimeline}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 px-2">
+                <MessageSquare className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardFooter>
+      
+      <TimelineEditModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        timeline={timeline}
+        onSave={handleSaveTimeline}
+      />
     </Card>
   );
 };
