@@ -137,7 +137,7 @@ export const TimelineDetail = () => {
 
             <Card>
               <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold">{timeline.subtimelines}</div>
+                <div className="text-2xl font-bold">{timeline.subtimelines.length}</div>
                 <div className="text-sm text-muted-foreground">Sub-timelines</div>
                 <div className="text-sm text-primary mt-1">
                   <GitBranch className="h-3 w-3 inline mr-1" />
@@ -231,7 +231,7 @@ export const TimelineDetail = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <GitBranch className="h-5 w-5" />
-                    Sub-timelines ({timeline.subtimelines})
+                    Sub-timelines ({timeline.subtimelines.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

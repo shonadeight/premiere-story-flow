@@ -82,9 +82,9 @@ export const Marketplace = () => {
   const categories = [
     { value: 'all', label: 'All Categories', count: publicTimelines.length },
     { value: 'project', label: 'Projects', count: publicTimelines.filter(t => t.type === 'project').length },
-    { value: 'contact', label: 'Contacts', count: publicTimelines.filter(t => t.type === 'contact').length },
-    { value: 'training', label: 'Training', count: publicTimelines.filter(t => t.type === 'training').length },
-    { value: 'transaction', label: 'Financial', count: publicTimelines.filter(t => t.type === 'transaction').length },
+    { value: 'financial', label: 'Financial', count: publicTimelines.filter(t => t.type === 'financial').length },
+    { value: 'intellectual', label: 'Intellectual', count: publicTimelines.filter(t => t.type === 'intellectual').length },
+    { value: 'network', label: 'Network', count: publicTimelines.filter(t => t.type === 'network').length },
   ];
 
   const marketStats = [

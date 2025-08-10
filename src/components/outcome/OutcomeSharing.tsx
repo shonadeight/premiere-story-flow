@@ -278,7 +278,7 @@ export const OutcomeSharing = ({ timeline }: OutcomeSharingProps) => {
                       {availableTimelines.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           <div className="flex items-center gap-2">
-                            <span>{t.type === 'project' ? '🚀' : t.type === 'contact' ? '👤' : '💰'}</span>
+                            <span>{t.type === 'project' ? '🚀' : t.type === 'profile' ? '👤' : '💰'}</span>
                             <span>{t.title}</span>
                           </div>
                         </SelectItem>

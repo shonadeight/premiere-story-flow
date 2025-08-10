@@ -29,9 +29,9 @@ export const MatchingSystem = ({ currentTimeline }: MatchingSystemProps) => {
 
       // Match based on complementary types
       const typeMatch = (
-        (currentTimeline.type === 'project' && timeline.type === 'contact') ||
-        (currentTimeline.type === 'contact' && timeline.type === 'project') ||
-        (currentTimeline.type === 'transaction' && timeline.type === 'project')
+        (currentTimeline.type === 'project' && timeline.type === 'financial') ||
+        (currentTimeline.type === 'financial' && timeline.type === 'project') ||
+        (currentTimeline.type === 'intellectual' && timeline.type === 'project')
       );
 
       // Search filter

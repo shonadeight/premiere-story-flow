@@ -306,7 +306,7 @@ export const Portfolio = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="text-2xl">
-                          {timeline.type === 'project' ? '🚀' : timeline.type === 'contact' ? '👤' : '🧠'}
+                          {timeline.type === 'project' ? '🚀' : timeline.type === 'profile' ? '👤' : timeline.type === 'financial' ? '💰' : '🧠'}
                         </div>
                         <div>
                           <h4 className="font-semibold">{timeline.title}</h4>
@@ -393,7 +393,7 @@ export const Portfolio = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">
-                      {timeline.type === 'project' ? '🚀' : timeline.type === 'contact' ? '👤' : '🧠'}
+                      {timeline.type === 'project' ? '🚀' : timeline.type === 'profile' ? '👤' : '🧠'}
                     </div>
                     <div>
                       <h4 className="font-semibold">{timeline.title}</h4>
@@ -497,7 +497,7 @@ export const Portfolio = () => {
                   <div key={timeline.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className="text-2xl">
-                        {timeline.type === 'project' ? '🚀' : timeline.type === 'contact' ? '👤' : '💰'}
+                        {timeline.type === 'project' ? '🚀' : timeline.type === 'profile' ? '👤' : '💰'}
                       </div>
                       <div>
                         <div className="font-medium">{timeline.title}</div>
