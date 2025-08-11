@@ -132,7 +132,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
 
   return (
     <Card 
-      className="hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
+      className="hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02] mx-1 sm:mx-0"
       onClick={() => navigate(`/timeline/${timeline.id}`)}
     >
       <CardHeader className="pb-3">

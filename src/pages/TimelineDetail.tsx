@@ -34,6 +34,9 @@ import { MatchedTimelines } from '@/components/dashboard/MatchedTimelines';
 import { SortOptions } from '@/components/timeline/SortOptions';
 import { AnalyticsTab } from '@/components/timeline/tabs/AnalyticsTab';
 import { TradingTab } from '@/components/timeline/tabs/TradingTab';
+import { FollowupsTab } from '@/components/timeline/tabs/FollowupsTab';
+import { FilesTab } from '@/components/timeline/tabs/FilesTab';
+import { RatingsTab } from '@/components/timeline/tabs/RatingsTab';
 
 export const TimelineDetail = () => {
   const { id } = useParams();
@@ -97,7 +100,7 @@ export const TimelineDetail = () => {
   ];
 
   return (
-    <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6">
+    <div className="container mx-auto px-1 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6">
       {/* Header with Back Button */}
       <div className="flex items-center gap-3 sm:gap-4">
         <Button 
@@ -251,7 +254,7 @@ export const TimelineDetail = () => {
                     Create Subtimeline
                   </Button>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mx-1 sm:mx-0">
                   {mockSubtimelines.map((subtimeline) => (
                     <TimelineCard 
                       key={subtimeline.id} 
@@ -297,16 +300,28 @@ export const TimelineDetail = () => {
                 <TradingTab />
               </TabsContent>
 
-              {/* Placeholder content for other tabs */}
-              {tabs.slice(6).map((tab) => (
+              <TabsContent value="followups" className="m-0">
+                <FollowupsTab />
+              </TabsContent>
+
+              <TabsContent value="files" className="m-0">
+                <FilesTab />
+              </TabsContent>
+
+              <TabsContent value="ratings" className="m-0">
+                <RatingsTab />
+              </TabsContent>
+
+              {/* Placeholder content for remaining tabs */}
+              {tabs.slice(9).map((tab) => (
                 <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-4">
                   <div className="flex items-center gap-2">
                     <tab.icon className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-semibold">{tab.label}</h3>
                   </div>
                   <Card>
-                    <CardContent className="p-6">
-                      <p className="text-muted-foreground">
+                    <CardContent className="p-4 sm:p-6">
+                      <p className="text-muted-foreground text-sm sm:text-base">
                         {tab.label} content will be implemented here. This section will contain
                         detailed information and functionality related to {tab.label.toLowerCase()}.
                       </p>
