@@ -73,9 +73,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen bg-background flex flex-col">
             <Navbar />
-            <main>
+            <main className="flex-1 overflow-hidden">
               <Routes>
                 <Route path="/" element={<Portfolio />} />
                 <Route path="/timeline/:id" element={<TimelineDetail />} />

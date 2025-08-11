@@ -3,6 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -17,12 +18,17 @@ import {
   CheckCircle2,
   Settings,
   Edit,
-  MoreHorizontal
+  MoreHorizontal,
+  Plus,
+  Heart,
+  Share
 } from 'lucide-react';
 import { Timeline } from '@/types/timeline';
 import { TimelineEditModal } from './TimelineEditModal';
 import { useNavigate } from 'react-router-dom';
 import { ContributionBreakdown } from './ContributionBreakdown';
+import { ContributionFlow } from './ContributionFlow';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TimelineCardProps {
   timeline: Timeline;
@@ -32,7 +38,10 @@ interface TimelineCardProps {
 
 export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: TimelineCardProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showContribution, setShowContribution] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
 
   const handleEditTimeline = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -132,16 +141,16 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
 
   return (
     <Card 
-      className="hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02] mx-1 sm:mx-0"
+      className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 bg-card/80 backdrop-blur-sm hover:bg-card/90"
       onClick={() => navigate(`/timeline/${timeline.id}`)}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-2xl">{getTypeIcon(timeline.type)}</div>
+            <div className="text-xl">{getTypeIcon(timeline.type)}</div>
             <div>
-              <h3 className="font-semibold leading-tight">{timeline.title}</h3>
-              <Badge variant="outline" className="text-xs mt-1 capitalize">
+              <h3 className="font-semibold leading-tight text-sm">{timeline.title}</h3>
+              <Badge variant="outline" className="text-xs mt-1 capitalize h-4">
                 {timeline.type}
               </Badge>
             </div>
@@ -149,7 +158,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
           <div className="flex items-center gap-1">
             {getStatusIcon(timeline.status)}
             {timeline.invested && (
-              <Badge variant="secondary" className="bg-success/10 text-success text-xs">
+              <Badge variant="secondary" className="bg-success/10 text-success text-xs h-4">
                 Invested
               </Badge>
             )}
@@ -157,82 +166,165 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+      <CardContent className="p-3 pt-0">
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
           {timeline.description}
         </p>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold">{formatCurrency(timeline.value)}</span>
-            <div className={`flex items-center gap-1 text-sm font-medium ${
+            <span className="text-base font-bold">{formatCurrency(timeline.value)}</span>
+            <div className={`flex items-center gap-1 text-xs font-medium ${
               timeline.change >= 0 ? 'text-success' : 'text-destructive'
             }`}>
-              {timeline.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              {timeline.change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               <span>{timeline.changePercent > 0 ? '+' : ''}{timeline.changePercent}%</span>
-              <span className="text-muted-foreground">
-                ({timeline.change >= 0 ? '+' : ''}{formatCurrency(timeline.change)})
-              </span>
             </div>
           </div>
 
           {timeline.invested && (
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Your Investment:</span>
               <span className="font-medium">{formatCurrency(timeline.investedAmount || 0)}</span>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-1 mb-3">
-            {timeline.tags?.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+          <div className="flex flex-wrap gap-1 mb-2">
+            {timeline.tags?.slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="secondary" className="text-xs h-4">
                 {tag}
               </Badge>
             ))}
           </div>
-          
-          <ContributionBreakdown compact />
         </div>
       </CardContent>
 
-      <CardFooter className="pt-4 border-t border-border/50">
-        <div className="w-full flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <GitBranch className="h-4 w-4" />
-              <span>{timeline.subtimelines.length}</span>
+      <CardFooter className="p-3 pt-2 border-t border-border/30">
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <GitBranch className="h-3 w-3" />
+                <span>{timeline.subtimelines.length}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                <span>{timeline.investedMembers}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                <span>{timeline.views}</span>
+              </div>
             </div>
+            
             <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span>{timeline.investedMembers}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              <span>{timeline.views}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-current text-accent" />
+              <Star className="h-3 w-3 fill-current text-accent" />
               <span>{timeline.rating}</span>
             </div>
-            <div className="flex gap-1">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 px-2"
-                onClick={handleEditTimeline}
+          </div>
+
+          {/* Actions Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-1 h-7 px-2 ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLiked(!isLiked);
+                }}
               >
-                <Edit className="h-4 w-4" />
+                <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-current' : ''}`} />
+                <span className="text-xs">{timeline.likes + (isLiked ? 1 : 0)}</span>
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                <MessageSquare className="h-4 w-4" />
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-7 px-2 text-muted-foreground hover:text-blue-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle comment action
+                }}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="text-xs">{timeline.comments}</span>
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-7 px-2 text-muted-foreground hover:text-green-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle share action
+                }}
+              >
+                <Share className="h-3.5 w-3.5" />
               </Button>
             </div>
+
+            {/* Contribute Button */}
+            {isMobile ? (
+              <Drawer open={showContribution} onOpenChange={setShowContribution}>
+                <DrawerTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="text-xs">Contribute</span>
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="h-[85vh]">
+                  <div className="overflow-y-auto p-4">
+                    <ContributionFlow 
+                      targetTimeline={timeline} 
+                      onComplete={(data) => {
+                        console.log('Contribution completed:', data);
+                        setShowContribution(false);
+                      }}
+                      onCancel={() => setShowContribution(false)}
+                    />
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            ) : (
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowContribution(true);
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="text-xs">Contribute</span>
+              </Button>
+            )}
           </div>
         </div>
       </CardFooter>
+
+      {/* Contribution Flow for Desktop */}
+      {!isMobile && showContribution && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowContribution(false)}>
+          <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
+            <ContributionFlow 
+              targetTimeline={timeline} 
+              onComplete={(data) => {
+                console.log('Contribution completed:', data);
+                setShowContribution(false);
+              }}
+              onCancel={() => setShowContribution(false)}
+            />
+          </div>
+        </div>
+      )}
       
       <TimelineEditModal
         open={showEditModal}

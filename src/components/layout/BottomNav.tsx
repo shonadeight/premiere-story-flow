@@ -43,8 +43,8 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-50 lg:hidden">
-      <div className="flex items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/98 backdrop-blur-md border-t border-border/50 z-50 lg:hidden">
+      <div className="flex items-center justify-around px-1 py-1 safe-area-inset-bottom">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || (item.path === '/' && location.pathname === '/portfolio');
           const Icon = item.icon;
@@ -52,15 +52,17 @@ export const BottomNav = () => {
           return (
             <Button
               key={item.path}
-              variant={isActive ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
-              className={`flex-col h-auto py-2 px-3 gap-1 relative ${
-                isActive ? 'bg-primary/10 text-primary' : ''
+              className={`flex-col h-auto py-2 px-2 gap-0.5 relative transition-all duration-200 min-h-[44px] ${
+                isActive 
+                  ? 'text-primary bg-primary/5 scale-105' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
               onClick={(e) => handleNavClick(item, e)}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
+              <Icon className={`h-5 w-5 ${isActive ? 'scale-110' : ''} transition-transform duration-200`} />
+              <span className={`text-xs font-medium ${isActive ? 'font-semibold' : ''}`}>{item.label}</span>
               {item.label === 'Assistant' && (
                 <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-accent">
                   !

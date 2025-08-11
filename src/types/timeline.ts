@@ -96,6 +96,10 @@ export interface Timeline {
   createdAt: string;
   updatedAt: string;
   
+  // Social metrics
+  likes: number;
+  comments: number;
+  
   // Legacy and additional fields
   tags: string[];
   attachments?: string[];
