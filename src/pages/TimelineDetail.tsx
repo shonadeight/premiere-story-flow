@@ -32,6 +32,8 @@ import { Timeline } from '@/types/timeline';
 import { TimelineCard } from '@/components/timeline/TimelineCard';
 import { MatchedTimelines } from '@/components/dashboard/MatchedTimelines';
 import { SortOptions } from '@/components/timeline/SortOptions';
+import { AnalyticsTab } from '@/components/timeline/tabs/AnalyticsTab';
+import { TradingTab } from '@/components/timeline/tabs/TradingTab';
 
 export const TimelineDetail = () => {
   const { id } = useParams();
@@ -267,28 +269,7 @@ export const TimelineDetail = () => {
               </TabsContent>
 
               <TabsContent value="analytics" className="m-0 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Performance Analytics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Detailed analytics and reports will be displayed here.
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Growth Metrics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Growth metrics and trending data visualization.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <AnalyticsTab />
               </TabsContent>
 
               <TabsContent value="invested-users" className="m-0 space-y-4">
@@ -312,8 +293,12 @@ export const TimelineDetail = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="trading" className="m-0 space-y-4">
+                <TradingTab />
+              </TabsContent>
+
               {/* Placeholder content for other tabs */}
-              {tabs.slice(4).map((tab) => (
+              {tabs.slice(6).map((tab) => (
                 <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-4">
                   <div className="flex items-center gap-2">
                     <tab.icon className="h-5 w-5 text-primary" />
