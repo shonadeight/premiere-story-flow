@@ -201,7 +201,15 @@ export const TimelineDetail = () => {
             <h2 className="text-lg sm:text-xl font-semibold">Timeline Details</h2>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto">
-            <SortOptions />
+            <SortOptions 
+              onSortChange={(field, order) => {
+                setSortBy(field);
+                setSortOrder(order);
+              }}
+              onFilterChange={setFilters}
+              currentSort={sortBy}
+              currentFilters={filters}
+            />
             <Button variant="outline" size="sm" className="whitespace-nowrap touch-manipulation">
               <Settings className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Manage</span>
