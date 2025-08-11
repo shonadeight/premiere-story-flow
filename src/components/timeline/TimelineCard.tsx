@@ -21,7 +21,8 @@ import {
   MoreHorizontal,
   Plus,
   Heart,
-  Share
+  Share,
+  Bell
 } from 'lucide-react';
 import { Timeline } from '@/types/timeline';
 import { TimelineEditModal } from './TimelineEditModal';
@@ -29,6 +30,10 @@ import { useNavigate } from 'react-router-dom';
 import { ContributionBreakdown } from './ContributionBreakdown';
 import { ContributionFlow } from './ContributionFlow';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SubtimelinesModal } from './SubtimelinesModal';
+import { ImpactRatingModal } from './ImpactRatingModal';
+import { SubscribeModal } from './SubscribeModal';
+import { VisitsModal } from './VisitsModal';
 
 interface TimelineCardProps {
   timeline: Timeline;
@@ -42,6 +47,10 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
   const [showEditModal, setShowEditModal] = useState(false);
   const [showContribution, setShowContribution] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [showSubtimelines, setShowSubtimelines] = useState(false);
+  const [showImpactRating, setShowImpactRating] = useState(false);
+  const [showSubscribe, setShowSubscribe] = useState(false);
+  const [showVisits, setShowVisits] = useState(false);
 
   const handleEditTimeline = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -203,23 +212,60 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
         <div className="w-full">
           <div className="flex items-center justify-between mb-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-5 px-1 text-muted-foreground hover:text-blue-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSubtimelines(true);
+                }}
+              >
                 <GitBranch className="h-3 w-3" />
                 <span>{timeline.subtimelines.length}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span>{timeline.investedMembers}</span>
-              </div>
-              <div className="flex items-center gap-1">
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-5 px-1 text-muted-foreground hover:text-yellow-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowImpactRating(true);
+                }}
+              >
+                <Star className="h-3 w-3 fill-current text-accent" />
+                <span>{timeline.rating}</span>
+              </Button>
+              {timeline.allowSubscription && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 h-5 px-1 text-muted-foreground hover:text-orange-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSubscribe(true);
+                  }}
+                >
+                  <Bell className="h-3 w-3" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 h-5 px-1 text-muted-foreground hover:text-purple-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVisits(true);
+                }}
+              >
                 <Eye className="h-3 w-3" />
                 <span>{timeline.views}</span>
-              </div>
+              </Button>
             </div>
             
             <div className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-current text-accent" />
-              <span>{timeline.rating}</span>
+              <Users className="h-3 w-3" />
+              <span>{timeline.investedMembers}</span>
             </div>
           </div>
 
@@ -331,6 +377,31 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
         onOpenChange={setShowEditModal}
         timeline={timeline}
         onSave={handleSaveTimeline}
+      />
+
+      {/* Action Modals */}
+      <SubtimelinesModal
+        open={showSubtimelines}
+        onOpenChange={setShowSubtimelines}
+        timeline={timeline}
+      />
+      
+      <ImpactRatingModal
+        open={showImpactRating}
+        onOpenChange={setShowImpactRating}
+        timeline={timeline}
+      />
+      
+      <SubscribeModal
+        open={showSubscribe}
+        onOpenChange={setShowSubscribe}
+        timeline={timeline}
+      />
+      
+      <VisitsModal
+        open={showVisits}
+        onOpenChange={setShowVisits}
+        timeline={timeline}
       />
     </Card>
   );

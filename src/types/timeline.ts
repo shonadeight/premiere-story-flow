@@ -113,6 +113,7 @@ export interface Timeline {
   isPublic: boolean;
   collaborators?: string[];
   matchingCriteria?: string[];
+  allowSubscription?: boolean;
 }
 
 export interface ChatMessage {
