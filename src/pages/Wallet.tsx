@@ -20,7 +20,8 @@ import {
   EyeOff,
   Smartphone,
   Calendar,
-  Shield
+  Shield,
+  BarChart3
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { WithdrawModal } from '@/components/ui/dialog-modal';
@@ -341,67 +342,79 @@ export const Wallet = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Add Funds
+                <TrendingUp className="h-5 w-5" />
+                Timeline Gains & Revenue Sharing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Amount (USD)</label>
-                  <Input
-                    type="number"
-                    placeholder="1000"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="1"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Payment Method</label>
-                  <Select value={selectedMethod} onValueChange={setSelectedMethod}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((method) => {
-                        const Icon = method.icon;
-                        return (
-                          <SelectItem key={method.id} value={method.id}>
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              <span>{method.name}</span>
-                              <Badge variant="outline" className="ml-auto text-xs">
-                                {method.fees}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-sm">Secure Transaction</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  All transactions are encrypted and processed through secure payment gateways.
+              <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
+                <h4 className="font-medium text-success mb-2">Automatic Deposits from Timeline Outcomes</h4>
+                <p className="text-sm text-muted-foreground">
+                  Funds are automatically deposited from your timeline investments and outcome sharing agreements.
                 </p>
               </div>
 
+              <div className="space-y-4">
+                <h4 className="font-medium">Recent Timeline Deposits</h4>
+                {[
+                  { timeline: 'AI SaaS Platform', amount: 2400, type: 'Revenue Share', date: '2024-08-01' },
+                  { timeline: 'Sarah Chen Partnership', amount: 1200, type: 'Outcome Share', date: '2024-07-25' },
+                  { timeline: 'DeFi Protocol', amount: 800, type: 'Profit Distribution', date: '2024-07-20' },
+                  { timeline: 'Mobile App Dev', amount: 650, type: 'Milestone Payout', date: '2024-07-15' }
+                ].map((deposit, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-success/10 rounded-lg">
+                        <TrendingUp className="h-4 w-4 text-success" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{deposit.timeline}</div>
+                        <div className="text-sm text-muted-foreground">{deposit.type}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-success">+{formatCurrency(deposit.amount)}</div>
+                      <div className="text-xs text-muted-foreground">{deposit.date}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                  <h4 className="font-medium mb-2">Pending Revenue Shares</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Green Energy Project</span>
+                      <span className="text-accent">+$1,500 (pending verification)</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Blockchain Analytics</span>
+                      <span className="text-accent">+$750 (processing)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-success">{formatCurrency(5050)}</div>
+                    <div className="text-sm text-muted-foreground">This Month</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{formatCurrency(18750)}</div>
+                    <div className="text-sm text-muted-foreground">Total Earned</div>
+                  </div>
+                </div>
+              </div>
+
               <Button 
-                onClick={() => handleTransaction('deposit')}
+                variant="outline"
                 className="w-full"
                 size="lg"
+                onClick={() => window.open('/portfolio', '_blank')}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Deposit {amount && `$${parseFloat(amount).toLocaleString()}`}
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Timeline Performance
               </Button>
             </CardContent>
           </Card>

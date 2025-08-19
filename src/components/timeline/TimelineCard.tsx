@@ -34,6 +34,7 @@ import { SubtimelinesModal } from './SubtimelinesModal';
 import { ImpactRatingModal } from './ImpactRatingModal';
 import { SubscribeModal } from './SubscribeModal';
 import { VisitsModal } from './VisitsModal';
+import { ConversationModal } from './ConversationModal';
 
 interface TimelineCardProps {
   timeline: Timeline;
@@ -49,8 +50,9 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
   const [isLiked, setIsLiked] = useState(false);
   const [showSubtimelines, setShowSubtimelines] = useState(false);
   const [showImpactRating, setShowImpactRating] = useState(false);
-  const [showSubscribe, setShowSubscribe] = useState(false);
-  const [showVisits, setShowVisits] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+  const [showVisitsModal, setShowVisitsModal] = useState(false);
+  const [showConversationModal, setShowConversationModal] = useState(false);
 
   const handleEditTimeline = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -236,31 +238,29 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
                 <Star className="h-3 w-3 fill-current text-accent" />
                 <span>{timeline.rating}</span>
               </Button>
-              {timeline.allowSubscription && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 h-5 px-1 text-muted-foreground hover:text-orange-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowSubscribe(true);
-                  }}
-                >
-                  <Bell className="h-3 w-3" />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 h-5 px-1 text-muted-foreground hover:text-purple-500"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowVisits(true);
-                }}
-              >
-                <Eye className="h-3 w-3" />
-                <span>{timeline.views}</span>
-              </Button>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   className="gap-1 h-5 px-1 text-muted-foreground hover:text-orange-500"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     setShowSubscribeModal(true);
+                   }}
+                 >
+                   <Bell className="h-3 w-3" />
+                 </Button>
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 className="gap-1 h-5 px-1 text-muted-foreground hover:text-purple-500"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setShowVisitsModal(true);
+                 }}
+               >
+                 <Eye className="h-3 w-3" />
+                 <span>{timeline.views}</span>
+               </Button>
             </div>
             
             <div className="flex items-center gap-1">
@@ -285,18 +285,18 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
                 <span className="text-xs">{timeline.likes + (isLiked ? 1 : 0)}</span>
               </Button>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 h-7 px-2 text-muted-foreground hover:text-blue-500"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle comment action
-                }}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span className="text-xs">{timeline.comments}</span>
-              </Button>
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 className="gap-1 h-7 px-2 text-muted-foreground hover:text-blue-500"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setShowConversationModal(true);
+                 }}
+               >
+                 <MessageSquare className="h-3.5 w-3.5" />
+                 <span className="text-xs">{timeline.comments}</span>
+               </Button>
               
               <Button
                 variant="ghost"
@@ -393,14 +393,20 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
       />
       
       <SubscribeModal
-        open={showSubscribe}
-        onOpenChange={setShowSubscribe}
+        open={showSubscribeModal}
+        onOpenChange={setShowSubscribeModal}
         timeline={timeline}
       />
       
-      <VisitsModal
-        open={showVisits}
-        onOpenChange={setShowVisits}
+      <VisitsModal 
+        open={showVisitsModal} 
+        onOpenChange={setShowVisitsModal}
+        timeline={timeline}
+      />
+
+      <ConversationModal
+        open={showConversationModal}
+        onOpenChange={setShowConversationModal}
         timeline={timeline}
       />
     </Card>

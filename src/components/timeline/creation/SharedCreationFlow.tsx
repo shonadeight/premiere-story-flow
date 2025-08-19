@@ -407,6 +407,242 @@ export const SharedCreationFlow: React.FC<SharedCreationFlowProps> = ({
           </Card>
         );
 
+      case 6:
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tracking Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Evidence Inputs</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {['Manual logs', 'File uploads', 'API feeds', 'CRM integration', 'Payment receipts', 'Analytics data'].map((input) => (
+                    <div key={input} className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <Checkbox
+                        checked={formData.trackingInputs.includes(input)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            handleInputChange('trackingInputs', [...formData.trackingInputs, input]);
+                          } else {
+                            handleInputChange('trackingInputs', formData.trackingInputs.filter(t => t !== input));
+                          }
+                        }}
+                        className="touch-manipulation"
+                      />
+                      <Label className="cursor-pointer flex-1">{input}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Verification Method</Label>
+                <Select value={formData.verificationMethod} onValueChange={(value) => handleInputChange('verificationMethod', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="self-attest">Self-attest - Contributors verify themselves</SelectItem>
+                    <SelectItem value="owner-approved">Owner Approved - Manual review by owner</SelectItem>
+                    <SelectItem value="third-party">Third-party Audited - External verification</SelectItem>
+                    <SelectItem value="smart-contract">Smart Contract - Automated validation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 7:
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Outcome Sharing Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Reward Types</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {['Profit %', 'Equity', 'Royalties', 'Credits', 'Access rights', 'Badges/Recognition'].map((reward) => (
+                    <div key={reward} className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <Checkbox
+                        checked={formData.rewardTypes.includes(reward)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            handleInputChange('rewardTypes', [...formData.rewardTypes, reward]);
+                          } else {
+                            handleInputChange('rewardTypes', formData.rewardTypes.filter(r => r !== reward));
+                          }
+                        }}
+                        className="touch-manipulation"
+                      />
+                      <Label className="cursor-pointer flex-1">{reward}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Distribution Model</Label>
+                <Select value={formData.distributionModel} onValueChange={(value) => handleInputChange('distributionModel', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pro-rata">Pro-rata - Proportional to contribution</SelectItem>
+                    <SelectItem value="tiered">Tiered - Based on contribution levels</SelectItem>
+                    <SelectItem value="milestone">Milestone Release - Triggered by achievements</SelectItem>
+                    <SelectItem value="custom">Custom - Define specific rules</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payout Triggers</Label>
+                <div className="space-y-2">
+                  {formData.payoutTriggers.map((trigger, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={trigger}
+                        onChange={(e) => {
+                          const newTriggers = [...formData.payoutTriggers];
+                          newTriggers[index] = e.target.value;
+                          handleInputChange('payoutTriggers', newTriggers);
+                        }}
+                        placeholder="e.g., Milestone reached, Revenue target hit"
+                        className="flex-1 touch-manipulation"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleArrayRemove('payoutTriggers', index)}
+                        className="touch-manipulation"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => handleArrayAdd('payoutTriggers', '')}
+                    className="w-full touch-manipulation"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Trigger
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 8:
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Subtimeline Rules</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label className="font-medium">Allow Subtimelines</Label>
+                  <p className="text-sm text-muted-foreground">Enable nested timelines under this timeline</p>
+                </div>
+                <Switch
+                  checked={formData.allowSubtimelines}
+                  onCheckedChange={(checked) => handleInputChange('allowSubtimelines', checked)}
+                  className="touch-manipulation"
+                />
+              </div>
+
+              {formData.allowSubtimelines && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Subtimeline Creation Method</Label>
+                    <Select value={formData.subtimelineCreation} onValueChange={(value) => handleInputChange('subtimelineCreation', value)}>
+                      <SelectTrigger className="touch-manipulation">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto - Each contribution spawns a subtimeline</SelectItem>
+                        <SelectItem value="template">Template - Contributors use preset templates</SelectItem>
+                        <SelectItem value="manual">Manual - Owner creates on demand</SelectItem>
+                        <SelectItem value="conditional">Conditional - Auto-create when conditions met</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <Label className="font-medium">Inherit Parent Rules</Label>
+                      <p className="text-sm text-muted-foreground">Subtimelines inherit this timeline's configuration</p>
+                    </div>
+                    <Switch
+                      checked={formData.inheritRules}
+                      onCheckedChange={(checked) => handleInputChange('inheritRules', checked)}
+                      className="touch-manipulation"
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 9:
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Governance & Compliance</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Approval Process</Label>
+                <Select value={formData.approvalProcess} onValueChange={(value) => handleInputChange('approvalProcess', value)}>
+                  <SelectTrigger className="touch-manipulation">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="owner">Owner - Timeline owner approves all contributions</SelectItem>
+                    <SelectItem value="multi-sign">Multi-sign - Multiple approvers required</SelectItem>
+                    <SelectItem value="vote">Vote - Community-based approval</SelectItem>
+                    <SelectItem value="automatic">Automatic - No approval needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label className="font-medium">KYC Required</Label>
+                  <p className="text-sm text-muted-foreground">Require identity verification for contributors</p>
+                </div>
+                <Switch
+                  checked={formData.kycRequired}
+                  onCheckedChange={(checked) => handleInputChange('kycRequired', checked)}
+                  className="touch-manipulation"
+                />
+              </div>
+
+              {formData.kycRequired && (
+                <div className="space-y-2">
+                  <Label>KYC Threshold (USD)</Label>
+                  <Input
+                    type="number"
+                    value={formData.kycThreshold}
+                    onChange={(e) => handleInputChange('kycThreshold', parseFloat(e.target.value) || 0)}
+                    placeholder="1000"
+                    className="touch-manipulation"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Contributions above this amount require KYC verification
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+
       case 10:
         return (
           <Card>
@@ -439,16 +675,23 @@ export const SharedCreationFlow: React.FC<SharedCreationFlowProps> = ({
                     <li>• Base Unit: {formData.baseUnit}</li>
                     <li>• Verification: {formData.verificationMethod}</li>
                     <li>• Subtimelines: {formData.allowSubtimelines ? 'Enabled' : 'Disabled'}</li>
+                    <li>• KYC: {formData.kycRequired ? `Required (>${formData.kycThreshold})` : 'Not required'}</li>
                   </ul>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <Switch
-                  checked={true}
-                  disabled
-                />
-                <Label className="text-sm">Ready to publish timeline</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <Switch checked={true} disabled />
+                  <Label className="text-sm">Configuration complete - Ready to publish</Label>
+                </div>
+                <Button 
+                  onClick={() => onComplete(formData)}
+                  className="w-full"
+                  size="lg"
+                >
+                  Create Timeline
+                </Button>
               </div>
             </CardContent>
           </Card>
