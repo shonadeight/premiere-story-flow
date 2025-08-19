@@ -25,7 +25,8 @@ import {
   Share2,
   Eye,
   ThumbsUp,
-  Plus
+  Plus,
+  Brain
 } from 'lucide-react';
 import { mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
@@ -37,6 +38,10 @@ import { TradingTab } from '@/components/timeline/tabs/TradingTab';
 import { FollowupsTab } from '@/components/timeline/tabs/FollowupsTab';
 import { FilesTab } from '@/components/timeline/tabs/FilesTab';
 import { RatingsTab } from '@/components/timeline/tabs/RatingsTab';
+import { RulesTermsTab } from '@/components/timeline/tabs/RulesTermsTab';
+import { AdminTab } from '@/components/timeline/tabs/AdminTab';
+import { TransactionsTab } from '@/components/timeline/tabs/TransactionsTab';
+import { ValuationTab } from '@/components/timeline/tabs/ValuationTab';
 
 export const TimelineDetail = () => {
   const { id } = useParams();
@@ -58,6 +63,15 @@ export const TimelineDetail = () => {
   if (!timeline) {
     return <div>Timeline not found</div>;
   }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   // Mock data for timeline tabs
   const mockSubtimelines = mockTimelines.slice(1, 4);
@@ -312,23 +326,49 @@ export const TimelineDetail = () => {
                 <RatingsTab />
               </TabsContent>
 
-              {/* Placeholder content for remaining tabs */}
-              {tabs.slice(9).map((tab) => (
-                <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <tab.icon className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{tab.label}</h3>
-                  </div>
-                  <Card>
-                    <CardContent className="p-4 sm:p-6">
-                      <p className="text-muted-foreground text-sm sm:text-base">
-                        {tab.label} content will be implemented here. This section will contain
-                        detailed information and functionality related to {tab.label.toLowerCase()}.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
+              <TabsContent value="rules" className="m-0">
+                <RulesTermsTab />
+              </TabsContent>
+
+              <TabsContent value="admin" className="m-0">
+                <AdminTab />
+              </TabsContent>
+
+              <TabsContent value="capital-flow" className="m-0 space-y-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Capital Flow</h3>
+                </div>
+                <Card>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center p-4 border rounded-lg">
+                        <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                        <div className="text-2xl font-bold">{formatCurrency(125000)}</div>
+                        <div className="text-sm text-muted-foreground">Financial Capital</div>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg">
+                        <Users className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                        <div className="text-2xl font-bold">{formatCurrency(45000)}</div>
+                        <div className="text-sm text-muted-foreground">Network Capital</div>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg">
+                        <Brain className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+                        <div className="text-2xl font-bold">{formatCurrency(38000)}</div>
+                        <div className="text-sm text-muted-foreground">Intellectual Capital</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="transactions" className="m-0">
+                <TransactionsTab />
+              </TabsContent>
+
+              <TabsContent value="valuation" className="m-0">
+                <ValuationTab />
+              </TabsContent>
             </div>
           </Tabs>
         </CardContent>

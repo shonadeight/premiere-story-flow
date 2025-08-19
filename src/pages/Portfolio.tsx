@@ -38,6 +38,10 @@ import { TradingTab } from '@/components/timeline/tabs/TradingTab';
 import { FollowupsTab } from '@/components/timeline/tabs/FollowupsTab';
 import { FilesTab } from '@/components/timeline/tabs/FilesTab';
 import { RatingsTab } from '@/components/timeline/tabs/RatingsTab';
+import { RulesTermsTab } from '@/components/timeline/tabs/RulesTermsTab';
+import { AdminTab } from '@/components/timeline/tabs/AdminTab';
+import { TransactionsTab } from '@/components/timeline/tabs/TransactionsTab';
+import { ValuationTab } from '@/components/timeline/tabs/ValuationTab';
 
 export const Portfolio = () => {
   const isMobile = useIsMobile();
@@ -341,23 +345,21 @@ export const Portfolio = () => {
                 </Card>
               </TabsContent>
 
-              {/* Placeholder content for remaining tabs */}
-              {tabs.slice(9).map((tab) => (
-                <TabsContent key={tab.id} value={tab.id} className="m-0 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <tab.icon className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">{tab.label}</h3>
-                  </div>
-                  <Card>
-                    <CardContent className="p-4 sm:p-6">
-                      <p className="text-muted-foreground text-sm sm:text-base">
-                        {tab.label} content will be implemented here. This section will contain
-                        detailed information and functionality related to {tab.label.toLowerCase()}.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
+              <TabsContent value="rules" className="m-0">
+                <RulesTermsTab />
+              </TabsContent>
+
+              <TabsContent value="admin" className="m-0">
+                <AdminTab />
+              </TabsContent>
+
+              <TabsContent value="transactions" className="m-0">
+                <TransactionsTab />
+              </TabsContent>
+
+              <TabsContent value="valuation" className="m-0">
+                <ValuationTab />
+              </TabsContent>
             </div>
           </Tabs>
         </CardContent>
