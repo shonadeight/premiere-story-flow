@@ -1,4 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ interface VisitsModalProps {
 }
 
 export const VisitsModal = ({ open, onOpenChange, timeline }: VisitsModalProps) => {
+  const isMobile = useIsMobile();
   const visitorData = [
     { period: 'Today', visits: 42, uniqueVisitors: 38 },
     { period: 'This Week', visits: 287, uniqueVisitors: 198 },
