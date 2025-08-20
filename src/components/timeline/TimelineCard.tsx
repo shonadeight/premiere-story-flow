@@ -97,8 +97,18 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
   if (view === 'list') {
     return (
       <Card 
-        className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-primary/50"
-        onClick={() => navigate(`/timeline/${timeline.id}`)}
+        className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-primary/50 touch-manipulation active:scale-[0.98]"
+        onClick={(e) => {
+          e.preventDefault();
+          if (isMobile) {
+            (e.currentTarget as HTMLElement).style.transform = 'scale(0.95)';
+            setTimeout(() => {
+              navigate(`/timeline/${timeline.id}`);
+            }, 100);
+          } else {
+            navigate(`/timeline/${timeline.id}`);
+          }
+        }}
       >
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -152,8 +162,18 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
 
   return (
     <Card 
-      className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 bg-card/80 backdrop-blur-sm hover:bg-card/90"
-      onClick={() => navigate(`/timeline/${timeline.id}`)}
+      className="hover:shadow-md transition-all duration-200 cursor-pointer border-0 bg-card/80 backdrop-blur-sm hover:bg-card/90 touch-manipulation active:scale-[0.98]"
+      onClick={(e) => {
+        e.preventDefault();
+        if (isMobile) {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            navigate(`/timeline/${timeline.id}`);
+          }, 100);
+        } else {
+          navigate(`/timeline/${timeline.id}`);
+        }
+      }}
     >
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between">

@@ -75,24 +75,24 @@ const App = () => {
         <BrowserRouter>
           <div className="min-h-screen bg-background flex flex-col">
             <Navbar />
-            <main className="flex-1 overflow-hidden">
+            <main className="flex-1 overflow-hidden relative">
               <Routes>
-                <Route path="/" element={<Portfolio />} />
-                <Route path="/timeline/:id" element={<TimelineDetail />} />
-                <Route path="/create" element={<CreateTimeline />} />
-                <Route path="/create-modal" element={<CreateTimeline />} />
-                <Route path="/assistant" element={<Assistant />} />
-                <Route path="/assistant-modal" element={<Assistant />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/wallet" element={<Wallet />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/train" element={<Train />} />
-                <Route path="/stats" element={<StatsBreakdown />} />
+                <Route path="/" element={<div className="page-transition ios-push-enter"><Portfolio /></div>} />
+                <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter"><TimelineDetail /></div>} />
+                <Route path="/create" element={<div className="page-transition ios-push-enter"><CreateTimeline /></div>} />
+                <Route path="/create-modal" element={<div className="page-transition ios-push-enter"><CreateTimeline /></div>} />
+                <Route path="/assistant" element={<div className="page-transition ios-push-enter"><Assistant /></div>} />
+                <Route path="/assistant-modal" element={<div className="page-transition ios-push-enter"><Assistant /></div>} />
+                <Route path="/portfolio" element={<div className="page-transition ios-push-enter"><Portfolio /></div>} />
+                <Route path="/profile" element={<div className="page-transition ios-push-enter"><Profile /></div>} />
+                <Route path="/notifications" element={<div className="page-transition ios-push-enter"><Notifications /></div>} />
+                <Route path="/wallet" element={<div className="page-transition ios-push-enter"><Wallet /></div>} />
+                <Route path="/marketplace" element={<div className="page-transition ios-push-enter"><Marketplace /></div>} />
+                <Route path="/settings" element={<div className="page-transition ios-push-enter"><Settings /></div>} />
+                <Route path="/train" element={<div className="page-transition ios-push-enter"><Train /></div>} />
+                <Route path="/stats" element={<div className="page-transition ios-push-enter"><StatsBreakdown /></div>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={<div className="page-transition ios-push-enter"><NotFound /></div>} />
               </Routes>
             </main>
             <BottomNav />

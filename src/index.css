@@ -150,4 +150,40 @@ All colors MUST be HSL.
   .touch-manipulation {
     touch-action: manipulation;
   }
+  
+  /* iOS-style page transitions */
+  .ios-push-enter {
+    animation: ios-push-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .ios-push-exit {
+    animation: ios-push-out 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  @keyframes ios-push-in {
+    from { 
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to { 
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes ios-push-out {
+    from { 
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to { 
+      transform: translateX(-30%);
+      opacity: 0;
+    }
+  }
+
+  /* Page transition container */
+  .page-transition {
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
 }
