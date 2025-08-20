@@ -160,6 +160,18 @@ All colors MUST be HSL.
     animation: ios-push-out 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
+  /* Full screen pushed pages */
+  .ios-full-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: hsl(var(--background));
+    overflow-y: auto;
+  }
+
   @keyframes ios-push-in {
     from { 
       transform: translateX(100%);
