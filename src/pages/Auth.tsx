@@ -12,6 +12,7 @@ export const Auth = () => {
   const [code, setCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
   const handleSendCode = async () => {
@@ -20,19 +21,27 @@ export const Auth = () => {
       return;
     }
     
+    setIsSending(true);
     try {
-      // Use Supabase's built-in OTP functionality
+      // Use Supabase's built-in OTP functionality with shouldCreateUser: true to allow signups
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true, // Enable user creation for signups
           emailRedirectTo: `${window.location.origin}/`
         }
       });
 
       if (error) {
         console.error('Error sending OTP:', error);
-        toast({ title: error.message || "Failed to send verification code" });
+        if (error.message.includes('Signups not allowed')) {
+          toast({ 
+            title: "Signup Disabled", 
+            description: "Please enable email signup in your Supabase dashboard under Authentication > Providers" 
+          });
+        } else {
+          toast({ title: error.message || "Failed to send verification code" });
+        }
       } else {
         setIsCodeSent(true);
         toast({ title: "Verification code sent to your email" });
@@ -40,6 +49,8 @@ export const Auth = () => {
     } catch (error) {
       console.error('Error sending code:', error);
       toast({ title: "Failed to send verification code" });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -60,7 +71,19 @@ export const Auth = () => {
 
       if (error) {
         console.error('Error verifying OTP:', error);
-        toast({ title: error.message || "Invalid verification code" });
+        if (error.message.includes('expired')) {
+          toast({ 
+            title: "Code Expired", 
+            description: "Your verification code has expired. Please request a new one." 
+          });
+        } else if (error.message.includes('invalid')) {
+          toast({ 
+            title: "Invalid Code", 
+            description: "The verification code is incorrect. Please try again." 
+          });
+        } else {
+          toast({ title: error.message || "Invalid verification code" });
+        }
         setIsVerifying(false);
       } else if (data.user && data.session) {
         toast({ title: "Email verified successfully!" });
@@ -85,6 +108,11 @@ export const Auth = () => {
       toast({ title: "Failed to verify code" });
       setIsVerifying(false);
     }
+  };
+
+  const handleResendCode = async () => {
+    setCode('');
+    await handleSendCode();
   };
 
   return (
@@ -119,9 +147,19 @@ export const Auth = () => {
                 onClick={handleSendCode}
                 className="w-full"
                 size="lg"
+                disabled={isSending}
               >
-                Send Verification Code
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {isSending ? (
+                  <>
+                    <Clock className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Verification Code
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </>
           ) : (
@@ -159,13 +197,23 @@ export const Auth = () => {
                   </>
                 )}
               </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setIsCodeSent(false)}
-                className="w-full"
-              >
-                Use Different Email
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={handleResendCode}
+                  disabled={isSending}
+                  size="sm"
+                >
+                  {isSending ? "Sending..." : "Resend Code"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsCodeSent(false)}
+                  size="sm"
+                >
+                  Change Email
+                </Button>
+              </div>
             </>
           )}
           
