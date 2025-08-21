@@ -79,19 +79,19 @@ export type Database = {
           contribution_type: string
           created_at: string
           id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           contribution_type: string
           created_at?: string
           id?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           contribution_type?: string
           created_at?: string
           id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -100,19 +100,19 @@ export type Database = {
           created_at: string
           expectation: string
           id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
           expectation: string
           id?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
           expectation?: string
           id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -122,21 +122,21 @@ export type Database = {
           created_at: string
           id: string
           interest: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           category: string
           created_at?: string
           id?: string
           interest: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           category?: string
           created_at?: string
           id?: string
           interest?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -145,19 +145,19 @@ export type Database = {
           created_at: string
           id: string
           outcome_type: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           outcome_type: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           outcome_type?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

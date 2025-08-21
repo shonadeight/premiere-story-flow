@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,13 +50,54 @@ export const Portfolio = () => {
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<any>({});
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // Check if this is the root timeline (profile)
   const isRootTimeline = true; // In real app, this would be determined by route/context
   
   const allTimelines = mockTimelines;
-  const profileTimeline = allTimelines.find(t => t.type === 'profile') || allTimelines[0];
   
+  // Use user profile data if available, otherwise fallback to mock
+  const profileData = userProfile || {
+    name: "Professional Timeline",
+    type: 'profile',
+    description: "Your professional timeline and portfolio overview",
+    status: 'active'
+  };
+  
+  const profileTimeline = {
+    ...allTimelines[0],
+    title: `${profileData.name} - Profile Timeline`,
+    type: 'profile',
+    description: profileData.description || `Professional ${profileData.professional_role || 'timeline'}`,
+    status: profileData.status || 'active'
+  };
+  
+  // Load user profile data
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile) {
+            setUserProfile(profile);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+
+    loadUserProfile();
+  }, []);
+
   // Calculate portfolio summary stats
   const totalWorth = 208000; // Financial + Network + Intellectual capital
   const totalGained = 45200;
