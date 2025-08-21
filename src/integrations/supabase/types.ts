@@ -14,7 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      email_verification_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          used: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          used?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          phone: string | null
+          professional_role: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          phone?: string | null
+          professional_role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          phone?: string | null
+          professional_role?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_contribution_types: {
+        Row: {
+          contribution_type: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          contribution_type: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          contribution_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_expectations: {
+        Row: {
+          created_at: string
+          expectation: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expectation: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expectation?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_interest_areas: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          interest: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          interest: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          interest?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_outcome_sharing: {
+        Row: {
+          created_at: string
+          id: string
+          outcome_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          outcome_type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          outcome_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
