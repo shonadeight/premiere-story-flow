@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Mail, ArrowRight, Clock, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -169,15 +170,30 @@ export const Auth = () => {
                   <Mail className="h-4 w-4" />
                   Code sent to: {email}
                 </div>
-                <Input
-                  type="text"
-                  placeholder="123456"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.slice(0, 6))}
-                  onKeyPress={(e) => e.key === 'Enter' && handleVerifyCode()}
-                  className="text-center text-lg tracking-widest"
-                  maxLength={6}
-                />
+                <div className="flex justify-center">
+                  <InputOTP 
+                    maxLength={6} 
+                    value={code} 
+                    onChange={(value) => setCode(value)}
+                    onComplete={(value) => {
+                      if (value.length === 6) {
+                        handleVerifyCode();
+                      }
+                    }}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Enter the 6-digit code sent to your email
+                </p>
               </div>
               <Button 
                 onClick={handleVerifyCode}
