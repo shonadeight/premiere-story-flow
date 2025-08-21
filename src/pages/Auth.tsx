@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mail, ArrowRight, Clock, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Auth = () => {
   const [email, setEmail] = useState('');
@@ -13,33 +14,77 @@ export const Auth = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const { toast } = useToast();
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     if (!email) {
       toast({ title: "Please enter your email address" });
       return;
     }
-    setIsCodeSent(true);
-    toast({ title: "Verification code sent to your email" });
+    
+    try {
+      // Use Supabase's built-in OTP functionality
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        console.error('Error sending OTP:', error);
+        toast({ title: error.message || "Failed to send verification code" });
+      } else {
+        setIsCodeSent(true);
+        toast({ title: "Verification code sent to your email" });
+      }
+    } catch (error) {
+      console.error('Error sending code:', error);
+      toast({ title: "Failed to send verification code" });
+    }
   };
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     if (code.length !== 6) {
       toast({ title: "Please enter the 6-digit code" });
       return;
     }
+    
     setIsVerifying(true);
-    // Simulate verification
-    setTimeout(() => {
-      localStorage.setItem('userEmail', email);
-      localStorage.setItem('authenticated', 'true');
-      // Check if user needs onboarding
-      const isNewUser = !localStorage.getItem('onboardingComplete');
-      if (isNewUser) {
-        window.location.href = '/onboarding';
-      } else {
-        window.location.href = '/';
+    try {
+      // Use Supabase's built-in OTP verification
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email,
+        token: code,
+        type: 'email'
+      });
+
+      if (error) {
+        console.error('Error verifying OTP:', error);
+        toast({ title: error.message || "Invalid verification code" });
+        setIsVerifying(false);
+      } else if (data.user && data.session) {
+        toast({ title: "Email verified successfully!" });
+        
+        // Check if user has completed onboarding by checking if profile exists
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        if (profile && profile.name) {
+          // User has completed onboarding
+          window.location.href = '/';
+        } else {
+          // User needs to complete onboarding
+          window.location.href = '/onboarding';
+        }
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      toast({ title: "Failed to verify code" });
+      setIsVerifying(false);
+    }
   };
 
   return (
