@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Mail,
   User, 
@@ -129,57 +130,168 @@ export const Onboarding = () => {
     if (!data.email) return;
     
     setIsVerifying(true);
-    // Simulate sending verification code
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: data.email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/onboarding`
+        }
+      });
+
+      if (error) {
+        console.error('Error sending OTP:', error);
+        toast.error(error.message || "Failed to send verification code");
+      } else {
+        setVerificationTimer(60);
+        toast.success('Verification code sent to your email!');
+      }
+    } catch (error) {
+      console.error('Error sending code:', error);
+      toast.error("Failed to send verification code");
+    } finally {
       setIsVerifying(false);
-      setVerificationTimer(60); // 1 minute timeout
-      toast.success('Verification code sent to your email!');
-    }, 1500);
+    }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 1) {
-      sendVerificationCode();
+      await sendVerificationCode();
       setCurrentStep(2);
+    } else if (currentStep === 2) {
+      // Verify OTP code
+      setIsVerifying(true);
+      try {
+        const { data: authData, error } = await supabase.auth.verifyOtp({
+          email: data.email,
+          token: data.verificationCode,
+          type: 'email'
+        });
+
+        if (error) {
+          console.error('Error verifying OTP:', error);
+          toast.error(error.message || "Invalid verification code");
+          setIsVerifying(false);
+          return;
+        }
+
+        if (authData.user && authData.session) {
+          toast.success("Email verified successfully!");
+          setCurrentStep(3);
+        }
+      } catch (error) {
+        console.error('Error verifying code:', error);
+        toast.error("Failed to verify code");
+      } finally {
+        setIsVerifying(false);
+      }
     } else if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding and save to database
-      localStorage.setItem('onboardingComplete', 'true');
-      localStorage.setItem('userProfile', JSON.stringify(data));
-      
-      // Create user timeline (this becomes the profile timeline)
-      const userTimeline = {
-        id: 'user-' + Date.now(),
-        title: `${data.name} - Profile Timeline`,
-        type: 'profile',
-        description: `Professional ${data.role}. Contributions: ${data.contributionTypes.join(', ')}`,
-        value: 0,
-        currency: 'USD',
-        change: 0,
-        changePercent: 0,
-        invested: false,
-        subtimelines: 0,
-        rating: 5.0,
-        views: 1,
-        investedMembers: 0,
-        matchedTimelines: 0,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        userId: 'self',
-        tags: [data.role, ...data.contributionTypes.slice(0, 3)],
-        customMetrics: {
-          contributionTypes: data.contributionTypes,
-          primeExpectations: data.primeExpectations,
-          outcomeSharing: data.outcomeSharing,
-          interestAreas: data.interestAreas
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error("User not authenticated");
+          return;
         }
-      };
-      localStorage.setItem('userTimeline', JSON.stringify(userTimeline));
-      
-      toast.success('Welcome to ShonaCoin! Your profile timeline has been created.');
-      window.location.href = '/';
+
+        // Save profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            email: data.email,
+            name: data.name,
+            phone: data.phone,
+            professional_role: data.role
+          });
+
+        if (profileError) {
+          console.error('Error saving profile:', profileError);
+          toast.error("Failed to save profile");
+          return;
+        }
+
+        // Save contribution types
+        if (data.contributionTypes.length > 0) {
+          const contributionData = data.contributionTypes.map(type => ({
+            user_id: user.id,
+            contribution_type: type
+          }));
+          
+          const { error: contributionError } = await supabase
+            .from('user_contribution_types')
+            .insert(contributionData);
+
+          if (contributionError) {
+            console.error('Error saving contribution types:', contributionError);
+          }
+        }
+
+        // Save expectations
+        if (data.primeExpectations.length > 0) {
+          const expectationData = data.primeExpectations.map(expectation => ({
+            user_id: user.id,
+            expectation
+          }));
+          
+          const { error: expectationError } = await supabase
+            .from('user_expectations')
+            .insert(expectationData);
+
+          if (expectationError) {
+            console.error('Error saving expectations:', expectationError);
+          }
+        }
+
+        // Save outcome sharing preferences
+        if (data.outcomeSharing.length > 0) {
+          const outcomeData = data.outcomeSharing.map(outcome => ({
+            user_id: user.id,
+            outcome_type: outcome
+          }));
+          
+          const { error: outcomeError } = await supabase
+            .from('user_outcome_sharing')
+            .insert(outcomeData);
+
+          if (outcomeError) {
+            console.error('Error saving outcome sharing:', outcomeError);
+          }
+        }
+
+        // Save interest areas
+        if (data.interestAreas.length > 0) {
+          const interestData = data.interestAreas.map(interest => {
+            // Find the category for this interest
+            const category = Object.entries(interestCategories).find(([cat, items]) => 
+              items.includes(interest)
+            )?.[0] || 'Other';
+            
+            return {
+              user_id: user.id,
+              interest,
+              category
+            };
+          });
+          
+          const { error: interestError } = await supabase
+            .from('user_interest_areas')
+            .insert(interestData);
+
+          if (interestError) {
+            console.error('Error saving interests:', interestError);
+          }
+        }
+
+        toast.success('Welcome to ShonaCoin! Your profile has been created.');
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Error completing onboarding:', error);
+        toast.error("Failed to complete onboarding");
+      }
     }
   };
 
@@ -451,73 +563,78 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <div className="text-center space-y-2 mb-6">
-            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto">
-              <Briefcase className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen bg-gradient-subtle flex flex-col">
+      {/* Header */}
+      <div className="p-4 sm:p-6">
+        <Card className="w-full max-w-2xl mx-auto">
+          <CardHeader>
+            <div className="text-center space-y-2 mb-6">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto">
+                <Briefcase className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <CardTitle className="text-xl sm:text-2xl">Welcome to ShonaCoin</CardTitle>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                The best tool that helps fulfill your prime timelines. Match, invest, track, valuate and follow up with any primetimeline.
+              </p>
             </div>
-            <CardTitle className="text-2xl">Welcome to ShonaCoin</CardTitle>
-            <p className="text-muted-foreground">
-              The best tool that helps fulfill your prime timelines. Match, invest, track, valuate and follow up with any primetimeline.
-            </p>
-          </div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-medium">{steps[currentStep - 1]?.title}</p>
-              <p className="text-xs text-muted-foreground">Step {currentStep} of {steps.length}</p>
+            
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-medium">{steps[currentStep - 1]?.title}</p>
+                <p className="text-xs text-muted-foreground">Step {currentStep} of {steps.length}</p>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {Math.round(progress)}% Complete
+              </Badge>
             </div>
-            <Badge variant="outline">{Math.round(progress)}% Complete</Badge>
-          </div>
-          <Progress value={progress} className="h-2" />
+            
+            <Progress value={progress} className="h-2" />
+          </CardHeader>
           
-          <div className="flex justify-between mt-4">
-            {steps.map((step) => {
-              const StepIcon = step.icon;
-              const isActive = step.id === currentStep;
-              const isCompleted = step.id < currentStep;
-              
-              return (
-                <div key={step.id} className="flex flex-col items-center gap-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isCompleted ? 'bg-success text-success-foreground' :
-                    isActive ? 'bg-primary text-primary-foreground' :
-                    'bg-muted text-muted-foreground'
-                  }`}>
-                    {isCompleted ? <CheckCircle className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                  </div>
-                  <span className="text-xs text-center">{step.title}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {renderStep()}
-          
-          <div className="flex justify-between pt-4">
-            <Button
-              variant="outline"
+          <CardContent className="space-y-4 pb-4">
+            {renderStep()}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer with Navigation Buttons - Fixed at bottom */}
+      <div className="mt-auto p-4 bg-background/95 backdrop-blur-sm border-t sticky bottom-0">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="flex justify-between gap-3">
+            <Button 
+              variant="outline" 
               onClick={handlePrevious}
               disabled={currentStep === 1}
+              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Previous
+              <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="text-sm sm:text-base">Previous</span>
             </Button>
-            <Button
+            
+            <Button 
               onClick={handleNext}
-              disabled={!canProceed() || (currentStep === 1 && isVerifying)}
+              disabled={!canProceed() || isVerifying}
+              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
             >
-              {currentStep === 1 ? (isVerifying ? 'Sending Code...' : 'Send Verification Code') :
-               currentStep === steps.length ? 'Complete Onboarding' : 'Next Step'}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {isVerifying ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 mr-1 sm:mr-2 border-b-2 border-primary-foreground"></div>
+                  <span className="text-sm sm:text-base">
+                    {currentStep === 1 ? 'Sending...' : 'Verifying...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm sm:text-base">
+                    {currentStep === steps.length ? 'Complete Setup' : 'Next'}
+                  </span>
+                  <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
+                </>
+              )}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
