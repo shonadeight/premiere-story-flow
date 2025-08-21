@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "./components/layout/Navbar";
 import { BottomNav } from "./components/layout/BottomNav";
 import { Auth } from "./pages/Auth";
@@ -25,90 +23,19 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Check if user is authenticated and onboarded
+const isAuthenticated = () => {
+  // In a real app, check for auth tokens
+  return localStorage.getItem('userEmail') !== null;
+};
+
+const isOnboarded = () => {
+  return localStorage.getItem('onboardingComplete') === 'true';
+};
+
 const App = () => {
-  const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [hasProfile, setHasProfile] = useState(false);
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Check if user has completed onboarding
-          setTimeout(async () => {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .single();
-              
-              setHasProfile(profile && profile.name ? true : false);
-            } catch (error) {
-              console.error('Error checking profile:', error);
-              setHasProfile(false);
-            } finally {
-              setLoading(false);
-            }
-          }, 0);
-        } else {
-          setHasProfile(false);
-          setLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            setHasProfile(profile && profile.name ? true : false);
-          } catch (error) {
-            console.error('Error checking profile:', error);
-            setHasProfile(false);
-          } finally {
-            setLoading(false);
-          }
-        }, 0);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  // Check if user is authenticated and onboarded
-  if (!user || !session) {
+  // Mock auth check - in real app, this would be more sophisticated
+  if (!isAuthenticated()) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
@@ -124,7 +51,7 @@ const App = () => {
     );
   }
 
-  if (!hasProfile) {
+  if (!isOnboarded()) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
