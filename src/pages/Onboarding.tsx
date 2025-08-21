@@ -90,12 +90,12 @@ const professionalRoles = [
 ];
 
 const interestCategories = {
-  technology: ['AI/ML', 'SaaS', 'Blockchain', 'Cybersecurity', 'Cloud', 'Mobile Apps', 'IoT', 'VR/AR'],
-  health: ['Healthcare Tech', 'Biotech', 'Pharmaceuticals', 'Green/Renewable Energy'],
-  business: ['Fintech', 'E-commerce', 'Financial Services', 'Insurance', 'Consulting', 'Legal'],
-  creative: ['Gaming', 'Entertainment', 'Social Media', 'Digital Marketing', 'Music', 'Arts', 'Film', 'Publishing', 'Photography'],
-  industries: ['Real Estate', 'Construction', 'Manufacturing', 'Mining', 'Oil & Gas', 'Aerospace', 'Transportation'],
-  lifestyle: ['Fashion', 'Retail', 'Travel', 'Tourism', 'Sports', 'Fitness', 'Food & Agriculture', 'Education (EdTech)', 'Others'],
+  'Technology': ['AI/ML', 'SaaS', 'Blockchain', 'Cybersecurity', 'Cloud', 'Mobile Apps', 'IoT', 'VR/AR'],
+  'Health & Science': ['Healthcare Tech', 'Biotech', 'Pharmaceuticals', 'Green/Renewable Energy'],
+  'Business & Finance': ['Fintech', 'E-commerce', 'Financial Services', 'Insurance', 'Consulting', 'Legal'],
+  'Creative & Media': ['Gaming', 'Entertainment', 'Social Media', 'Digital Marketing', 'Music', 'Arts', 'Film', 'Publishing', 'Photography'],
+  'Industries & Infrastructure': ['Real Estate', 'Construction', 'Manufacturing', 'Mining', 'Oil & Gas', 'Aerospace', 'Transportation'],
+  'Lifestyle & Services': ['Fashion', 'Retail', 'Travel', 'Tourism', 'Sports', 'Fitness', 'Food & Agriculture', 'Education (EdTech)', 'Others'],
 };
 
 export const Onboarding = () => {
