@@ -39,12 +39,13 @@ interface OnboardingData {
 }
 
 const steps = [
-  { id: 1, title: 'Profile Setup', icon: User },
-  { id: 2, title: 'Contribution Types', icon: DollarSign },
-  { id: 3, title: 'Prime Expectations', icon: Target },
-  { id: 4, title: 'Outcome Sharing', icon: BarChart3 },
-  { id: 5, title: 'Interest Areas', icon: Brain },
-  { id: 6, title: 'Complete Setup', icon: CheckCircle },
+  { id: 1, title: 'Email Verification', icon: Mail },
+  { id: 2, title: 'Profile Setup', icon: User },
+  { id: 3, title: 'Contribution Types', icon: DollarSign },
+  { id: 4, title: 'Prime Expectations', icon: Target },
+  { id: 5, title: 'Outcome Sharing', icon: BarChart3 },
+  { id: 6, title: 'Interest Areas', icon: Brain },
+  { id: 7, title: 'Complete Setup', icon: CheckCircle },
 ];
 
 const contributionTypes = [
@@ -254,6 +255,21 @@ export const Onboarding = () => {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <Input
+                type="email"
+                placeholder="njehuu@gmail.com"
+                value={data.email}
+                onChange={(e) => setData({...data, email: e.target.value})}
+              />
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
               <label className="text-sm font-medium">Full Name</label>
               <Input
                 placeholder="Alex Johnson"
@@ -303,7 +319,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-4">
             <div>
@@ -336,7 +352,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-4">
             <div>
@@ -358,7 +374,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-4">
             <div>
@@ -380,7 +396,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 5:
+      case 6:
         return (
           <div className="space-y-4">
             <div>
@@ -408,7 +424,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 6:
+      case 7:
         return (
           <div className="space-y-4">
             <div className="text-center space-y-4">
@@ -442,19 +458,21 @@ export const Onboarding = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return data.name && data.phone && data.role;
+        return data.email && data.email.includes('@');
       case 2:
+        return data.name && data.phone && data.role;
+      case 3:
         if (data.contributionTypes.includes('custom')) {
           return data.contributionTypes.length > 0 && data.customContributionType.trim().length > 0;
         }
         return data.contributionTypes.length > 0;
-      case 3:
-        return data.primeExpectations.length > 0;
       case 4:
-        return data.outcomeSharing.length > 0;
+        return data.primeExpectations.length > 0;
       case 5:
-        return data.interestAreas.length > 0;
+        return data.outcomeSharing.length > 0;
       case 6:
+        return data.interestAreas.length > 0;
+      case 7:
         return true;
       default:
         return false;
