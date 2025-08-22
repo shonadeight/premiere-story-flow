@@ -28,7 +28,6 @@ import {
 
 interface OnboardingData {
   email: string;
-  verificationCode: string;
   name: string;
   phone: string;
   role: string;
@@ -36,17 +35,16 @@ interface OnboardingData {
   primeExpectations: string[];
   outcomeSharing: string[];
   interestAreas: string[];
+  customContributionType: string;
 }
 
 const steps = [
-  { id: 1, title: 'Email Verification', icon: Mail },
-  { id: 2, title: 'Verification Code', icon: CheckCircle },
-  { id: 3, title: 'Profile Setup', icon: User },
-  { id: 4, title: 'Contribution Types', icon: DollarSign },
-  { id: 5, title: 'Prime Expectations', icon: Target },
-  { id: 6, title: 'Outcome Sharing', icon: BarChart3 },
-  { id: 7, title: 'Interest Areas', icon: Brain },
-  { id: 8, title: 'Complete Setup', icon: CheckCircle },
+  { id: 1, title: 'Profile Setup', icon: User },
+  { id: 2, title: 'Contribution Types', icon: DollarSign },
+  { id: 3, title: 'Prime Expectations', icon: Target },
+  { id: 4, title: 'Outcome Sharing', icon: BarChart3 },
+  { id: 5, title: 'Interest Areas', icon: Brain },
+  { id: 6, title: 'Complete Setup', icon: CheckCircle },
 ];
 
 const contributionTypes = [
@@ -102,11 +100,9 @@ const interestCategories = {
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [customRole, setCustomRole] = useState('');
-  const [verificationTimer, setVerificationTimer] = useState(0);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     email: '',
-    verificationCode: '',
     name: '',
     phone: '',
     role: '',
@@ -114,95 +110,29 @@ export const Onboarding = () => {
     primeExpectations: [],
     outcomeSharing: [],
     interestAreas: [],
+    customContributionType: '',
   });
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (verificationTimer > 0) {
-      interval = setInterval(() => {
-        setVerificationTimer(prev => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [verificationTimer]);
-
-  const sendVerificationCode = async () => {
-    if (!data.email) return;
-    
-    setIsVerifying(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: data.email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/onboarding`
-        }
-      });
-
-      if (error) {
-        console.error('Error sending OTP:', error);
-        toast.error(error.message || "Failed to send verification code");
-      } else {
-        setVerificationTimer(60);
-        toast.success('Verification code sent to your email!');
-      }
-    } catch (error) {
-      console.error('Error sending code:', error);
-      toast.error("Failed to send verification code");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
   const handleNext = async () => {
-    if (currentStep === 1) {
-      await sendVerificationCode();
-      setCurrentStep(2);
-    } else if (currentStep === 2) {
-      // Verify OTP code
-      setIsVerifying(true);
-      try {
-        const { data: authData, error } = await supabase.auth.verifyOtp({
-          email: data.email,
-          token: data.verificationCode,
-          type: 'email'
-        });
-
-        if (error) {
-          console.error('Error verifying OTP:', error);
-          toast.error(error.message || "Invalid verification code");
-          setIsVerifying(false);
-          return;
-        }
-
-        if (authData.user && authData.session) {
-          toast.success("Email verified successfully!");
-          setCurrentStep(3);
-        }
-      } catch (error) {
-        console.error('Error verifying code:', error);
-        toast.error("Failed to verify code");
-      } finally {
-        setIsVerifying(false);
-      }
-    } else if (currentStep < steps.length) {
+    if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding and save to database
+      setIsSubmitting(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          toast.error("User not authenticated");
+          toast.error("Please log in to complete onboarding");
           return;
         }
 
-        // Save profile
+        // Save profile with the user's email from auth
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             user_id: user.id,
-            email: data.email,
+            email: user.email || data.email,
             name: data.name,
             phone: data.phone,
             professional_role: data.role
@@ -210,20 +140,24 @@ export const Onboarding = () => {
 
         if (profileError) {
           console.error('Error saving profile:', profileError);
-          toast.error("Failed to save profile");
+          toast.error("Failed to save profile: " + profileError.message);
           return;
         }
 
-        // Save contribution types
+        // Save contribution types (including custom)
         if (data.contributionTypes.length > 0) {
-          const contributionData = data.contributionTypes.map(type => ({
-            user_id: user.id,
-            contribution_type: type
-          }));
+          const contributionTypesToSave = data.contributionTypes.map(type => {
+            // If it's custom, use the custom text
+            const finalType = type === 'custom' ? data.customContributionType : type;
+            return {
+              user_id: user.id,
+              contribution_type: finalType
+            };
+          });
           
           const { error: contributionError } = await supabase
             .from('user_contribution_types')
-            .insert(contributionData);
+            .insert(contributionTypesToSave);
 
           if (contributionError) {
             console.error('Error saving contribution types:', contributionError);
@@ -290,7 +224,9 @@ export const Onboarding = () => {
         window.location.href = '/';
       } catch (error) {
         console.error('Error completing onboarding:', error);
-        toast.error("Failed to complete onboarding");
+        toast.error("Failed to complete onboarding: " + (error as Error).message);
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -315,51 +251,6 @@ export const Onboarding = () => {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input
-                type="email"
-                placeholder="your.email@example.com"
-                value={data.email}
-                onChange={(e) => setData({...data, email: e.target.value})}
-              />
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Enter Verification Code</label>
-              <Input
-                placeholder="Enter 6-digit code"
-                value={data.verificationCode}
-                onChange={(e) => setData({...data, verificationCode: e.target.value})}
-                maxLength={6}
-              />
-              {verificationTimer > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Code expires in {verificationTimer} seconds
-                </p>
-              )}
-              {verificationTimer === 0 && data.email && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={sendVerificationCode}
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? 'Sending...' : 'Resend Code'}
-                </Button>
-              )}
-            </div>
-          </div>
-        );
-
-      case 3:
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -412,7 +303,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 4:
+      case 2:
         return (
           <div className="space-y-4">
             <div>
@@ -422,7 +313,7 @@ export const Onboarding = () => {
                   <Button
                     key={type.id}
                     variant={data.contributionTypes.includes(type.id) ? "default" : "outline"}
-                    className="justify-start h-auto p-4 text-left"
+                    className="justify-start h-auto p-4 text-left border-2 hover:border-primary"
                     onClick={() => toggleSelection(type.id, 'contributionTypes')}
                   >
                     <div>
@@ -432,11 +323,20 @@ export const Onboarding = () => {
                   </Button>
                 ))}
               </div>
+              {data.contributionTypes.includes('custom') && (
+                <div className="mt-3">
+                  <Input
+                    placeholder="Enter your custom contribution type"
+                    value={data.customContributionType}
+                    onChange={(e) => setData({...data, customContributionType: e.target.value})}
+                  />
+                </div>
+              )}
             </div>
           </div>
         );
 
-      case 5:
+      case 3:
         return (
           <div className="space-y-4">
             <div>
@@ -446,7 +346,7 @@ export const Onboarding = () => {
                   <Button
                     key={index}
                     variant={data.primeExpectations.includes(expectation) ? "default" : "outline"}
-                    className="justify-start h-auto p-3 text-left text-sm"
+                    className="justify-start h-auto p-3 text-left text-sm border-2 hover:border-primary"
                     onClick={() => toggleSelection(expectation, 'primeExpectations')}
                   >
                     <span className="text-xs mr-2 text-muted-foreground">{index + 1})</span>
@@ -458,7 +358,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 6:
+      case 4:
         return (
           <div className="space-y-4">
             <div>
@@ -468,7 +368,7 @@ export const Onboarding = () => {
                   <Button
                     key={index}
                     variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                    className="justify-start h-auto p-3 text-left"
+                    className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
                     onClick={() => toggleSelection(option, 'outcomeSharing')}
                   >
                     <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
@@ -480,7 +380,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 7:
+      case 5:
         return (
           <div className="space-y-4">
             <div>
@@ -494,7 +394,7 @@ export const Onboarding = () => {
                         <Button
                           key={item}
                           variant={data.interestAreas.includes(item) ? "default" : "outline"}
-                          className="justify-start h-auto p-2 text-xs"
+                          className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
                           onClick={() => toggleSelection(item, 'interestAreas')}
                         >
                           {item}
@@ -508,7 +408,7 @@ export const Onboarding = () => {
           </div>
         );
 
-      case 8:
+      case 6:
         return (
           <div className="space-y-4">
             <div className="text-center space-y-4">
@@ -542,20 +442,19 @@ export const Onboarding = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return data.email && data.email.includes('@');
-      case 2:
-        return data.verificationCode.length === 6;
-      case 3:
         return data.name && data.phone && data.role;
-      case 4:
+      case 2:
+        if (data.contributionTypes.includes('custom')) {
+          return data.contributionTypes.length > 0 && data.customContributionType.trim().length > 0;
+        }
         return data.contributionTypes.length > 0;
-      case 5:
+      case 3:
         return data.primeExpectations.length > 0;
-      case 6:
+      case 4:
         return data.outcomeSharing.length > 0;
-      case 7:
+      case 5:
         return data.interestAreas.length > 0;
-      case 8:
+      case 6:
         return true;
       default:
         return false;
@@ -563,7 +462,7 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="p-4 sm:p-6">
         <Card className="w-full max-w-2xl mx-auto">
@@ -613,15 +512,13 @@ export const Onboarding = () => {
             
             <Button 
               onClick={handleNext}
-              disabled={!canProceed() || isVerifying}
+              disabled={!canProceed() || isSubmitting}
               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
             >
-              {isVerifying ? (
+              {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 mr-1 sm:mr-2 border-b-2 border-primary-foreground"></div>
-                  <span className="text-sm sm:text-base">
-                    {currentStep === 1 ? 'Sending...' : 'Verifying...'}
-                  </span>
+                  <span className="text-sm sm:text-base">Saving...</span>
                 </>
               ) : (
                 <>
