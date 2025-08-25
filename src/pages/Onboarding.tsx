@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -19,7 +20,10 @@ import {
   ArrowLeft,
   CheckCircle,
   Briefcase,
-  Timer
+  Timer,
+  ChevronDown,
+  ChevronUp,
+  Plus
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -27,7 +31,7 @@ interface OnboardingData {
   name: string;
   phone: string;
   role: string;
-  contributionTypes: string[];
+  contributionTypes: {[key: string]: string[]};
   primeExpectations: string[];
   outcomeSharing: string[];
   interestAreas: string[];
@@ -47,12 +51,36 @@ const steps = [
 ];
 
 const contributionTypes = [
-  { id: 'financial', label: '💰 Financial', description: 'cash, debt, pledges' },
-  { id: 'intellectual', label: '🧠 Intellectual', description: 'advisory, research, design' },
-  { id: 'network', label: '🌍 Network & Marketing', description: 'referrals, events, campaigns' },
-  { id: 'assets', label: '🏢 Assets', description: 'land, office space, equipment' },
-  { id: 'followup', label: '📋 Follow-up', description: 'onboarding, progress tracking' },
-  { id: 'custom', label: '📊 Custom', description: 'anything else' },
+  { 
+    id: 'financial', 
+    label: '💰 Financial', 
+    subOptions: ['Cash', 'Debt', 'Pledges']
+  },
+  { 
+    id: 'intellectual', 
+    label: '🧠 Intellectual', 
+    subOptions: ['Advisory', 'Research', 'Design']
+  },
+  { 
+    id: 'network', 
+    label: '🌍 Network & Marketing', 
+    subOptions: ['Referrals', 'Events', 'Campaigns']
+  },
+  { 
+    id: 'assets', 
+    label: '🏢 Assets', 
+    subOptions: ['Land', 'Office space', 'Equipment']
+  },
+  { 
+    id: 'followup', 
+    label: '📋 Follow-up', 
+    subOptions: ['Onboarding', 'Progress tracking']
+  },
+  { 
+    id: 'custom', 
+    label: '📊 Custom', 
+    subOptions: []
+  },
 ];
 
 const primeExpectationGroups = [
@@ -157,12 +185,14 @@ export const Onboarding = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [error, setError] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<{[key: string]: boolean}>({});
+  const [newCustomOptions, setNewCustomOptions] = useState<{[key: string]: string}>({});
   const [data, setData] = useState<OnboardingData>({
     email: '',
     name: '',
     phone: '',
     role: '',
-    contributionTypes: [],
+    contributionTypes: {},
     primeExpectations: [],
     outcomeSharing: [],
     interestAreas: [],
@@ -321,14 +351,14 @@ export const Onboarding = () => {
         const promises = [];
 
         // Save contribution types
-        if (data.contributionTypes.length > 0) {
-          const contributionTypesToSave = data.contributionTypes.map(type => {
-            const finalType = type === 'custom' ? data.customContributionType : type;
-            return {
-              user_id: user.id,
-              contribution_type: finalType
-            };
-          });
+        const allContributionTypes = Object.entries(data.contributionTypes)
+          .flatMap(([category, options]) => options.map(option => `${category}: ${option}`));
+        
+        if (allContributionTypes.length > 0) {
+          const contributionTypesToSave = allContributionTypes.map(type => ({
+            user_id: user.id,
+            contribution_type: type
+          }));
           
           promises.push(
             supabase.from('user_contribution_types').insert(contributionTypesToSave)
@@ -394,13 +424,48 @@ export const Onboarding = () => {
     }
   };
 
-  const toggleSelection = (value: string, field: 'contributionTypes' | 'primeExpectations' | 'outcomeSharing' | 'interestAreas') => {
+  const toggleSelection = (value: string, field: 'primeExpectations' | 'outcomeSharing' | 'interestAreas') => {
     setData(prev => ({
       ...prev,
       [field]: prev[field].includes(value)
         ? prev[field].filter(item => item !== value)
         : [...prev[field], value]
     }));
+  };
+
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  const toggleContributionSubOption = (categoryId: string, subOption: string) => {
+    setData(prev => {
+      const currentSelections = prev.contributionTypes[categoryId] || [];
+      const isSelected = currentSelections.includes(subOption);
+      
+      return {
+        ...prev,
+        contributionTypes: {
+          ...prev.contributionTypes,
+          [categoryId]: isSelected
+            ? currentSelections.filter(item => item !== subOption)
+            : [...currentSelections, subOption]
+        }
+      };
+    });
+  };
+
+  const addCustomSubOption = (categoryId: string) => {
+    const customValue = newCustomOptions[categoryId]?.trim();
+    if (customValue) {
+      toggleContributionSubOption(categoryId, customValue);
+      setNewCustomOptions(prev => ({
+        ...prev,
+        [categoryId]: ''
+      }));
+    }
   };
 
   const progress = (currentStep / steps.length) * 100;
@@ -566,32 +631,107 @@ export const Onboarding = () => {
       case 4:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">Select Contribution Types</h2>
-            <p className="text-sm text-muted-foreground text-center">Choose all that apply (multi-select)</p>
-            <div className="grid grid-cols-1 gap-3">
-              {contributionTypes.map((type) => (
-                <Button
-                  key={type.id}
-                  variant={data.contributionTypes.includes(type.id) ? "default" : "outline"}
-                  className="justify-start h-auto p-4 text-left border-2 hover:border-primary data-[state=selected]:border-primary"
-                  onClick={() => toggleSelection(type.id, 'contributionTypes')}
-                >
-                  <div>
-                    <div className="font-medium">{type.label}</div>
-                    <div className="text-xs text-muted-foreground">{type.description}</div>
+            <h2 className="text-xl font-semibold text-center">What types of contributions would you leverage or give?</h2>
+            <p className="text-sm text-muted-foreground text-center">Select categories and choose specific types (multi-select)</p>
+            <div className="space-y-3">
+              {contributionTypes.map((type) => {
+                const isExpanded = expandedCategories[type.id];
+                const selectedOptions = data.contributionTypes[type.id] || [];
+                const hasSelections = selectedOptions.length > 0;
+                
+                return (
+                  <div key={type.id} className="space-y-2">
+                    <Button
+                      variant={hasSelections ? "default" : "outline"}
+                      className="w-full justify-between h-auto p-4 text-left border-2 hover:border-primary"
+                      onClick={() => toggleCategoryExpansion(type.id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{type.label}</span>
+                        {hasSelections && (
+                          <Badge variant="secondary" className="text-xs">
+                            {selectedOptions.length}
+                          </Badge>
+                        )}
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                    
+                    {isExpanded && (
+                      <div className="ml-4 space-y-2 p-3 border border-border rounded-lg bg-muted/20">
+                        {/* Predefined sub-options */}
+                        {type.subOptions.map((subOption) => (
+                          <div key={subOption} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${type.id}-${subOption}`}
+                              checked={selectedOptions.includes(subOption)}
+                              onCheckedChange={() => toggleContributionSubOption(type.id, subOption)}
+                            />
+                            <label
+                              htmlFor={`${type.id}-${subOption}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {subOption}
+                            </label>
+                          </div>
+                        ))}
+                        
+                        {/* Custom sub-options that were added */}
+                        {selectedOptions
+                          .filter(option => !type.subOptions.includes(option))
+                          .map((customOption) => (
+                            <div key={customOption} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${type.id}-${customOption}`}
+                                checked={true}
+                                onCheckedChange={() => toggleContributionSubOption(type.id, customOption)}
+                              />
+                              <label
+                                htmlFor={`${type.id}-${customOption}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer italic"
+                              >
+                                {customOption}
+                              </label>
+                            </div>
+                          ))
+                        }
+                        
+                        {/* Add custom option */}
+                        <div className="flex items-center space-x-2 pt-2 border-t border-border">
+                          <Plus className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder={type.id === 'custom' ? "Add anything else that adds value" : "Add more"}
+                            value={newCustomOptions[type.id] || ''}
+                            onChange={(e) => setNewCustomOptions(prev => ({
+                              ...prev,
+                              [type.id]: e.target.value
+                            }))}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                addCustomSubOption(type.id);
+                              }
+                            }}
+                            className="text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => addCustomSubOption(type.id)}
+                            disabled={!newCustomOptions[type.id]?.trim()}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </Button>
-              ))}
+                );
+              })}
             </div>
-            {data.contributionTypes.includes('custom') && (
-              <div className="mt-3">
-                <Input
-                  placeholder="Enter your custom contribution type"
-                  value={data.customContributionType}
-                  onChange={(e) => setData({...data, customContributionType: e.target.value})}
-                />
-              </div>
-            )}
           </div>
         );
 
@@ -693,7 +833,7 @@ export const Onboarding = () => {
               <div className="bg-muted/50 rounded-lg p-4">
                 <h4 className="font-medium text-sm mb-2">Summary:</h4>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• {data.contributionTypes.length} contribution type(s) selected</p>
+                  <p>• {Object.values(data.contributionTypes).flat().length} contribution type(s) selected</p>
                   <p>• {data.primeExpectations.length} prime expectation(s) chosen</p>
                   <p>• {data.outcomeSharing.length} outcome sharing option(s)</p>
                   <p>• {data.interestAreas.length} interest area(s) selected</p>
@@ -717,10 +857,7 @@ export const Onboarding = () => {
       case 3:
         return data.name && data.phone && data.role;
       case 4:
-        if (data.contributionTypes.includes('custom')) {
-          return data.contributionTypes.length > 0 && data.customContributionType.trim().length > 0;
-        }
-        return data.contributionTypes.length > 0;
+        return Object.values(data.contributionTypes).some(options => options.length > 0);
       case 5:
         return data.primeExpectations.length > 0;
       case 6:
