@@ -379,6 +379,10 @@ export const Onboarding = () => {
                 className="text-center"
               />
             </div>
+            <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 mt-4">
+              <span>🔒</span>
+              <span>Secure / No passwords required</span>
+            </div>
           </div>
         );
 
@@ -487,7 +491,7 @@ export const Onboarding = () => {
                 <Button
                   key={type.id}
                   variant={data.contributionTypes.includes(type.id) ? "default" : "outline"}
-                  className="justify-start h-auto p-4 text-left border-2 hover:border-primary"
+                  className="justify-start h-auto p-4 text-left border-2 hover:border-primary data-[state=selected]:border-primary"
                   onClick={() => toggleSelection(type.id, 'contributionTypes')}
                 >
                   <div>
