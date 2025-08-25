@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -152,8 +153,10 @@ export const Onboarding = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
+  const [error, setError] = useState('');
   const [data, setData] = useState<OnboardingData>({
     email: '',
     name: '',
@@ -178,65 +181,110 @@ export const Onboarding = () => {
     return () => clearInterval(interval);
   }, [isCodeSent, timeLeft]);
 
+  // Navigate to step 2 when verification code is sent successfully
+  useEffect(() => {
+    if (isCodeSent && currentStep === 1) {
+      setCurrentStep(2);
+    }
+  }, [isCodeSent, currentStep]);
+
   const sendVerificationCode = async () => {
+    if (!data.email || !data.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsSendingCode(true);
+    setError('');
+    
     try {
-      const response = await fetch('/api/send-verification-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email }),
+      const { data: response, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { email: data.email }
       });
 
-      if (response.ok) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        setError('Failed to send verification code. Please try again.');
+        toast.error('Failed to send verification code');
+        return;
+      }
+
+      if (response?.success) {
         setIsCodeSent(true);
         setTimeLeft(60);
         toast.success('Verification code sent to your email');
       } else {
+        setError('Failed to send verification code. Please try again.');
         toast.error('Failed to send verification code');
       }
     } catch (error) {
+      console.error('Error sending verification code:', error);
+      setError('Failed to send verification code. Please try again.');
       toast.error('Failed to send verification code');
+    } finally {
+      setIsSendingCode(false);
     }
   };
 
   const verifyCode = async () => {
+    if (verificationCode.length !== 6) {
+      setError('Please enter a 6-digit verification code');
+      return;
+    }
+
     setIsVerifying(true);
+    setError('');
+    
     try {
-      const response = await fetch('/api/verify-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
+      const { data: response, error } = await supabase.functions.invoke('verify-code', {
+        body: { 
           email: data.email, 
           code: verificationCode 
-        }),
+        }
       });
 
-      if (response.ok) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        setError('Invalid or expired verification code');
+        toast.error('Invalid or expired verification code');
+        return;
+      }
+
+      if (response?.success) {
         toast.success('Email verified successfully');
         setCurrentStep(3);
       } else {
-        toast.error('Invalid or expired code');
+        setError('Invalid or expired verification code');
+        toast.error('Invalid or expired verification code');
       }
     } catch (error) {
+      console.error('Error verifying code:', error);
+      setError('Verification failed. Please try again.');
       toast.error('Verification failed');
+    } finally {
+      setIsVerifying(false);
     }
-    setIsVerifying(false);
   };
 
-  const resendCode = () => {
+  const resendCode = async () => {
+    setVerificationCode('');
+    setError('');
+    setTimeLeft(60);
+    await sendVerificationCode();
+  };
+
+  const changeEmail = () => {
     setVerificationCode('');
     setIsCodeSent(false);
+    setError('');
     setTimeLeft(60);
-    sendVerificationCode();
+    setCurrentStep(1);
   };
 
   const handleNext = async () => {
     if (currentStep === 1) {
       await sendVerificationCode();
-      setCurrentStep(2);
+      // Navigate to step 2 if code was sent successfully (isCodeSent will be true)
     } else if (currentStep === 2) {
       await verifyCode();
     } else if (currentStep < steps.length) {
@@ -369,13 +417,23 @@ export const Onboarding = () => {
                 Match with, invest, track, valuate and follow up with any prime timeline.
               </p>
             </div>
+            
+            {error && (
+              <Alert className="text-left">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2 text-left">
               <label className="text-sm font-medium">Email Address</label>
               <Input
                 type="email"
                 placeholder="Enter your email address"
                 value={data.email}
-                onChange={(e) => setData({...data, email: e.target.value})}
+                onChange={(e) => {
+                  setData({...data, email: e.target.value});
+                  setError(''); // Clear error when user starts typing
+                }}
                 className="text-center"
               />
             </div>
@@ -396,11 +454,18 @@ export const Onboarding = () => {
               </p>
             </div>
             
+            {error && (
+              <Alert className="text-left">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-4">
               <InputOTP
                 maxLength={6}
                 value={verificationCode}
                 onChange={(value) => setVerificationCode(value)}
+                disabled={timeLeft === 0}
               >
                 <InputOTPGroup className="gap-2">
                   <InputOTPSlot index={0} className="w-12 h-12" />
@@ -414,12 +479,29 @@ export const Onboarding = () => {
               
               {timeLeft > 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Code expires in {timeLeft} seconds
+                  Code expires in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                 </p>
               ) : (
-                <Button variant="link" onClick={resendCode} className="text-sm">
-                  Resend Code
-                </Button>
+                <div className="space-y-2">
+                  <p className="text-sm text-destructive font-medium">Code expired</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={resendCode} 
+                      disabled={isSendingCode}
+                      className="text-sm"
+                    >
+                      {isSendingCode ? 'Sending...' : 'Resend Code'}
+                    </Button>
+                    <Button 
+                      variant="link" 
+                      onClick={changeEmail} 
+                      className="text-sm"
+                    >
+                      Change Email
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -656,7 +738,7 @@ export const Onboarding = () => {
   };
 
   const getButtonText = () => {
-    if (currentStep === 1) return 'Send Verification Code';
+    if (currentStep === 1) return isSendingCode ? 'Sending...' : 'Send Verification Code';
     if (currentStep === 2) return isVerifying ? 'Verifying...' : 'Verify Code';
     if (currentStep === steps.length) return isSubmitting ? 'Completing Setup...' : 'Complete Setup';
     return 'Next';
@@ -712,7 +794,7 @@ export const Onboarding = () => {
             
             <Button 
               onClick={handleNext}
-              disabled={!canProceed() || isSubmitting || isVerifying}
+              disabled={!canProceed() || isSubmitting || isVerifying || isSendingCode}
               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
             >
               <span className="text-sm sm:text-base">{getButtonText()}</span>
