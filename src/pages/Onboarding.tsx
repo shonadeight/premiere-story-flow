@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -18,12 +18,7 @@ import {
   ArrowLeft,
   CheckCircle,
   Briefcase,
-  TrendingUp,
-  Plus,
-  Heart,
-  Building,
-  ClipboardList,
-  BarChart3
+  Timer
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -36,16 +31,18 @@ interface OnboardingData {
   outcomeSharing: string[];
   interestAreas: string[];
   customContributionType: string;
+  customOutcomeSharing: string;
 }
 
 const steps = [
-  { id: 1, title: 'Email Verification', icon: Mail },
-  { id: 2, title: 'Profile Setup', icon: User },
-  { id: 3, title: 'Contribution Types', icon: DollarSign },
-  { id: 4, title: 'Prime Expectations', icon: Target },
-  { id: 5, title: 'Outcome Sharing', icon: BarChart3 },
-  { id: 6, title: 'Interest Areas', icon: Brain },
-  { id: 7, title: 'Complete Setup', icon: CheckCircle },
+  { id: 1, title: 'Welcome', icon: Mail },
+  { id: 2, title: 'Email Verification', icon: Timer },
+  { id: 3, title: 'Profile Setup', icon: User },
+  { id: 4, title: 'Contribution Types', icon: DollarSign },
+  { id: 5, title: 'Prime Expectations', icon: Target },
+  { id: 6, title: 'Outcome Sharing', icon: Brain },
+  { id: 7, title: 'Interest Areas', icon: Brain },
+  { id: 8, title: 'Complete Setup', icon: CheckCircle },
 ];
 
 const contributionTypes = [
@@ -57,26 +54,77 @@ const contributionTypes = [
   { id: 'custom', label: '📊 Custom', description: 'anything else' },
 ];
 
-const primeExpectations = [
-  'Manage and follow timelines (personal + aligned)',
-  'Contribute & valuate contributions',
-  'Expand skills, awareness & learning from others',
-  'Share outcomes, match with investors/partners/leads',
-  'Build networks & strategic partnerships',
-  'Manage assets, investments & generate income',
-  'Develop IP, research & innovation',
-  'Risk diversification & market insights',
-  'Teach, mentor & support others',
+const primeExpectationGroups = [
+  {
+    id: 'income',
+    title: 'A) Generate Income & Wealth',
+    subtitle: 'passive/main source',
+    options: ['Passive income generation', 'Main income source', 'Investment returns']
+  },
+  {
+    id: 'invest',
+    title: 'B) Invest in others\' contributions',
+    subtitle: 'financial, networks, intellectual, assets',
+    options: ['Financial investments', 'Network building', 'Intellectual property', 'Asset investments']
+  },
+  {
+    id: 'attract',
+    title: 'C) Attract timelines/leads',
+    subtitle: 'contribute, evolve, invest',
+    options: ['Attract contributors', 'Business evolution', 'Investment opportunities']
+  },
+  {
+    id: 'personal',
+    title: 'D) Manage personal timelines',
+    subtitle: 'alone/with others',
+    options: ['Solo project management', 'Collaborative projects', 'Personal development']
+  },
+  {
+    id: 'business',
+    title: 'E) Manage & fulfill business timelines',
+    subtitle: 'create, valuate, track, follow-up',
+    options: ['Business creation', 'Valuation management', 'Progress tracking', 'Follow-up systems']
+  },
+  {
+    id: 'partnerships',
+    title: 'F) Partnerships & co-creation',
+    subtitle: 'JV, co-invest, collaborate',
+    options: ['Joint ventures', 'Co-investment opportunities', 'Strategic collaboration']
+  },
+  {
+    id: 'outcomes',
+    title: 'G) Valuating outcomes',
+    subtitle: 'effective outcome sharing',
+    options: ['Outcome measurement', 'Value distribution', 'Performance metrics']
+  },
+  {
+    id: 'learning',
+    title: 'H) Learning & personal evolution',
+    subtitle: '',
+    options: ['Skill development', 'Knowledge acquisition', 'Personal growth']
+  },
+  {
+    id: 'innovation',
+    title: 'I) Develop innovation, research & IP',
+    subtitle: '',
+    options: ['Research & development', 'Innovation projects', 'Intellectual property creation']
+  },
+  {
+    id: 'teaching',
+    title: 'J) Teach & mentor others',
+    subtitle: '',
+    options: ['Teaching', 'Mentoring', 'Knowledge sharing']
+  }
 ];
 
 const outcomeSharingOptions = [
   'Equity',
   'Wages',
-  'Credit/loan',
+  'Credit/Loan',
   'Revenue sharing',
   'Profit sharing',
-  'Networks & intellectual outcomes',
-  'Add extra options',
+  'Networks & Intellectual outcomes',
+  'Custom'
 ];
 
 const professionalRoles = [
@@ -89,19 +137,23 @@ const professionalRoles = [
   'Doctor', 'Teacher', 'Engineer', 'Accountant', 'Real Estate Agent', 'Freelancer'
 ];
 
-const interestCategories = {
-  'Technology': ['AI/ML', 'SaaS', 'Blockchain', 'Cybersecurity', 'Cloud', 'Mobile Apps', 'IoT', 'VR/AR'],
-  'Health & Science': ['Healthcare Tech', 'Biotech', 'Pharmaceuticals', 'Green/Renewable Energy'],
-  'Business & Finance': ['Fintech', 'E-commerce', 'Financial Services', 'Insurance', 'Consulting', 'Legal'],
-  'Creative & Media': ['Gaming', 'Entertainment', 'Social Media', 'Digital Marketing', 'Music', 'Arts', 'Film', 'Publishing', 'Photography'],
-  'Industries & Infrastructure': ['Real Estate', 'Construction', 'Manufacturing', 'Mining', 'Oil & Gas', 'Aerospace', 'Transportation'],
-  'Lifestyle & Services': ['Fashion', 'Retail', 'Travel', 'Tourism', 'Sports', 'Fitness', 'Food & Agriculture', 'Education (EdTech)', 'Others'],
-};
+const interestAreas = [
+  'AI/ML', 'SaaS', 'Blockchain', 'Green Energy', 'Healthcare', 'EdTech', 'Fintech', 
+  'E-commerce', 'Real Estate', 'Gaming', 'Biotech', 'Cybersecurity', 'Mobile', 'Cloud', 
+  'IoT', 'VR/AR', 'Social Media', 'Digital Marketing', 'Media & Content', 
+  'Food & Agriculture', 'Transport', 'Manufacturing', 'Fashion', 'Travel', 'Sports', 
+  'Music', 'Photography', 'Film', 'Publishing', 'Consulting', 'Legal', 'Financial', 
+  'Insurance', 'Retail', 'Construction', 'Mining', 'Oil & Gas', 'Pharma', 'Aerospace', 'Others'
+];
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [customRole, setCustomRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
   const [data, setData] = useState<OnboardingData>({
     email: '',
     name: '',
@@ -112,10 +164,82 @@ export const Onboarding = () => {
     outcomeSharing: [],
     interestAreas: [],
     customContributionType: '',
+    customOutcomeSharing: '',
   });
 
+  // Timer for verification code
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isCodeSent && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(time => time - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isCodeSent, timeLeft]);
+
+  const sendVerificationCode = async () => {
+    try {
+      const response = await fetch('/api/send-verification-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: data.email }),
+      });
+
+      if (response.ok) {
+        setIsCodeSent(true);
+        setTimeLeft(60);
+        toast.success('Verification code sent to your email');
+      } else {
+        toast.error('Failed to send verification code');
+      }
+    } catch (error) {
+      toast.error('Failed to send verification code');
+    }
+  };
+
+  const verifyCode = async () => {
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: data.email, 
+          code: verificationCode 
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Email verified successfully');
+        setCurrentStep(3);
+      } else {
+        toast.error('Invalid or expired code');
+      }
+    } catch (error) {
+      toast.error('Verification failed');
+    }
+    setIsVerifying(false);
+  };
+
+  const resendCode = () => {
+    setVerificationCode('');
+    setIsCodeSent(false);
+    setTimeLeft(60);
+    sendVerificationCode();
+  };
+
   const handleNext = async () => {
-    if (currentStep < steps.length) {
+    if (currentStep === 1) {
+      await sendVerificationCode();
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      await verifyCode();
+    } else if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding and save to database
@@ -128,7 +252,7 @@ export const Onboarding = () => {
           return;
         }
 
-        // Save profile with the user's email from auth
+        // Save profile
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -145,10 +269,12 @@ export const Onboarding = () => {
           return;
         }
 
-        // Save contribution types (including custom)
+        // Save all other data in parallel
+        const promises = [];
+
+        // Save contribution types
         if (data.contributionTypes.length > 0) {
           const contributionTypesToSave = data.contributionTypes.map(type => {
-            // If it's custom, use the custom text
             const finalType = type === 'custom' ? data.customContributionType : type;
             return {
               user_id: user.id,
@@ -156,13 +282,9 @@ export const Onboarding = () => {
             };
           });
           
-          const { error: contributionError } = await supabase
-            .from('user_contribution_types')
-            .insert(contributionTypesToSave);
-
-          if (contributionError) {
-            console.error('Error saving contribution types:', contributionError);
-          }
+          promises.push(
+            supabase.from('user_contribution_types').insert(contributionTypesToSave)
+          );
         }
 
         // Save expectations
@@ -172,54 +294,40 @@ export const Onboarding = () => {
             expectation
           }));
           
-          const { error: expectationError } = await supabase
-            .from('user_expectations')
-            .insert(expectationData);
-
-          if (expectationError) {
-            console.error('Error saving expectations:', expectationError);
-          }
+          promises.push(
+            supabase.from('user_expectations').insert(expectationData)
+          );
         }
 
-        // Save outcome sharing preferences
+        // Save outcome sharing
         if (data.outcomeSharing.length > 0) {
-          const outcomeData = data.outcomeSharing.map(outcome => ({
-            user_id: user.id,
-            outcome_type: outcome
-          }));
-          
-          const { error: outcomeError } = await supabase
-            .from('user_outcome_sharing')
-            .insert(outcomeData);
-
-          if (outcomeError) {
-            console.error('Error saving outcome sharing:', outcomeError);
-          }
-        }
-
-        // Save interest areas
-        if (data.interestAreas.length > 0) {
-          const interestData = data.interestAreas.map(interest => {
-            // Find the category for this interest
-            const category = Object.entries(interestCategories).find(([cat, items]) => 
-              items.includes(interest)
-            )?.[0] || 'Other';
-            
+          const outcomeData = data.outcomeSharing.map(outcome => {
+            const finalOutcome = outcome === 'Custom' ? data.customOutcomeSharing : outcome;
             return {
               user_id: user.id,
-              interest,
-              category
+              outcome_type: finalOutcome
             };
           });
           
-          const { error: interestError } = await supabase
-            .from('user_interest_areas')
-            .insert(interestData);
-
-          if (interestError) {
-            console.error('Error saving interests:', interestError);
-          }
+          promises.push(
+            supabase.from('user_outcome_sharing').insert(outcomeData)
+          );
         }
+
+        // Save interests
+        if (data.interestAreas.length > 0) {
+          const interestData = data.interestAreas.map(interest => ({
+            user_id: user.id,
+            interest,
+            category: 'General'
+          }));
+          
+          promises.push(
+            supabase.from('user_interest_areas').insert(interestData)
+          );
+        }
+
+        await Promise.all(promises);
 
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
         window.location.href = '/';
@@ -253,14 +361,22 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="space-y-6 text-center">
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Welcome to ShonaCoin</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                The best tool that helps fulfill your prime timelines in any way possible. 
+                Match with, invest, track, valuate and follow up with any prime timeline.
+              </p>
+            </div>
+            <div className="space-y-2 text-left">
               <label className="text-sm font-medium">Email Address</label>
               <Input
                 type="email"
-                placeholder="njehuu@gmail.com"
+                placeholder="Enter your email address"
                 value={data.email}
                 onChange={(e) => setData({...data, email: e.target.value})}
+                className="text-center"
               />
             </div>
           </div>
@@ -268,52 +384,38 @@ export const Onboarding = () => {
 
       case 2:
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Full Name</label>
-              <Input
-                placeholder="Alex Johnson"
-                value={data.name}
-                onChange={(e) => setData({...data, name: e.target.value})}
-              />
+          <div className="space-y-6 text-center">
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Enter Verification Code</h2>
+              <p className="text-sm text-muted-foreground">
+                We've sent a 6-digit code to {data.email}
+              </p>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number</label>
-              <Input
-                placeholder="+1 (555) 123-4567"
-                value={data.phone}
-                onChange={(e) => setData({...data, phone: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Professional Role</label>
-              <Select value={data.role} onValueChange={(value) => {
-                setData({...data, role: value});
-                if (value === 'custom') {
-                  setCustomRole('');
-                }
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {professionalRoles.map((role) => (
-                    <SelectItem key={role.toLowerCase().replace(/\s+/g, '-')} value={role.toLowerCase().replace(/\s+/g, '-')}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Other (Custom)</SelectItem>
-                </SelectContent>
-              </Select>
-              {data.role === 'custom' && (
-                <Input
-                  placeholder="Enter your custom role"
-                  value={customRole}
-                  onChange={(e) => {
-                    setCustomRole(e.target.value);
-                    setData({...data, role: e.target.value});
-                  }}
-                />
+            
+            <div className="space-y-4">
+              <InputOTP
+                maxLength={6}
+                value={verificationCode}
+                onChange={(value) => setVerificationCode(value)}
+              >
+                <InputOTPGroup className="gap-2">
+                  <InputOTPSlot index={0} className="w-12 h-12" />
+                  <InputOTPSlot index={1} className="w-12 h-12" />
+                  <InputOTPSlot index={2} className="w-12 h-12" />
+                  <InputOTPSlot index={3} className="w-12 h-12" />
+                  <InputOTPSlot index={4} className="w-12 h-12" />
+                  <InputOTPSlot index={5} className="w-12 h-12" />
+                </InputOTPGroup>
+              </InputOTP>
+              
+              {timeLeft > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Code expires in {timeLeft} seconds
+                </p>
+              ) : (
+                <Button variant="link" onClick={resendCode} className="text-sm">
+                  Resend Code
+                </Button>
               )}
             </div>
           </div>
@@ -322,32 +424,55 @@ export const Onboarding = () => {
       case 3:
         return (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-3 block">Select contribution types (multi-select):</label>
-              <div className="grid grid-cols-1 gap-3">
-                {contributionTypes.map((type) => (
-                  <Button
-                    key={type.id}
-                    variant={data.contributionTypes.includes(type.id) ? "default" : "outline"}
-                    className="justify-start h-auto p-4 text-left border-2 hover:border-primary"
-                    onClick={() => toggleSelection(type.id, 'contributionTypes')}
-                  >
-                    <div>
-                      <div className="font-medium">{type.label}</div>
-                      <div className="text-xs text-muted-foreground">{type.description}</div>
-                    </div>
-                  </Button>
-                ))}
+            <h2 className="text-xl font-semibold text-center">Profile Setup</h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name</label>
+                <Input
+                  placeholder="Alex Johnson"
+                  value={data.name}
+                  onChange={(e) => setData({...data, name: e.target.value})}
+                />
               </div>
-              {data.contributionTypes.includes('custom') && (
-                <div className="mt-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number</label>
+                <Input
+                  placeholder="+1 (555) 123-4567"
+                  value={data.phone}
+                  onChange={(e) => setData({...data, phone: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Professional Role</label>
+                <Select value={data.role} onValueChange={(value) => {
+                  setData({...data, role: value});
+                  if (value === 'custom') {
+                    setCustomRole('');
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {professionalRoles.map((role) => (
+                      <SelectItem key={role.toLowerCase().replace(/\s+/g, '-')} value={role.toLowerCase().replace(/\s+/g, '-')}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Other (Custom)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {data.role === 'custom' && (
                   <Input
-                    placeholder="Enter your custom contribution type"
-                    value={data.customContributionType}
-                    onChange={(e) => setData({...data, customContributionType: e.target.value})}
+                    placeholder="Enter your custom role"
+                    value={customRole}
+                    onChange={(e) => {
+                      setCustomRole(e.target.value);
+                      setData({...data, role: e.target.value});
+                    }}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         );
@@ -355,43 +480,63 @@ export const Onboarding = () => {
       case 4:
         return (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-3 block">Select prime expectations/goals (multi-select):</label>
-              <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
-                {primeExpectations.map((expectation, index) => (
-                  <Button
-                    key={index}
-                    variant={data.primeExpectations.includes(expectation) ? "default" : "outline"}
-                    className="justify-start h-auto p-3 text-left text-sm border-2 hover:border-primary"
-                    onClick={() => toggleSelection(expectation, 'primeExpectations')}
-                  >
-                    <span className="text-xs mr-2 text-muted-foreground">{index + 1})</span>
-                    {expectation}
-                  </Button>
-                ))}
-              </div>
+            <h2 className="text-xl font-semibold text-center">Select Contribution Types</h2>
+            <p className="text-sm text-muted-foreground text-center">Choose all that apply (multi-select)</p>
+            <div className="grid grid-cols-1 gap-3">
+              {contributionTypes.map((type) => (
+                <Button
+                  key={type.id}
+                  variant={data.contributionTypes.includes(type.id) ? "default" : "outline"}
+                  className="justify-start h-auto p-4 text-left border-2 hover:border-primary"
+                  onClick={() => toggleSelection(type.id, 'contributionTypes')}
+                >
+                  <div>
+                    <div className="font-medium">{type.label}</div>
+                    <div className="text-xs text-muted-foreground">{type.description}</div>
+                  </div>
+                </Button>
+              ))}
             </div>
+            {data.contributionTypes.includes('custom') && (
+              <div className="mt-3">
+                <Input
+                  placeholder="Enter your custom contribution type"
+                  value={data.customContributionType}
+                  onChange={(e) => setData({...data, customContributionType: e.target.value})}
+                />
+              </div>
+            )}
           </div>
         );
 
       case 5:
         return (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-3 block">Outcome sharing (multi-select):</label>
-              <div className="grid grid-cols-1 gap-2">
-                {outcomeSharingOptions.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                    className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
-                    onClick={() => toggleSelection(option, 'outcomeSharing')}
-                  >
-                    <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
-                    {option}
-                  </Button>
-                ))}
-              </div>
+            <h2 className="text-xl font-semibold text-center">Prime Expectations & Goals</h2>
+            <p className="text-sm text-muted-foreground text-center">Select your main goals (multi-select)</p>
+            <div className="space-y-4 max-h-80 overflow-y-auto">
+              {primeExpectationGroups.map((group) => (
+                <div key={group.id} className="space-y-2">
+                  <div className="border-l-4 border-primary pl-3">
+                    <h4 className="font-medium text-sm">{group.title}</h4>
+                    {group.subtitle && (
+                      <p className="text-xs text-muted-foreground">{group.subtitle}</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 ml-4">
+                    {group.options.map((option) => (
+                      <Button
+                        key={option}
+                        variant={data.primeExpectations.includes(option) ? "default" : "outline"}
+                        className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
+                        onClick={() => toggleSelection(option, 'primeExpectations')}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -399,32 +544,54 @@ export const Onboarding = () => {
       case 6:
         return (
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-3 block">Select areas of interest (multi-select by category):</label>
-              <div className="space-y-4 max-h-64 overflow-y-auto">
-                {Object.entries(interestCategories).map(([category, items]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="font-medium text-sm capitalize">{category.replace(/([A-Z])/g, ' $1').trim()}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {items.map((item) => (
-                        <Button
-                          key={item}
-                          variant={data.interestAreas.includes(item) ? "default" : "outline"}
-                          className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
-                          onClick={() => toggleSelection(item, 'interestAreas')}
-                        >
-                          {item}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <h2 className="text-xl font-semibold text-center">Outcome Sharing</h2>
+            <p className="text-sm text-muted-foreground text-center">How would you like to share outcomes? (multi-select)</p>
+            <div className="grid grid-cols-1 gap-2">
+              {outcomeSharingOptions.map((option, index) => (
+                <Button
+                  key={option}
+                  variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
+                  className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
+                  onClick={() => toggleSelection(option, 'outcomeSharing')}
+                >
+                  <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
+                  {option}
+                </Button>
+              ))}
             </div>
+            {data.outcomeSharing.includes('Custom') && (
+              <div className="mt-3">
+                <Input
+                  placeholder="Enter your custom outcome sharing option"
+                  value={data.customOutcomeSharing}
+                  onChange={(e) => setData({...data, customOutcomeSharing: e.target.value})}
+                />
+              </div>
+            )}
           </div>
         );
 
       case 7:
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-center">Areas of Interest</h2>
+            <p className="text-sm text-muted-foreground text-center">Select your areas of interest (multi-select)</p>
+            <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
+              {interestAreas.map((area) => (
+                <Button
+                  key={area}
+                  variant={data.interestAreas.includes(area) ? "default" : "outline"}
+                  className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
+                  onClick={() => toggleSelection(area, 'interestAreas')}
+                >
+                  {area}
+                </Button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 8:
         return (
           <div className="space-y-4">
             <div className="text-center space-y-4">
@@ -460,23 +627,35 @@ export const Onboarding = () => {
       case 1:
         return data.email && data.email.includes('@');
       case 2:
-        return data.name && data.phone && data.role;
+        return verificationCode.length === 6;
       case 3:
+        return data.name && data.phone && data.role;
+      case 4:
         if (data.contributionTypes.includes('custom')) {
           return data.contributionTypes.length > 0 && data.customContributionType.trim().length > 0;
         }
         return data.contributionTypes.length > 0;
-      case 4:
-        return data.primeExpectations.length > 0;
       case 5:
-        return data.outcomeSharing.length > 0;
+        return data.primeExpectations.length > 0;
       case 6:
-        return data.interestAreas.length > 0;
+        if (data.outcomeSharing.includes('Custom')) {
+          return data.outcomeSharing.length > 0 && data.customOutcomeSharing.trim().length > 0;
+        }
+        return data.outcomeSharing.length > 0;
       case 7:
+        return data.interestAreas.length > 0;
+      case 8:
         return true;
       default:
         return false;
     }
+  };
+
+  const getButtonText = () => {
+    if (currentStep === 1) return 'Send Verification Code';
+    if (currentStep === 2) return isVerifying ? 'Verifying...' : 'Verify Code';
+    if (currentStep === steps.length) return isSubmitting ? 'Completing Setup...' : 'Complete Setup';
+    return 'Next';
   };
 
   return (
@@ -489,23 +668,22 @@ export const Onboarding = () => {
               <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <Briefcase className="h-6 w-6 text-primary-foreground" />
               </div>
-              <CardTitle className="text-xl sm:text-2xl">Welcome to ShonaCoin</CardTitle>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                The best tool that helps fulfill your prime timelines. Match, invest, track, valuate and follow up with any primetimeline.
-              </p>
+              {currentStep > 2 && (
+                <>
+                  <CardTitle className="text-xl sm:text-2xl">Setup Your Profile</CardTitle>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium">{steps[currentStep - 1]?.title}</p>
+                      <p className="text-xs text-muted-foreground">Step {currentStep} of {steps.length}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {Math.round(progress)}% Complete
+                    </Badge>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </>
+              )}
             </div>
-            
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium">{steps[currentStep - 1]?.title}</p>
-                <p className="text-xs text-muted-foreground">Step {currentStep} of {steps.length}</p>
-              </div>
-              <Badge variant="outline" className="text-xs">
-                {Math.round(progress)}% Complete
-              </Badge>
-            </div>
-            
-            <Progress value={progress} className="h-2" />
           </CardHeader>
           
           <CardContent className="space-y-4 pb-4">
@@ -530,22 +708,11 @@ export const Onboarding = () => {
             
             <Button 
               onClick={handleNext}
-              disabled={!canProceed() || isSubmitting}
+              disabled={!canProceed() || isSubmitting || isVerifying}
               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
             >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 mr-1 sm:mr-2 border-b-2 border-primary-foreground"></div>
-                  <span className="text-sm sm:text-base">Saving...</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm sm:text-base">
-                    {currentStep === steps.length ? 'Complete Setup' : 'Next'}
-                  </span>
-                  <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
-                </>
-              )}
+              <span className="text-sm sm:text-base">{getButtonText()}</span>
+              <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
             </Button>
           </div>
         </div>
