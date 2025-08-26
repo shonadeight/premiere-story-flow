@@ -176,6 +176,7 @@ const interestAreas = [
 ];
 
 export const Onboarding = () => {
+  // Always start from step 1 to ensure proper onboarding flow
   const [currentStep, setCurrentStep] = useState(1);
   const [customRole, setCustomRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
