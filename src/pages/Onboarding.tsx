@@ -340,8 +340,6 @@ export const Onboarding = () => {
             name: data.name,
             phone: data.phone,
             professional_role: data.role
-          }, {
-            onConflict: 'user_id'
           });
 
         if (profileError) {
