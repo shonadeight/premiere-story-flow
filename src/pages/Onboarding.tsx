@@ -485,27 +485,22 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                <Mail className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">Welcome to ShonaCoin</h2>
-                <p className="text-muted-foreground max-w-lg mx-auto">
-                  The best tool that helps fulfill your prime timelines in any way possible. 
-                  Match with, invest, track, valuate and follow up with any prime timeline.
-                </p>
-              </div>
+          <div className="space-y-6 text-center">
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Welcome to ShonaCoin</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                The best tool that helps fulfill your prime timelines in any way possible. 
+                Match with, invest, track, valuate and follow up with any prime timeline.
+              </p>
             </div>
             
             {error && (
-              <Alert>
+              <Alert className="text-left">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
-            <div className="space-y-2">
+            <div className="space-y-2 text-left">
               <label className="text-sm font-medium">Email Address</label>
               <Input
                 type="email"
@@ -515,9 +510,10 @@ export const Onboarding = () => {
                   setData({...data, email: e.target.value});
                   setError(''); // Clear error when user starts typing
                 }}
+                className="text-center"
               />
             </div>
-            <div className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+            <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 mt-4">
               <span>🔒</span>
               <span>Secure / No passwords required</span>
             </div>
