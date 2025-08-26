@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCards } from '@/components/dashboard/StatsCards';
@@ -14,16 +15,44 @@ import {
   Plus,
   SortAsc,
   TrendingUp,
-  Clock
+  Clock,
+  User,
+  Phone,
+  Mail,
+  Briefcase
 } from 'lucide-react';
 import { mockTimelines } from '@/data/mockData';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserProfile {
+  name?: string;
+  phone?: string;
+  professional_role?: string;
+  email?: string;
+}
+
+interface UserData {
+  profile: UserProfile | null;
+  contributionTypes: Array<{ contribution_type: string }>;
+  expectations: Array<{ expectation: string }>;
+  outcomeSharing: Array<{ outcome_type: string }>;
+  interests: Array<{ interest: string; category: string }>;
+}
 
 export const Dashboard = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [sortBy, setSortBy] = useState('updated');
+  const [userData, setUserData] = useState<UserData>({
+    profile: null,
+    contributionTypes: [],
+    expectations: [],
+    outcomeSharing: [],
+    interests: []
+  });
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   const filteredTimelines = mockTimelines.filter(timeline => {
@@ -50,6 +79,44 @@ export const Dashboard = () => {
     }
   });
 
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch all user data in parallel
+      const [
+        { data: profile },
+        { data: contributionTypes },
+        { data: expectations },
+        { data: outcomeSharing },
+        { data: interests }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+        supabase.from('user_contribution_types').select('*').eq('user_id', user.id),
+        supabase.from('user_expectations').select('*').eq('user_id', user.id),
+        supabase.from('user_outcome_sharing').select('*').eq('user_id', user.id),
+        supabase.from('user_interest_areas').select('*').eq('user_id', user.id)
+      ]);
+
+      setUserData({
+        profile: profile || null,
+        contributionTypes: contributionTypes || [],
+        expectations: expectations || [],
+        outcomeSharing: outcomeSharing || [],
+        interests: interests || []
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const timelineTypes = [
     { value: 'all', label: 'All Types' },
     { value: 'project', label: 'Projects' },
@@ -63,19 +130,119 @@ export const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Timeline Dashboard</h1>
+          <h1 className="text-2xl font-bold">Welcome back, {userData.profile?.name || 'User'}</h1>
           <p className="text-muted-foreground">
             Manage your investment timelines and track performance
           </p>
         </div>
         <Button 
           onClick={() => navigate('/create')}
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto bg-primary hover:bg-primary/90 border-0"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Timeline
         </Button>
       </div>
+
+      {/* User Profile Overview */}
+      {!loading && userData.profile && (
+        <Card className="p-6 mb-6 border-2 border-primary/20">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Your Profile Overview
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Basic Info</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  {userData.profile.name || 'Not provided'}
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  {userData.profile.email || 'Not provided'}
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  {userData.profile.phone || 'Not provided'}
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  {userData.profile.professional_role || 'Not provided'}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Contribution Types</h4>
+              <div className="flex flex-wrap gap-1">
+                {userData.contributionTypes.slice(0, 3).map((item, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {item.contribution_type}
+                  </Badge>
+                ))}
+                {userData.contributionTypes.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{userData.contributionTypes.length - 3} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Expectations</h4>
+              <div className="flex flex-wrap gap-1">
+                {userData.expectations.slice(0, 2).map((item, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {item.expectation}
+                  </Badge>
+                ))}
+                {userData.expectations.length > 2 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{userData.expectations.length - 2} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Outcome Sharing</h4>
+              <div className="flex flex-wrap gap-1">
+                {userData.outcomeSharing.slice(0, 2).map((item, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {item.outcome_type}
+                  </Badge>
+                ))}
+                {userData.outcomeSharing.length > 2 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{userData.outcomeSharing.length - 2} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {userData.interests.length > 0 && (
+            <div className="mt-6 pt-4 border-t">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Areas of Interest</h4>
+              <div className="flex flex-wrap gap-1">
+                {userData.interests.slice(0, 5).map((item, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {item.interest}
+                  </Badge>
+                ))}
+                {userData.interests.length > 5 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{userData.interests.length - 5} more interests
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <StatsCards />
@@ -84,7 +251,7 @@ export const Dashboard = () => {
       <div className="bg-card rounded-lg border p-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Capital Breakdown</h3>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="hover:bg-muted">
             <Plus className="h-4 w-4 mr-2" />
             Customize
           </Button>
@@ -169,7 +336,7 @@ export const Dashboard = () => {
                 variant={view === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('grid')}
-                className="h-8 px-3"
+                className="h-8 px-3 bg-primary hover:bg-primary/90 border-0"
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
@@ -177,7 +344,7 @@ export const Dashboard = () => {
                 variant={view === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('list')}
-                className="h-8 px-3"
+                className="h-8 px-3 bg-primary hover:bg-primary/90 border-0"
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -271,7 +438,7 @@ export const Dashboard = () => {
             <p className="text-muted-foreground mb-4">
               Discover investment opportunities tailored to your portfolio
             </p>
-            <Button variant="outline">
+            <Button variant="outline" className="hover:bg-muted border-primary">
               <TrendingUp className="h-4 w-4 mr-2" />
               Explore Opportunities
             </Button>

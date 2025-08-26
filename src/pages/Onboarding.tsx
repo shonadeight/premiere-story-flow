@@ -408,7 +408,7 @@ export const Onboarding = () => {
         await Promise.all(promises);
 
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
-        window.location.href = '/';
+        window.location.href = '/dashboard';
       } catch (error) {
         console.error('Error completing onboarding:', error);
         toast.error("Failed to complete onboarding: " + (error as Error).message);
