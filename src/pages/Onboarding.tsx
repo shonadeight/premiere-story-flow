@@ -347,8 +347,18 @@ export const Onboarding = () => {
           return;
         }
 
-        // Save all other data in parallel
-        const promises = [];
+        // Delete existing data first, then insert new data (UPSERT behavior)
+        const deletePromises = [
+          supabase.from('user_contribution_types').delete().eq('user_id', user.id),
+          supabase.from('user_expectations').delete().eq('user_id', user.id),
+          supabase.from('user_outcome_sharing').delete().eq('user_id', user.id),
+          supabase.from('user_interest_areas').delete().eq('user_id', user.id)
+        ];
+
+        await Promise.all(deletePromises);
+
+        // Now insert all new data in parallel
+        const insertPromises = [];
 
         // Save contribution types
         const allContributionTypes = Object.entries(data.contributionTypes)
@@ -360,7 +370,7 @@ export const Onboarding = () => {
             contribution_type: type
           }));
           
-          promises.push(
+          insertPromises.push(
             supabase.from('user_contribution_types').insert(contributionTypesToSave)
           );
         }
@@ -372,7 +382,7 @@ export const Onboarding = () => {
             expectation
           }));
           
-          promises.push(
+          insertPromises.push(
             supabase.from('user_expectations').insert(expectationData)
           );
         }
@@ -387,7 +397,7 @@ export const Onboarding = () => {
             };
           });
           
-          promises.push(
+          insertPromises.push(
             supabase.from('user_outcome_sharing').insert(outcomeData)
           );
         }
@@ -400,12 +410,12 @@ export const Onboarding = () => {
             category: 'General'
           }));
           
-          promises.push(
+          insertPromises.push(
             supabase.from('user_interest_areas').insert(interestData)
           );
         }
 
-        await Promise.all(promises);
+        await Promise.all(insertPromises);
 
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
         window.location.href = '/dashboard';
