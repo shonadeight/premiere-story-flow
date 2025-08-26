@@ -330,7 +330,7 @@ export const Onboarding = () => {
           return;
         }
 
-        // Save profile
+        // Save profile with explicit conflict resolution
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -339,6 +339,8 @@ export const Onboarding = () => {
             name: data.name,
             phone: data.phone,
             professional_role: data.role
+          }, {
+            onConflict: 'user_id'
           });
 
         if (profileError) {
