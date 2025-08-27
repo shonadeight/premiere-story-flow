@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "./components/layout/Navbar";
 import { BottomNav } from "./components/layout/BottomNav";
-import { Auth } from "./pages/Auth";
+
 import { Onboarding } from "./pages/Onboarding";
 import { Dashboard } from "./pages/Dashboard";
 import { TimelineDetail } from "./pages/TimelineDetail";
@@ -107,24 +107,8 @@ const App = () => {
     );
   }
 
-  // Check if user is authenticated and onboarded
-  if (!user || !session) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="*" element={<Auth />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
-
-  if (!onboardingCompleted) {
+  // Always show onboarding if not completed or not authenticated
+  if (!user || !session || !onboardingCompleted) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
