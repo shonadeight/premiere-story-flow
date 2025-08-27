@@ -485,21 +485,21 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="max-w-md mx-auto">
-            <Card className="border border-border bg-card">
-              <CardContent className="pt-8 pb-8">
+          <div className="max-w-sm mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardContent className="px-6 py-8">
                 <div className="space-y-6 text-center">
                   {/* Purple briefcase icon */}
                   <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                      <Briefcase className="h-8 w-8 text-primary-foreground" />
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                      <Briefcase className="h-6 w-6 text-primary-foreground" />
                     </div>
                   </div>
                   
                   {/* Title and description */}
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <h1 className="text-xl font-semibold text-foreground">Welcome to ShonaCoin</h1>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed px-2">
                       The best tool that helps fulfill your prime timelines in any way possible. 
                       Match with, invest, track, valuate and follow up with any prime timeline.
                     </p>
@@ -513,7 +513,7 @@ export const Onboarding = () => {
                   )}
                   
                   {/* Email input section */}
-                  <div className="space-y-3 text-left">
+                  <div className="space-y-2 text-left">
                     <label className="text-sm font-medium text-foreground">Email Address</label>
                     <Input
                       type="email"
@@ -523,14 +523,14 @@ export const Onboarding = () => {
                         setData({...data, email: e.target.value});
                         setError('');
                       }}
-                      className="h-11"
+                      className="h-10 text-sm"
                     />
                   </div>
                   
                   {/* Security note */}
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    <span>🔒</span>
-                    <span>Secure / No passwords required</span>
+                  <div className="flex items-center justify-center gap-1 pt-2">
+                    <span className="text-xs">🔒</span>
+                    <span className="text-xs text-muted-foreground">Secure / No passwords required</span>
                   </div>
                 </div>
               </CardContent>
