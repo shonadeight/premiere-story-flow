@@ -446,9 +446,18 @@ export const Onboarding = () => {
 
         await Promise.all(insertPromises);
 
+        // Mark onboarding as completed
+        await supabase
+          .from('profiles')
+          .update({
+            onboarding_completed: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
-        // Use navigate to redirect to Portfolio (which is actually the dashboard)
-        navigate('/');
+        // Force refresh to main app
+        window.location.href = '/portfolio';
       } catch (error) {
         console.error('Error completing onboarding:', error);
         toast.error("Failed to complete onboarding: " + (error as Error).message);

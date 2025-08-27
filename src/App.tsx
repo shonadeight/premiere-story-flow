@@ -29,7 +29,7 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hasProfile, setHasProfile] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -44,20 +44,20 @@ const App = () => {
             try {
               const { data: profile } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('onboarding_completed')
                 .eq('user_id', session.user.id)
                 .single();
               
-              setHasProfile(profile && profile.name ? true : false);
+              setOnboardingCompleted(profile?.onboarding_completed || false);
             } catch (error) {
               console.error('Error checking profile:', error);
-              setHasProfile(false);
+              setOnboardingCompleted(false);
             } finally {
               setLoading(false);
             }
           }, 0);
         } else {
-          setHasProfile(false);
+          setOnboardingCompleted(false);
           setLoading(false);
         }
       }
@@ -73,14 +73,14 @@ const App = () => {
           try {
             const { data: profile } = await supabase
               .from('profiles')
-              .select('*')
+              .select('onboarding_completed')
               .eq('user_id', session.user.id)
               .single();
             
-            setHasProfile(profile && profile.name ? true : false);
+            setOnboardingCompleted(profile?.onboarding_completed || false);
           } catch (error) {
             console.error('Error checking profile:', error);
-            setHasProfile(false);
+            setOnboardingCompleted(false);
           } finally {
             setLoading(false);
           }
@@ -124,7 +124,7 @@ const App = () => {
     );
   }
 
-  if (!hasProfile) {
+  if (!onboardingCompleted) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>

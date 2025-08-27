@@ -5,9 +5,34 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Bell, Settings, User, LogOut } from 'lucide-react';
 import { mockUser } from '@/data/mockData';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const Navbar = () => {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      // Clean up any existing auth state
+      const existingKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('supabase.auth.') || key.includes('sb-')
+      );
+      existingKeys.forEach(key => localStorage.removeItem(key));
+      
+      // Attempt global sign out
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      toast.success('Logged out successfully');
+      
+      // Force page reload to ensure clean state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Error logging out');
+      // Even if logout fails, redirect to auth
+      window.location.href = '/';
+    }
+  };
 
   return (
     <nav className="bg-card/95 backdrop-blur-md sticky top-0 z-50 border-b border-border/50">
@@ -73,7 +98,7 @@ export const Navbar = () => {
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start text-destructive hover:text-destructive"
-                  onClick={() => navigate('/auth')}
+                  onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
