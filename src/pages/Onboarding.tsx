@@ -485,52 +485,54 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="max-w-sm mx-auto">
+          <div className="max-w-lg mx-auto">
             <Card className="border border-border bg-card shadow-sm">
-              <CardContent className="px-6 py-8">
-                <div className="space-y-6 text-center">
-                  {/* Purple briefcase icon */}
-                  <div className="flex justify-center">
-                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                      <Briefcase className="h-6 w-6 text-primary-foreground" />
-                    </div>
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <Briefcase className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  
-                  {/* Title and description */}
-                  <div className="space-y-4">
-                    <h1 className="text-xl font-semibold text-foreground">Welcome to ShonaCoin</h1>
-                    <p className="text-sm text-muted-foreground leading-relaxed px-2">
-                      The best tool that helps fulfill your prime timelines in any way possible. 
-                      Match with, invest, track, valuate and follow up with any prime timeline.
-                    </p>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Welcome to ShonaCoin
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  Complete your profile to get started with timeline management
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
                   </div>
-                  
-                  {/* Error message */}
-                  {error && (
-                    <Alert className="text-left">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {/* Email input section */}
-                  <div className="space-y-2 text-left">
-                    <label className="text-sm font-medium text-foreground">Email Address</label>
-                    <Input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={data.email}
-                      onChange={(e) => {
-                        setData({...data, email: e.target.value});
-                        setError('');
-                      }}
-                      className="h-10 text-sm"
-                    />
-                  </div>
-                  
-                  {/* Security note */}
-                  <div className="flex items-center justify-center gap-1 pt-2">
-                    <span className="text-xs">🔒</span>
-                    <span className="text-xs text-muted-foreground">Secure / No passwords required</span>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                {/* Error display */}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Email input section */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Email Address</label>
+                  <Input
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={data.email}
+                    onChange={(e) => {
+                      setData({...data, email: e.target.value});
+                      setError('');
+                    }}
+                    className="h-11"
+                  />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>🔒</span>
+                    <span>Secure / No passwords required</span>
                   </div>
                 </div>
               </CardContent>
@@ -540,335 +542,496 @@ export const Onboarding = () => {
 
       case 2:
         return (
-          <div className="space-y-6 text-center">
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Enter Verification Code</h2>
-              <p className="text-sm text-muted-foreground">
-                We've sent a 6-digit code to {data.email}
-              </p>
-            </div>
-            
-            {error && (
-              <Alert className="text-left">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-4">
-              <InputOTP
-                maxLength={6}
-                value={verificationCode}
-                onChange={(value) => setVerificationCode(value)}
-                disabled={timeLeft === 0}
-              >
-                <InputOTPGroup className="gap-2">
-                  <InputOTPSlot index={0} className="w-12 h-12" />
-                  <InputOTPSlot index={1} className="w-12 h-12" />
-                  <InputOTPSlot index={2} className="w-12 h-12" />
-                  <InputOTPSlot index={3} className="w-12 h-12" />
-                  <InputOTPSlot index={4} className="w-12 h-12" />
-                  <InputOTPSlot index={5} className="w-12 h-12" />
-                </InputOTPGroup>
-              </InputOTP>
-              
-              {timeLeft > 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Code expires in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-sm text-destructive font-medium">Code expired</p>
-                  <div className="flex gap-2 justify-center">
-                    <Button 
-                      variant="outline" 
-                      onClick={resendCode} 
-                      disabled={isSendingCode}
-                      className="text-sm"
-                    >
-                      {isSendingCode ? 'Sending...' : 'Resend Code'}
-                    </Button>
-                    <Button 
-                      variant="link" 
-                      onClick={changeEmail} 
-                      className="text-sm"
-                    >
-                      Change Email
-                    </Button>
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <Timer className="h-8 w-8 text-primary-foreground" />
                   </div>
                 </div>
-              )}
-            </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Email Verification
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  We've sent a 6-digit code to {data.email}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                {/* Error display */}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* OTP Input */}
+                <div className="space-y-4 text-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={verificationCode}
+                    onChange={(value) => setVerificationCode(value)}
+                    disabled={timeLeft === 0}
+                  >
+                    <InputOTPGroup className="gap-2">
+                      <InputOTPSlot index={0} className="w-12 h-12" />
+                      <InputOTPSlot index={1} className="w-12 h-12" />
+                      <InputOTPSlot index={2} className="w-12 h-12" />
+                      <InputOTPSlot index={3} className="w-12 h-12" />
+                      <InputOTPSlot index={4} className="w-12 h-12" />
+                      <InputOTPSlot index={5} className="w-12 h-12" />
+                    </InputOTPGroup>
+                  </InputOTP>
+                  
+                  {timeLeft > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Code expires in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-destructive font-medium">Code expired</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={resendCode} 
+                          disabled={isSendingCode}
+                          className="text-sm"
+                        >
+                          {isSendingCode ? 'Sending...' : 'Resend Code'}
+                        </Button>
+                        <Button 
+                          variant="link" 
+                          onClick={changeEmail} 
+                          className="text-sm"
+                        >
+                          Change Email
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 3:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">Profile Setup</h2>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name</label>
-                <Input
-                  placeholder="Alex Johnson"
-                  value={data.name}
-                  onChange={(e) => setData({...data, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Phone Number</label>
-                <Input
-                  placeholder="+1 (555) 123-4567"
-                  value={data.phone}
-                  onChange={(e) => setData({...data, phone: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Professional Role</label>
-                <Select value={data.role} onValueChange={(value) => {
-                  setData({...data, role: value});
-                  if (value === 'custom') {
-                    setCustomRole('');
-                  }
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {professionalRoles.map((role) => (
-                      <SelectItem key={role.toLowerCase().replace(/\s+/g, '-')} value={role.toLowerCase().replace(/\s+/g, '-')}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Other (Custom)</SelectItem>
-                  </SelectContent>
-                </Select>
-                {data.role === 'custom' && (
-                  <Input
-                    placeholder="Enter your custom role"
-                    value={customRole}
-                    onChange={(e) => {
-                      setCustomRole(e.target.value);
-                      setData({...data, role: e.target.value});
-                    }}
-                  />
-                )}
-              </div>
-            </div>
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <User className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Profile Setup
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  Tell us about yourself to complete your profile
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Full Name</label>
+                    <Input
+                      placeholder="Alex Johnson"
+                      value={data.name}
+                      onChange={(e) => setData({...data, name: e.target.value})}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Phone Number</label>
+                    <Input
+                      placeholder="+1 (555) 123-4567"
+                      value={data.phone}
+                      onChange={(e) => setData({...data, phone: e.target.value})}
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Professional Role</label>
+                    <Select value={data.role} onValueChange={(value) => {
+                      setData({...data, role: value});
+                      if (value === 'custom') {
+                        setCustomRole('');
+                      }
+                    }}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {professionalRoles.map((role) => (
+                          <SelectItem key={role.toLowerCase().replace(/\s+/g, '-')} value={role.toLowerCase().replace(/\s+/g, '-')}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Other (Custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {data.role === 'custom' && (
+                      <Input
+                        placeholder="Enter your custom role"
+                        value={customRole}
+                        onChange={(e) => {
+                          setCustomRole(e.target.value);
+                          setData({...data, role: e.target.value});
+                        }}
+                        className="h-11"
+                      />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 4:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">What types of contributions would you leverage or give?</h2>
-            <p className="text-sm text-muted-foreground text-center">Select categories and choose specific types (multi-select)</p>
-            <div className="space-y-3">
-              {contributionTypes.map((type) => {
-                const isExpanded = expandedCategories[type.id];
-                const selectedOptions = data.contributionTypes[type.id] || [];
-                const hasSelections = selectedOptions.length > 0;
-                
-                return (
-                  <div key={type.id} className="space-y-2">
-                    <Button
-                      variant={hasSelections ? "default" : "outline"}
-                      className="w-full justify-between h-auto p-4 text-left border-2 hover:border-primary"
-                      onClick={() => toggleCategoryExpansion(type.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{type.label}</span>
-                        {hasSelections && (
-                          <Badge variant="secondary" className="text-xs">
-                            {selectedOptions.length}
-                          </Badge>
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <DollarSign className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Contribution Types
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  What types of contributions would you leverage or give?
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="space-y-3">
+                  {contributionTypes.map((type) => {
+                    const isExpanded = expandedCategories[type.id];
+                    const selectedOptions = data.contributionTypes[type.id] || [];
+                    const hasSelections = selectedOptions.length > 0;
+                    
+                    return (
+                      <div key={type.id} className="space-y-2">
+                        <Button
+                          variant={hasSelections ? "default" : "outline"}
+                          className="w-full justify-between h-auto p-4 text-left border-2 hover:border-primary"
+                          onClick={() => toggleCategoryExpansion(type.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{type.label}</span>
+                            {hasSelections && (
+                              <Badge variant="secondary" className="text-xs">
+                                {selectedOptions.length}
+                              </Badge>
+                            )}
+                          </div>
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                        
+                        {isExpanded && (
+                          <div className="ml-4 space-y-2 p-3 border border-border rounded-lg bg-muted/20">
+                            {/* Predefined sub-options */}
+                            {type.subOptions.map((subOption) => (
+                              <div key={subOption} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`${type.id}-${subOption}`}
+                                  checked={selectedOptions.includes(subOption)}
+                                  onCheckedChange={() => toggleContributionSubOption(type.id, subOption)}
+                                />
+                                <label
+                                  htmlFor={`${type.id}-${subOption}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                >
+                                  {subOption}
+                                </label>
+                              </div>
+                            ))}
+                            
+                            {/* Custom sub-options that were added */}
+                            {selectedOptions
+                              .filter(option => !type.subOptions.includes(option))
+                              .map((customOption) => (
+                                <div key={customOption} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${type.id}-${customOption}`}
+                                    checked={true}
+                                    onCheckedChange={() => toggleContributionSubOption(type.id, customOption)}
+                                  />
+                                  <label
+                                    htmlFor={`${type.id}-${customOption}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer italic"
+                                  >
+                                    {customOption}
+                                  </label>
+                                </div>
+                              ))
+                            }
+                            
+                            {/* Add custom option */}
+                            <div className="flex items-center space-x-2 pt-2 border-t border-border">
+                              <Plus className="h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder={type.id === 'custom' ? "Add anything else that adds value" : "Add more"}
+                                value={newCustomOptions[type.id] || ''}
+                                onChange={(e) => setNewCustomOptions(prev => ({
+                                  ...prev,
+                                  [type.id]: e.target.value
+                                }))}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    addCustomSubOption(type.id);
+                                  }
+                                }}
+                                className="text-sm"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => addCustomSubOption(type.id)}
+                                disabled={!newCustomOptions[type.id]?.trim()}
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                    
-                    {isExpanded && (
-                      <div className="ml-4 space-y-2 p-3 border border-border rounded-lg bg-muted/20">
-                        {/* Predefined sub-options */}
-                        {type.subOptions.map((subOption) => (
-                          <div key={subOption} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${type.id}-${subOption}`}
-                              checked={selectedOptions.includes(subOption)}
-                              onCheckedChange={() => toggleContributionSubOption(type.id, subOption)}
-                            />
-                            <label
-                              htmlFor={`${type.id}-${subOption}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {subOption}
-                            </label>
-                          </div>
-                        ))}
-                        
-                        {/* Custom sub-options that were added */}
-                        {selectedOptions
-                          .filter(option => !type.subOptions.includes(option))
-                          .map((customOption) => (
-                            <div key={customOption} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`${type.id}-${customOption}`}
-                                checked={true}
-                                onCheckedChange={() => toggleContributionSubOption(type.id, customOption)}
-                              />
-                              <label
-                                htmlFor={`${type.id}-${customOption}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer italic"
-                              >
-                                {customOption}
-                              </label>
-                            </div>
-                          ))
-                        }
-                        
-                        {/* Add custom option */}
-                        <div className="flex items-center space-x-2 pt-2 border-t border-border">
-                          <Plus className="h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder={type.id === 'custom' ? "Add anything else that adds value" : "Add more"}
-                            value={newCustomOptions[type.id] || ''}
-                            onChange={(e) => setNewCustomOptions(prev => ({
-                              ...prev,
-                              [type.id]: e.target.value
-                            }))}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                addCustomSubOption(type.id);
-                              }
-                            }}
-                            className="text-sm"
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => addCustomSubOption(type.id)}
-                            disabled={!newCustomOptions[type.id]?.trim()}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 5:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">Prime Expectations & Goals</h2>
-            <p className="text-sm text-muted-foreground text-center">Select your main goals (multi-select)</p>
-            <div className="space-y-4 max-h-80 overflow-y-auto">
-              {primeExpectationGroups.map((group) => (
-                <div key={group.id} className="space-y-2">
-                  <div className="border-l-4 border-primary pl-3">
-                    <h4 className="font-medium text-sm">{group.title}</h4>
-                    {group.subtitle && (
-                      <p className="text-xs text-muted-foreground">{group.subtitle}</p>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 ml-4">
-                    {group.options.map((option) => (
-                      <Button
-                        key={option}
-                        variant={data.primeExpectations.includes(option) ? "default" : "outline"}
-                        className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
-                        onClick={() => toggleSelection(option, 'primeExpectations')}
-                      >
-                        {option}
-                      </Button>
-                    ))}
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <Target className="h-8 w-8 text-primary-foreground" />
                   </div>
                 </div>
-              ))}
-            </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Prime Expectations & Goals
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  Select your main goals for using ShonaCoin
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {primeExpectationGroups.map((group) => (
+                    <div key={group.id} className="space-y-2">
+                      <div className="border-l-4 border-primary pl-3">
+                        <h4 className="font-medium text-sm">{group.title}</h4>
+                        {group.subtitle && (
+                          <p className="text-xs text-muted-foreground">{group.subtitle}</p>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 ml-4">
+                        {group.options.map((option) => (
+                          <Button
+                            key={option}
+                            variant={data.primeExpectations.includes(option) ? "default" : "outline"}
+                            className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
+                            onClick={() => toggleSelection(option, 'primeExpectations')}
+                          >
+                            {option}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 6:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">Outcome Sharing</h2>
-            <p className="text-sm text-muted-foreground text-center">How would you like to share outcomes? (multi-select)</p>
-            <div className="grid grid-cols-1 gap-2">
-              {outcomeSharingOptions.map((option, index) => (
-                <Button
-                  key={option}
-                  variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                  className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
-                  onClick={() => toggleSelection(option, 'outcomeSharing')}
-                >
-                  <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
-                  {option}
-                </Button>
-              ))}
-            </div>
-            {data.outcomeSharing.includes('Custom') && (
-              <div className="mt-3">
-                <Input
-                  placeholder="Enter your custom outcome sharing option"
-                  value={data.customOutcomeSharing}
-                  onChange={(e) => setData({...data, customOutcomeSharing: e.target.value})}
-                />
-              </div>
-            )}
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Outcome Sharing
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  How would you like to share outcomes?
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {outcomeSharingOptions.map((option, index) => (
+                    <Button
+                      key={option}
+                      variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
+                      className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
+                      onClick={() => toggleSelection(option, 'outcomeSharing')}
+                    >
+                      <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+                {data.outcomeSharing.includes('Custom') && (
+                  <div className="mt-3">
+                    <Input
+                      placeholder="Enter your custom outcome sharing option"
+                      value={data.customOutcomeSharing}
+                      onChange={(e) => setData({...data, customOutcomeSharing: e.target.value})}
+                      className="h-11"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 7:
         return (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">Areas of Interest</h2>
-            <p className="text-sm text-muted-foreground text-center">Select your areas of interest (multi-select)</p>
-            <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
-              {interestAreas.map((area) => (
-                <Button
-                  key={area}
-                  variant={data.interestAreas.includes(area) ? "default" : "outline"}
-                  className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
-                  onClick={() => toggleSelection(area, 'interestAreas')}
-                >
-                  {area}
-                </Button>
-              ))}
-            </div>
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Areas of Interest
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  Select your areas of interest
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
+                  {interestAreas.map((area) => (
+                    <Button
+                      key={area}
+                      variant={data.interestAreas.includes(area) ? "default" : "outline"}
+                      className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
+                      onClick={() => toggleSelection(area, 'interestAreas')}
+                    >
+                      {area}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 8:
         return (
-          <div className="space-y-4">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="h-8 w-8 text-success" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Setup Complete!</h3>
-                <p className="text-sm text-muted-foreground">
-                  Your profile timeline has been created and you're ready to start using ShonaCoin.
-                </p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2">Summary:</h4>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>• {Object.values(data.contributionTypes).flat().length} contribution type(s) selected</p>
-                  <p>• {data.primeExpectations.length} prime expectation(s) chosen</p>
-                  <p>• {data.outcomeSharing.length} outcome sharing option(s)</p>
-                  <p>• {data.interestAreas.length} interest area(s) selected</p>
+          <div className="max-w-lg mx-auto">
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="text-center pb-6">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
                 </div>
-              </div>
-            </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Setup Complete!
+                </CardTitle>
+                <p className="text-muted-foreground mt-2">
+                  Your profile timeline has been created and you're ready to start using ShonaCoin
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Progress indicator */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Step {currentStep} of {steps.length}</span>
+                    <span>{Math.round(progress)}% complete</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h4 className="font-medium text-sm mb-3">Summary:</h4>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <p>• {Object.values(data.contributionTypes).flat().length} contribution type(s) selected</p>
+                    <p>• {data.primeExpectations.length} prime expectation(s) chosen</p>
+                    <p>• {data.outcomeSharing.length} outcome sharing option(s)</p>
+                    <p>• {data.interestAreas.length} interest area(s) selected</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -911,42 +1074,15 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <div className="p-4 sm:p-6">
-        <Card className="w-full max-w-2xl mx-auto">
-          <CardHeader>
-            <div className="text-center space-y-2 mb-6">
-              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto">
-                <Briefcase className="h-6 w-6 text-primary-foreground" />
-              </div>
-              {currentStep > 2 && (
-                <>
-                  <CardTitle className="text-xl sm:text-2xl">Setup Your Profile</CardTitle>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium">{steps[currentStep - 1]?.title}</p>
-                      <p className="text-xs text-muted-foreground">Step {currentStep} of {steps.length}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {Math.round(progress)}% Complete
-                    </Badge>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </>
-              )}
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4 pb-4">
-            {renderStep()}
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-background flex flex-col justify-center p-4">
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center">
+        {renderStep()}
       </div>
 
       {/* Footer with Navigation Buttons - Fixed at bottom */}
-      <div className="mt-auto p-4 bg-background/95 backdrop-blur-sm border-t sticky bottom-0">
-        <div className="w-full max-w-2xl mx-auto">
+      <div className="mt-8 p-4 bg-background/95 backdrop-blur-sm border-t sticky bottom-0">
+        <div className="w-full max-w-lg mx-auto">
           <div className="flex justify-between gap-3">
             <Button 
               variant="outline" 
