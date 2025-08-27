@@ -485,38 +485,56 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6 text-center">
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Welcome to ShonaCoin</h2>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                The best tool that helps fulfill your prime timelines in any way possible. 
-                Match with, invest, track, valuate and follow up with any prime timeline.
-              </p>
-            </div>
-            
-            {error && (
-              <Alert className="text-left">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-2 text-left">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input
-                type="email"
-                placeholder="Enter your email address"
-                value={data.email}
-                onChange={(e) => {
-                  setData({...data, email: e.target.value});
-                  setError(''); // Clear error when user starts typing
-                }}
-                className="text-center"
-              />
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 mt-4">
-              <span>🔒</span>
-              <span>Secure / No passwords required</span>
-            </div>
+          <div className="max-w-md mx-auto">
+            <Card className="border border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="space-y-6 text-center">
+                  {/* Purple briefcase icon */}
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                      <Briefcase className="h-8 w-8 text-primary-foreground" />
+                    </div>
+                  </div>
+                  
+                  {/* Title and description */}
+                  <div className="space-y-3">
+                    <h1 className="text-xl font-semibold text-foreground">Welcome to ShonaCoin</h1>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      The best tool that helps fulfill your prime timelines in any way possible. 
+                      Match with, invest, track, valuate and follow up with any prime timeline.
+                    </p>
+                  </div>
+                  
+                  {/* Error message */}
+                  {error && (
+                    <Alert className="text-left">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Email input section */}
+                  <div className="space-y-3 text-left">
+                    <label className="text-sm font-medium text-foreground">Email Address</label>
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={data.email}
+                      onChange={(e) => {
+                        setData({...data, email: e.target.value});
+                        setError('');
+                      }}
+                      className="h-11"
+                    />
+                  </div>
+                  
+                  {/* Security note */}
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <span>🔒</span>
+                    <span>Secure / No passwords required</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
