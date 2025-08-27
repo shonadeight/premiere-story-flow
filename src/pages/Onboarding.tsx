@@ -485,19 +485,19 @@ export const Onboarding = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-md mx-auto">
             <Card className="border border-border bg-card shadow-sm">
               <CardHeader className="text-center pb-6">
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                    <Briefcase className="h-8 w-8 text-primary-foreground" />
+                <div className="flex justify-center mb-6">
+                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                    <Briefcase className="h-6 w-6 text-primary-foreground" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-bold text-foreground">
+                <CardTitle className="text-xl font-semibold text-foreground mb-4">
                   Welcome to ShonaCoin
                 </CardTitle>
-                <p className="text-muted-foreground mt-2">
-                  Complete your profile to get started with timeline management
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  The best tool that helps fulfill your prime timelines in any way possible. Match with, invest, track, valuate and follow up with any prime timeline.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
