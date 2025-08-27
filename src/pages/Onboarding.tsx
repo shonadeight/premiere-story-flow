@@ -23,7 +23,9 @@ import {
   Timer,
   ChevronDown,
   ChevronUp,
-  Plus
+  Plus,
+  Gift,
+  Lock
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -489,51 +491,40 @@ export const Onboarding = () => {
             <Card className="border border-border bg-card shadow-sm">
               <CardHeader className="text-center pb-6">
                 <div className="flex justify-center mb-6">
-                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
-                    <Briefcase className="h-6 w-6 text-primary-foreground" />
+                  <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center">
+                    <Gift className="h-8 w-8 text-white" />
                   </div>
                 </div>
-                <CardTitle className="text-xl font-semibold text-foreground mb-4">
+                <CardTitle className="text-2xl font-bold text-foreground mb-4">
                   Welcome to ShonaCoin
                 </CardTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed px-4">
                   The best tool that helps fulfill your prime timelines in any way possible. Match with, invest, track, valuate and follow up with any prime timeline.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Progress indicator */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Step {currentStep} of {steps.length}</span>
-                    <span>{Math.round(progress)}% complete</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={data.email}
+                    onChange={(e) => setData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your email address"
+                    className="w-full"
+                    disabled={isCodeSent}
+                  />
                 </div>
-
-                {/* Error display */}
                 {error && (
                   <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                
-                {/* Email input section */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Email Address</label>
-                  <Input
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={data.email}
-                    onChange={(e) => {
-                      setData({...data, email: e.target.value});
-                      setError('');
-                    }}
-                    className="h-11"
-                  />
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>🔒</span>
-                    <span>Secure / No passwords required</span>
-                  </div>
+                <div className="flex items-center justify-center text-xs text-muted-foreground mt-6">
+                  <Lock className="h-3 w-3 mr-1" />
+                  <span>Secure / No passwords required</span>
                 </div>
               </CardContent>
             </Card>
