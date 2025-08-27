@@ -96,7 +96,7 @@ export const Dashboard = () => {
         { data: outcomeSharing },
         { data: interests }
       ] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('user_contribution_types').select('*').eq('user_id', user.id),
         supabase.from('user_expectations').select('*').eq('user_id', user.id),
         supabase.from('user_outcome_sharing').select('*').eq('user_id', user.id),
@@ -137,7 +137,7 @@ export const Dashboard = () => {
         </div>
         <Button 
           onClick={() => navigate('/create')}
-          className="w-full sm:w-auto bg-primary hover:bg-primary/90 border-0"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 border-0"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Timeline
@@ -336,7 +336,7 @@ export const Dashboard = () => {
                 variant={view === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('grid')}
-                className="h-8 px-3 bg-primary hover:bg-primary/90 border-0"
+                className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 border-0"
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
@@ -344,7 +344,7 @@ export const Dashboard = () => {
                 variant={view === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setView('list')}
-                className="h-8 px-3 bg-primary hover:bg-primary/90 border-0"
+                className="h-8 px-3 bg-primary text-primary-foreground hover:bg-primary/90 border-0"
               >
                 <List className="h-4 w-4" />
               </Button>

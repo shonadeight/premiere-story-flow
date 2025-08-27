@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,6 +179,7 @@ const interestAreas = [
 ];
 
 export const Onboarding = () => {
+  const navigate = useNavigate();
   // Always start from step 1 to ensure proper onboarding flow
   const [currentStep, setCurrentStep] = useState(1);
   const [customRole, setCustomRole] = useState('');
@@ -333,16 +335,40 @@ export const Onboarding = () => {
           return;
         }
 
-        // Save profile with explicit conflict resolution
-        const { error: profileError } = await supabase
+        // Check if profile exists and update or insert accordingly
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .upsert({
-            user_id: user.id,
-            email: user.email || data.email,
-            name: data.name,
-            phone: data.phone,
-            professional_role: data.role
-          });
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        let profileError;
+        if (existingProfile) {
+          // Update existing profile
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              email: user.email || data.email,
+              name: data.name,
+              phone: data.phone,
+              professional_role: data.role,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id);
+          profileError = error;
+        } else {
+          // Insert new profile
+          const { error } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email || data.email,
+              name: data.name,
+              phone: data.phone,
+              professional_role: data.role
+            });
+          profileError = error;
+        }
 
         if (profileError) {
           console.error('Error saving profile:', profileError);
@@ -421,7 +447,8 @@ export const Onboarding = () => {
         await Promise.all(insertPromises);
 
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
-        window.location.href = '/dashboard';
+        // Use navigate to redirect to Portfolio (which is actually the dashboard)
+        navigate('/');
       } catch (error) {
         console.error('Error completing onboarding:', error);
         toast.error("Failed to complete onboarding: " + (error as Error).message);
@@ -734,11 +761,11 @@ export const Onboarding = () => {
                     
                     return (
                       <div key={type.id} className="space-y-2">
-                        <Button
-                          variant={hasSelections ? "default" : "outline"}
-                          className="w-full justify-between h-auto p-4 text-left border-2 hover:border-primary"
-                          onClick={() => toggleCategoryExpansion(type.id)}
-                        >
+                         <Button
+                           variant={hasSelections ? "default" : "outline"}
+                           className="w-full justify-between h-auto p-4 text-left border-2 hover:border-border bg-primary text-primary-foreground hover:bg-primary/90"
+                           onClick={() => toggleCategoryExpansion(type.id)}
+                         >
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{type.label}</span>
                             {hasSelections && (
@@ -868,12 +895,12 @@ export const Onboarding = () => {
                       </div>
                       <div className="grid grid-cols-1 gap-2 ml-4">
                         {group.options.map((option) => (
-                          <Button
-                            key={option}
-                            variant={data.primeExpectations.includes(option) ? "default" : "outline"}
-                            className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
-                            onClick={() => toggleSelection(option, 'primeExpectations')}
-                          >
+                         <Button
+                           key={option}
+                           variant={data.primeExpectations.includes(option) ? "default" : "outline"}
+                           className="justify-start h-auto p-2 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                           onClick={() => toggleSelection(option, 'primeExpectations')}
+                         >
                             {option}
                           </Button>
                         ))}
@@ -915,12 +942,12 @@ export const Onboarding = () => {
 
                 <div className="grid grid-cols-1 gap-2">
                   {outcomeSharingOptions.map((option, index) => (
-                    <Button
-                      key={option}
-                      variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                      className="justify-start h-auto p-3 text-left border-2 hover:border-primary"
-                      onClick={() => toggleSelection(option, 'outcomeSharing')}
-                    >
+                     <Button
+                       key={option}
+                       variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
+                       className="justify-start h-auto p-3 text-left border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                       onClick={() => toggleSelection(option, 'outcomeSharing')}
+                     >
                       <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
                       {option}
                     </Button>
@@ -970,12 +997,12 @@ export const Onboarding = () => {
 
                 <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
                   {interestAreas.map((area) => (
-                    <Button
-                      key={area}
-                      variant={data.interestAreas.includes(area) ? "default" : "outline"}
-                      className="justify-start h-auto p-2 text-xs border-2 hover:border-primary"
-                      onClick={() => toggleSelection(area, 'interestAreas')}
-                    >
+                     <Button
+                       key={area}
+                       variant={data.interestAreas.includes(area) ? "default" : "outline"}
+                       className="justify-start h-auto p-2 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                       onClick={() => toggleSelection(area, 'interestAreas')}
+                     >
                       {area}
                     </Button>
                   ))}
