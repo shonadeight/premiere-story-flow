@@ -515,21 +515,21 @@ export const Onboarding = () => {
       case 1:
         return (
           <div className="max-w-md mx-auto">
-            <Card className="border border-border bg-card shadow-sm">
-              <CardHeader className="text-center pb-6">
+            <Card className="border border-border bg-card shadow-lg">
+              <CardHeader className="text-center pb-4">
                 <div className="flex justify-center mb-6">
                   <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center">
                     <Gift className="h-8 w-8 text-white" />
                   </div>
                 </div>
-                <CardTitle className="text-2xl font-bold text-foreground mb-4">
+                <CardTitle className="text-2xl font-bold text-foreground mb-3">
                   Welcome to ShonaCoin
                 </CardTitle>
-                <p className="text-sm text-muted-foreground leading-relaxed px-4">
+                <p className="text-sm text-muted-foreground leading-relaxed px-2">
                   The best tool that helps fulfill your prime timelines in any way possible. Match with, invest, track, valuate and follow up with any prime timeline.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 pt-0">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
                     Email Address
@@ -549,8 +549,8 @@ export const Onboarding = () => {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                <div className="flex items-center justify-center text-xs text-muted-foreground mt-6">
-                  <Lock className="h-3 w-3 mr-1" />
+                <div className="flex items-center justify-center text-xs text-muted-foreground pt-2">
+                  <Lock className="h-3 w-3 mr-1 text-orange-500" />
                   <span>Secure / No passwords required</span>
                 </div>
               </CardContent>
