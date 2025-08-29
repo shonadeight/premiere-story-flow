@@ -180,8 +180,8 @@ const interestAreas = [
 
 export const Onboarding = () => {
   const navigate = useNavigate();
-  // Always start from step 1 to ensure proper onboarding flow
   const [currentStep, setCurrentStep] = useState(1);
+  const [userChecked, setUserChecked] = useState(false);
   const [customRole, setCustomRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
@@ -204,6 +204,30 @@ export const Onboarding = () => {
     customContributionType: '',
     customOutcomeSharing: '',
   });
+
+  // Check if user is already logged in on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session?.user) {
+        // User is already logged in, check if they completed onboarding
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (profile?.onboarding_completed) {
+          // Already logged in and onboarded, redirect to dashboard
+          window.location.href = '/portfolio';
+          return;
+        }
+      }
+      setUserChecked(true);
+    };
+    
+    checkUser();
+  }, []);
 
   // Timer for verification code
   useEffect(() => {
@@ -233,6 +257,15 @@ export const Onboarding = () => {
     setError('');
     
     try {
+      // Check if this email has completed onboarding before
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('onboarding_completed, user_id')
+        .eq('email', data.email)
+        .limit(1);
+
+      const hasCompletedOnboarding = profiles && profiles.length > 0 && profiles[0].onboarding_completed;
+
       const { data: response, error } = await supabase.functions.invoke('send-verification-code', {
         body: { email: data.email }
       });
@@ -247,7 +280,13 @@ export const Onboarding = () => {
       if (response?.success) {
         setIsCodeSent(true);
         setTimeLeft(60);
-        toast.success('Verification code sent to your email');
+        
+        // If user has completed onboarding before, show different message
+        if (hasCompletedOnboarding) {
+          toast.success('Welcome back! Verification code sent to your email');
+        } else {
+          toast.success('Verification code sent to your email');
+        }
       } else {
         setError('Failed to send verification code. Please try again.');
         toast.error('Failed to send verification code');
@@ -286,8 +325,6 @@ export const Onboarding = () => {
       }
 
       if (response?.success) {
-        toast.success('Email verified successfully');
-        
         // Check if user is already onboarded
         if (response.user) {
           const { data: profile } = await supabase
@@ -298,13 +335,14 @@ export const Onboarding = () => {
           
           if (profile?.onboarding_completed) {
             // User is already onboarded, go straight to dashboard
-            toast.success('Welcome back!');
+            toast.success('Welcome back! Redirecting to dashboard...');
             window.location.href = '/portfolio';
             return;
           }
         }
         
         // New user or incomplete onboarding, continue to profile setup
+        toast.success('Email verified successfully');
         setCurrentStep(3);
       } else {
         setError('Invalid or expired verification code');
@@ -349,7 +387,8 @@ export const Onboarding = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          toast.error("Please log in to complete onboarding");
+          setError("Authentication required to complete onboarding");
+          toast.error("Authentication required to complete onboarding");
           return;
         }
 
@@ -1118,6 +1157,15 @@ export const Onboarding = () => {
     if (currentStep === steps.length) return isSubmitting ? 'Completing Setup...' : 'Complete Setup';
     return 'Next';
   };
+
+  // Don't render until we've checked if user is already logged in
+  if (!userChecked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center p-4">

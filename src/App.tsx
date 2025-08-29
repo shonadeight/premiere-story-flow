@@ -107,8 +107,26 @@ const App = () => {
     );
   }
 
-  // Always show onboarding if not completed or not authenticated
-  if (!user || !session || !onboardingCompleted) {
+  // Handle different authentication scenarios
+  if (!user || !session) {
+    // Not logged in - show onboarding/login
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="*" element={<Onboarding />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  // User is logged in but hasn't completed onboarding
+  if (!onboardingCompleted) {
     return (
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
