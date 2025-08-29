@@ -387,10 +387,8 @@ export const Onboarding = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          // If no user is authenticated at this point, there's a flow issue
-          // Instead of blocking, redirect to start the flow again
-          console.warn("No authenticated user during onboarding completion");
-          window.location.href = '/onboarding';
+          console.error("No authenticated user during onboarding completion");
+          toast.error("Authentication error. Please refresh and try again.");
           return;
         }
 
