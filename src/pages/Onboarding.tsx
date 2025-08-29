@@ -645,19 +645,19 @@ export const Onboarding = () => {
                     <div className="space-y-2">
                       <p className="text-sm text-destructive font-medium">Code expired</p>
                       <div className="flex gap-2 justify-center">
-                        <Button 
-                          variant="outline" 
-                          onClick={resendCode} 
-                          disabled={isSendingCode}
-                          className="text-sm"
-                        >
-                          {isSendingCode ? 'Sending...' : 'Resend Code'}
-                        </Button>
-                        <Button 
-                          variant="link" 
-                          onClick={changeEmail} 
-                          className="text-sm"
-                        >
+                         <Button 
+                           variant="secondary" 
+                           onClick={resendCode} 
+                           disabled={isSendingCode}
+                           className="text-sm"
+                         >
+                           {isSendingCode ? 'Sending...' : 'Resend Code'}
+                         </Button>
+                         <Button 
+                           variant="ghost" 
+                           onClick={changeEmail} 
+                           className="text-sm"
+                         >
                           Change Email
                         </Button>
                       </div>
@@ -788,9 +788,9 @@ export const Onboarding = () => {
                     
                     return (
                       <div key={type.id} className="space-y-2">
-                         <Button
-                           variant={hasSelections ? "default" : "outline"}
-                           className="w-full justify-between h-auto p-5 text-left border-2 hover:border-border bg-primary text-primary-foreground hover:bg-primary/90"
+                          <Button
+                           variant={hasSelections ? "secondary" : "outline"}
+                           className="w-full justify-between h-auto p-5 text-left"
                            onClick={() => toggleCategoryExpansion(type.id)}
                          >
                           <div className="flex items-center gap-2">
@@ -864,14 +864,14 @@ export const Onboarding = () => {
                                 }}
                                 className="text-sm"
                               />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => addCustomSubOption(type.id)}
-                                disabled={!newCustomOptions[type.id]?.trim()}
-                              >
-                                Add
-                              </Button>
+                               <Button
+                                 size="sm"
+                                 variant="secondary"
+                                 onClick={() => addCustomSubOption(type.id)}
+                                 disabled={!newCustomOptions[type.id]?.trim()}
+                               >
+                                 Add
+                               </Button>
                             </div>
                           </div>
                         )}
@@ -922,12 +922,12 @@ export const Onboarding = () => {
                       </div>
                       <div className="grid grid-cols-1 gap-2 ml-4">
                         {group.options.map((option) => (
-                          <Button
-                           key={option}
-                           variant={data.primeExpectations.includes(option) ? "default" : "outline"}
-                           className="justify-start h-auto p-3 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
-                           onClick={() => toggleSelection(option, 'primeExpectations')}
-                         >
+                           <Button
+                            key={option}
+                            variant={data.primeExpectations.includes(option) ? "secondary" : "outline"}
+                            className="justify-start h-auto p-3 text-xs"
+                            onClick={() => toggleSelection(option, 'primeExpectations')}
+                          >
                             {option}
                           </Button>
                         ))}
@@ -969,12 +969,12 @@ export const Onboarding = () => {
 
                 <div className="grid grid-cols-1 gap-2">
                   {outcomeSharingOptions.map((option, index) => (
-                     <Button
-                       key={option}
-                       variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                       className="justify-start h-auto p-4 text-left border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
-                       onClick={() => toggleSelection(option, 'outcomeSharing')}
-                     >
+                      <Button
+                        key={option}
+                        variant={data.outcomeSharing.includes(option) ? "secondary" : "outline"}
+                        className="justify-start h-auto p-4 text-left"
+                        onClick={() => toggleSelection(option, 'outcomeSharing')}
+                      >
                       <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
                       {option}
                     </Button>
@@ -1024,12 +1024,12 @@ export const Onboarding = () => {
 
                 <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
                   {interestAreas.map((area) => (
-                     <Button
-                       key={area}
-                       variant={data.interestAreas.includes(area) ? "default" : "outline"}
-                       className="justify-start h-auto p-3 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
-                       onClick={() => toggleSelection(area, 'interestAreas')}
-                     >
+                      <Button
+                        key={area}
+                        variant={data.interestAreas.includes(area) ? "secondary" : "outline"}
+                        className="justify-start h-auto p-3 text-xs"
+                        onClick={() => toggleSelection(area, 'interestAreas')}
+                      >
                       {area}
                     </Button>
                   ))}
@@ -1129,22 +1129,22 @@ export const Onboarding = () => {
       <div className="mt-8 p-4 bg-background/95 backdrop-blur-sm border-t sticky bottom-0">
         <div className="w-full max-w-lg mx-auto">
           <div className="flex justify-between gap-3">
-            <Button 
-              variant="outline" 
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="text-sm sm:text-base">Previous</span>
-            </Button>
-            
-            <Button 
-              onClick={handleNext}
-              disabled={!canProceed() || isSubmitting || isVerifying || isSendingCode}
-              variant="premium"
-              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation font-semibold"
-            >
+             <Button 
+               variant="secondary" 
+               onClick={handlePrevious}
+               disabled={currentStep === 1}
+               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
+             >
+               <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+               <span className="text-sm sm:text-base">Previous</span>
+             </Button>
+             
+             <Button 
+               onClick={handleNext}
+               disabled={!canProceed() || isSubmitting || isVerifying || isSendingCode}
+               variant="secondary"
+               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
+             >
               <span className="text-sm sm:text-base">{getButtonText()}</span>
               <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
             </Button>
