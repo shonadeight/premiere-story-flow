@@ -287,6 +287,24 @@ export const Onboarding = () => {
 
       if (response?.success) {
         toast.success('Email verified successfully');
+        
+        // Check if user is already onboarded
+        if (response.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('user_id', response.user.id)
+            .single();
+          
+          if (profile?.onboarding_completed) {
+            // User is already onboarded, go straight to dashboard
+            toast.success('Welcome back!');
+            window.location.href = '/portfolio';
+            return;
+          }
+        }
+        
+        // New user or incomplete onboarding, continue to profile setup
         setCurrentStep(3);
       } else {
         setError('Invalid or expired verification code');
