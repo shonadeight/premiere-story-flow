@@ -384,11 +384,42 @@ export const Onboarding = () => {
       // Complete onboarding and save to database
       setIsSubmitting(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // Try multiple methods to get the authenticated user
+        let user = null;
+        
+        // Method 1: Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (session?.user) {
+          user = session.user;
+        }
+        
+        // Method 2: Fallback to getUser if session doesn't have user
+        if (!user) {
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+          if (authUser) {
+            user = authUser;
+          }
+        }
         
         if (!user) {
           console.error("No authenticated user during onboarding completion");
-          toast.error("Authentication error. Please refresh and try again.");
+          // Instead of showing error, try to refresh the auth session
+          try {
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshedSession?.user) {
+              user = refreshedSession.user;
+            }
+          } catch (refreshError) {
+            console.error("Failed to refresh session:", refreshError);
+          }
+        }
+        
+        if (!user) {
+          console.error("Still no authenticated user after refresh attempts");
+          toast.error("Session expired. Please start the verification process again.");
+          setCurrentStep(1);
+          setIsCodeSent(false);
+          setVerificationCode('');
           return;
         }
 
