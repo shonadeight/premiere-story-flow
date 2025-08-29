@@ -789,8 +789,8 @@ export const Onboarding = () => {
                     return (
                       <div key={type.id} className="space-y-2">
                          <Button
-                           variant="outline"
-                           className="w-full justify-between h-auto p-5 text-left border border-border bg-background text-foreground hover:bg-background"
+                           variant={hasSelections ? "default" : "outline"}
+                           className="w-full justify-between h-auto p-5 text-left border-2 hover:border-border bg-primary text-primary-foreground hover:bg-primary/90"
                            onClick={() => toggleCategoryExpansion(type.id)}
                          >
                           <div className="flex items-center gap-2">
@@ -924,8 +924,8 @@ export const Onboarding = () => {
                         {group.options.map((option) => (
                           <Button
                            key={option}
-                           variant="outline"
-                           className="justify-start h-auto p-3 text-xs border border-border bg-background text-foreground hover:bg-background"
+                           variant={data.primeExpectations.includes(option) ? "default" : "outline"}
+                           className="justify-start h-auto p-3 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
                            onClick={() => toggleSelection(option, 'primeExpectations')}
                          >
                             {option}
@@ -971,8 +971,8 @@ export const Onboarding = () => {
                   {outcomeSharingOptions.map((option, index) => (
                      <Button
                        key={option}
-                       variant="outline"
-                       className="justify-start h-auto p-4 text-left border border-border bg-background text-foreground hover:bg-background"
+                       variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
+                       className="justify-start h-auto p-4 text-left border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
                        onClick={() => toggleSelection(option, 'outcomeSharing')}
                      >
                       <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
@@ -1026,8 +1026,8 @@ export const Onboarding = () => {
                   {interestAreas.map((area) => (
                      <Button
                        key={area}
-                       variant="outline"
-                       className="justify-start h-auto p-3 text-xs border border-border bg-background text-foreground hover:bg-background"
+                       variant={data.interestAreas.includes(area) ? "default" : "outline"}
+                       className="justify-start h-auto p-3 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
                        onClick={() => toggleSelection(area, 'interestAreas')}
                      >
                       {area}
