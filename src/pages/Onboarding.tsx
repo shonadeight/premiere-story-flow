@@ -649,14 +649,14 @@ export const Onboarding = () => {
                            variant="secondary" 
                            onClick={resendCode} 
                            disabled={isSendingCode}
-                           className="text-sm"
+                           className="text-sm hover:bg-secondary hover:text-secondary-foreground"
                          >
                            {isSendingCode ? 'Sending...' : 'Resend Code'}
                          </Button>
                          <Button 
                            variant="ghost" 
                            onClick={changeEmail} 
-                           className="text-sm"
+                           className="text-sm hover:bg-accent hover:text-accent-foreground"
                          >
                           Change Email
                         </Button>
@@ -790,7 +790,7 @@ export const Onboarding = () => {
                       <div key={type.id} className="space-y-2">
                           <Button
                            variant={hasSelections ? "secondary" : "outline"}
-                           className="w-full justify-between h-auto p-5 text-left"
+                           className={`w-full justify-between h-auto p-5 text-left ${hasSelections ? 'hover:bg-secondary hover:text-secondary-foreground' : 'hover:bg-background hover:text-foreground'}`}
                            onClick={() => toggleCategoryExpansion(type.id)}
                          >
                           <div className="flex items-center gap-2">
@@ -869,6 +869,7 @@ export const Onboarding = () => {
                                  variant="secondary"
                                  onClick={() => addCustomSubOption(type.id)}
                                  disabled={!newCustomOptions[type.id]?.trim()}
+                                 className="hover:bg-secondary hover:text-secondary-foreground"
                                >
                                  Add
                                </Button>
@@ -925,7 +926,7 @@ export const Onboarding = () => {
                            <Button
                             key={option}
                             variant={data.primeExpectations.includes(option) ? "secondary" : "outline"}
-                            className="justify-start h-auto p-3 text-xs"
+                            className={`justify-start h-auto p-3 text-xs ${data.primeExpectations.includes(option) ? 'hover:bg-secondary hover:text-secondary-foreground' : 'hover:bg-background hover:text-foreground'}`}
                             onClick={() => toggleSelection(option, 'primeExpectations')}
                           >
                             {option}
@@ -972,7 +973,7 @@ export const Onboarding = () => {
                       <Button
                         key={option}
                         variant={data.outcomeSharing.includes(option) ? "secondary" : "outline"}
-                        className="justify-start h-auto p-4 text-left"
+                        className={`justify-start h-auto p-4 text-left ${data.outcomeSharing.includes(option) ? 'hover:bg-secondary hover:text-secondary-foreground' : 'hover:bg-background hover:text-foreground'}`}
                         onClick={() => toggleSelection(option, 'outcomeSharing')}
                       >
                       <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
@@ -1027,7 +1028,7 @@ export const Onboarding = () => {
                       <Button
                         key={area}
                         variant={data.interestAreas.includes(area) ? "secondary" : "outline"}
-                        className="justify-start h-auto p-3 text-xs"
+                        className={`justify-start h-auto p-3 text-xs ${data.interestAreas.includes(area) ? 'hover:bg-secondary hover:text-secondary-foreground' : 'hover:bg-background hover:text-foreground'}`}
                         onClick={() => toggleSelection(area, 'interestAreas')}
                       >
                       {area}
@@ -1133,7 +1134,7 @@ export const Onboarding = () => {
                variant="secondary" 
                onClick={handlePrevious}
                disabled={currentStep === 1}
-               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
+               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation hover:bg-secondary hover:text-secondary-foreground"
              >
                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
                <span className="text-sm sm:text-base">Previous</span>
@@ -1143,7 +1144,7 @@ export const Onboarding = () => {
                onClick={handleNext}
                disabled={!canProceed() || isSubmitting || isVerifying || isSendingCode}
                variant="secondary"
-               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
+               className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation hover:bg-secondary hover:text-secondary-foreground"
              >
               <span className="text-sm sm:text-base">{getButtonText()}</span>
               <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
