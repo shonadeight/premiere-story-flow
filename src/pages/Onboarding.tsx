@@ -789,8 +789,8 @@ export const Onboarding = () => {
                     return (
                       <div key={type.id} className="space-y-2">
                          <Button
-                           variant={hasSelections ? "default" : "outline"}
-                           className="w-full justify-between h-auto p-4 text-left border-2 hover:border-border bg-primary text-primary-foreground hover:bg-primary/90"
+                           variant="outline"
+                           className="w-full justify-between h-auto p-5 text-left border border-border bg-background text-foreground hover:bg-background"
                            onClick={() => toggleCategoryExpansion(type.id)}
                          >
                           <div className="flex items-center gap-2">
@@ -809,7 +809,7 @@ export const Onboarding = () => {
                         </Button>
                         
                         {isExpanded && (
-                          <div className="ml-4 space-y-2 p-3 border border-border rounded-lg bg-muted/20">
+                          <div className="ml-4 space-y-2 p-4 border border-border rounded-lg bg-muted/10">
                             {/* Predefined sub-options */}
                             {type.subOptions.map((subOption) => (
                               <div key={subOption} className="flex items-center space-x-2">
@@ -922,10 +922,10 @@ export const Onboarding = () => {
                       </div>
                       <div className="grid grid-cols-1 gap-2 ml-4">
                         {group.options.map((option) => (
-                         <Button
+                          <Button
                            key={option}
-                           variant={data.primeExpectations.includes(option) ? "default" : "outline"}
-                           className="justify-start h-auto p-2 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                           variant="outline"
+                           className="justify-start h-auto p-3 text-xs border border-border bg-background text-foreground hover:bg-background"
                            onClick={() => toggleSelection(option, 'primeExpectations')}
                          >
                             {option}
@@ -971,8 +971,8 @@ export const Onboarding = () => {
                   {outcomeSharingOptions.map((option, index) => (
                      <Button
                        key={option}
-                       variant={data.outcomeSharing.includes(option) ? "default" : "outline"}
-                       className="justify-start h-auto p-3 text-left border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                       variant="outline"
+                       className="justify-start h-auto p-4 text-left border border-border bg-background text-foreground hover:bg-background"
                        onClick={() => toggleSelection(option, 'outcomeSharing')}
                      >
                       <span className="text-xs mr-2 text-muted-foreground">{String.fromCharCode(97 + index)})</span>
@@ -1026,8 +1026,8 @@ export const Onboarding = () => {
                   {interestAreas.map((area) => (
                      <Button
                        key={area}
-                       variant={data.interestAreas.includes(area) ? "default" : "outline"}
-                       className="justify-start h-auto p-2 text-xs border-2 bg-primary text-primary-foreground hover:bg-primary/90 hover:border-border"
+                       variant="outline"
+                       className="justify-start h-auto p-3 text-xs border border-border bg-background text-foreground hover:bg-background"
                        onClick={() => toggleSelection(area, 'interestAreas')}
                      >
                       {area}
@@ -1142,7 +1142,8 @@ export const Onboarding = () => {
             <Button 
               onClick={handleNext}
               disabled={!canProceed() || isSubmitting || isVerifying || isSendingCode}
-              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation"
+              variant="premium"
+              className="flex-1 sm:flex-none sm:min-w-[120px] touch-manipulation font-semibold"
             >
               <span className="text-sm sm:text-base">{getButtonText()}</span>
               <ArrowRight className="h-4 w-4 ml-1 sm:ml-2" />
