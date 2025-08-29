@@ -324,7 +324,13 @@ export const Onboarding = () => {
         return;
       }
 
-      if (response?.success) {
+      if (response?.success && response?.session) {
+        // Ensure the session is properly set in the client
+        await supabase.auth.setSession(response.session);
+        
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Check if user is already onboarded
         if (response.user) {
           const { data: profile } = await supabase
@@ -336,7 +342,9 @@ export const Onboarding = () => {
           if (profile?.onboarding_completed) {
             // User is already onboarded, go straight to dashboard
             toast.success('Welcome back! Redirecting to dashboard...');
-            window.location.href = '/portfolio';
+            setTimeout(() => {
+              window.location.href = '/portfolio';
+            }, 1000);
             return;
           }
         }
@@ -384,42 +392,42 @@ export const Onboarding = () => {
       // Complete onboarding and save to database
       setIsSubmitting(true);
       try {
-        // Try multiple methods to get the authenticated user
+        // Get the authenticated user with robust error handling
         let user = null;
+        let attempts = 0;
+        const maxAttempts = 3;
         
-        // Method 1: Get current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (session?.user) {
-          user = session.user;
-        }
-        
-        // Method 2: Fallback to getUser if session doesn't have user
-        if (!user) {
-          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-          if (authUser) {
-            user = authUser;
+        while (!user && attempts < maxAttempts) {
+          attempts++;
+          
+          // Try to get current session first
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            user = session.user;
+            break;
           }
-        }
-        
-        if (!user) {
-          console.error("No authenticated user during onboarding completion");
-          // Instead of showing error, try to refresh the auth session
-          try {
-            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-            if (refreshedSession?.user) {
-              user = refreshedSession.user;
+          
+          // If no session, try to refresh
+          if (attempts < maxAttempts) {
+            try {
+              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+              if (refreshedSession?.user) {
+                user = refreshedSession.user;
+                break;
+              }
+            } catch (refreshError) {
+              console.warn(`Refresh attempt ${attempts} failed:`, refreshError);
             }
-          } catch (refreshError) {
-            console.error("Failed to refresh session:", refreshError);
+            
+            // Wait before next attempt
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
         
         if (!user) {
-          console.error("Still no authenticated user after refresh attempts");
-          toast.error("Session expired. Please start the verification process again.");
-          setCurrentStep(1);
-          setIsCodeSent(false);
-          setVerificationCode('');
+          console.error("Unable to authenticate user after multiple attempts");
+          toast.error("Please complete email verification first.");
+          setCurrentStep(2);
           return;
         }
 
@@ -544,8 +552,11 @@ export const Onboarding = () => {
           .eq('user_id', user.id);
 
         toast.success('Welcome to ShonaCoin! Your profile has been created.');
-        // Force refresh to main app
-        window.location.href = '/portfolio';
+        
+        // Small delay to ensure the toast is visible before redirect
+        setTimeout(() => {
+          window.location.href = '/portfolio';
+        }, 1500);
       } catch (error) {
         console.error('Error completing onboarding:', error);
         toast.error("Failed to complete onboarding: " + (error as Error).message);
