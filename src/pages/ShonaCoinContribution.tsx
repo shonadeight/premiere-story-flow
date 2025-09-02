@@ -102,6 +102,10 @@ export function ShonaCoinContribution() {
       notes: string;
       gainPercentage: number;
       negotiationRequested: boolean;
+      amount?: string;
+      dates?: { start: string; end: string };
+      interestRate?: string;
+      expectedReturns?: string;
     }
   }>({});
 
@@ -322,7 +326,11 @@ export function ShonaCoinContribution() {
       valuationMethod: 'fixed',
       notes: '',
       gainPercentage: 0,
-      negotiationRequested: false
+      negotiationRequested: false,
+      amount: '',
+      dates: { start: '', end: '' },
+      interestRate: '',
+      expectedReturns: ''
     };
     
     const ConfigContent = (
@@ -361,10 +369,15 @@ export function ShonaCoinContribution() {
         <div>
           <Label className="text-sm font-medium">Custom Subtype (Optional)</Label>
           <Input 
-            placeholder="e.g., UX Case Study, Market Analysis..."
+            placeholder={type === 'intellectual' ? "e.g., UX Design Framework, Technical Analysis..." : "e.g., Custom contribution type..."}
             value={currentConfig.customSubtype}
             onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
           />
+          {currentConfig.customSubtype && (
+            <p className="text-xs text-green-600 mt-1">
+              ✓ Custom subtype "{currentConfig.customSubtype}" will be included
+            </p>
+          )}
         </div>
         
         {/* Valuation Section */}
@@ -374,11 +387,64 @@ export function ShonaCoinContribution() {
           <div>
             <Label>Contribution Value/Amount</Label>
             <Input 
-              placeholder="Enter monetary value or quantity"
+              placeholder={type === 'financial' ? "Enter monetary amount (e.g., $10,000)" : "Enter value or quantity"}
               value={currentConfig.value}
               onChange={(e) => updateTypeConfigField(type, 'value', e.target.value)}
             />
           </div>
+
+          {/* Financial-specific fields */}
+          {type === 'financial' && currentConfig.selectedSubtypes.length > 0 && (
+            <div className="space-y-3 p-3 border rounded-lg bg-blue-50">
+              <h5 className="font-medium text-sm">Financial Terms</h5>
+              
+              {currentConfig.selectedSubtypes.includes('debt') && (
+                <>
+                  <div>
+                    <Label className="text-xs">Interest Rate (%)</Label>
+                    <Input 
+                      placeholder="e.g., 5.5"
+                      value={currentConfig.interestRate}
+                      onChange={(e) => updateTypeConfigField(type, 'interestRate', e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Start Date</Label>
+                      <Input 
+                        type="date"
+                        value={currentConfig.dates?.start || ''}
+                        onChange={(e) => updateTypeConfigField(type, 'dates', { 
+                          ...currentConfig.dates, 
+                          start: e.target.value 
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">End Date</Label>
+                      <Input 
+                        type="date"
+                        value={currentConfig.dates?.end || ''}
+                        onChange={(e) => updateTypeConfigField(type, 'dates', { 
+                          ...currentConfig.dates, 
+                          end: e.target.value 
+                        })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div>
+                <Label className="text-xs">Expected Returns</Label>
+                <Input 
+                  placeholder="e.g., 15% annual return"
+                  value={currentConfig.expectedReturns}
+                  onChange={(e) => updateTypeConfigField(type, 'expectedReturns', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
           
           <div>
             <Label>Valuation Method</Label>
@@ -433,16 +499,31 @@ export function ShonaCoinContribution() {
       </div>
     );
 
-    if (isMobile) {
+    // Use full-screen overlay on smallest screens
+    const isVerySmallScreen = window.innerWidth < 480;
+    
+    if (isMobile || isVerySmallScreen) {
       return (
         <Drawer open={showTypeConfig === type} onOpenChange={() => setShowTypeConfig(null)}>
-          <DrawerContent>
+          <DrawerContent className={isVerySmallScreen ? "h-full" : ""}>
             <DrawerHeader>
-              <DrawerTitle>Configure {type} Contribution</DrawerTitle>
+              <DrawerTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DrawerTitle>
             </DrawerHeader>
-            <div className="p-4">
+            <ScrollArea className={`p-4 ${isVerySmallScreen ? "h-full" : ""}`}>
               {ConfigContent}
-            </div>
+              <div className="flex gap-2 mt-6 pb-4">
+                <Button onClick={() => setShowTypeConfig(null)} variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => saveTypeConfiguration(type)} 
+                  className="flex-1"
+                  disabled={!currentConfig.selectedSubtypes.length && !currentConfig.customSubtype.trim()}
+                >
+                  Save Configuration
+                </Button>
+              </div>
+            </ScrollArea>
           </DrawerContent>
         </Drawer>
       );
@@ -450,12 +531,12 @@ export function ShonaCoinContribution() {
 
     return showTypeConfig === type ? (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <Card className="w-full max-w-md max-h-[80vh] overflow-hidden">
+        <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
           <CardHeader>
-            <CardTitle>Configure {type} Contribution</CardTitle>
+            <CardTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="max-h-96">
+            <ScrollArea className="max-h-[70vh]">
               {ConfigContent}
             </ScrollArea>
             <div className="flex gap-2 mt-4">
@@ -465,7 +546,7 @@ export function ShonaCoinContribution() {
               <Button 
                 onClick={() => saveTypeConfiguration(type)} 
                 className="flex-1"
-                disabled={!currentConfig.selectedSubtypes.length && !currentConfig.customSubtype}
+                disabled={!currentConfig.selectedSubtypes.length && !currentConfig.customSubtype.trim()}
               >
                 Save Configuration
               </Button>
