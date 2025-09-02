@@ -172,12 +172,12 @@ export const TimelineDetail = () => {
             </div>
             <div className="flex flex-col gap-2 sm:min-w-[200px]">
               <Button 
-                onClick={handleInvest}
+                onClick={() => navigate(`/contribute/${id}`)}
                 size={isMobile ? "sm" : "default"}
                 className="w-full touch-manipulation"
               >
                 <DollarSign className="h-4 w-4 mr-2" />
-                Invest Now
+                Contribute
               </Button>
               <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                 <span>{timeline.investedMembers} investors</span>

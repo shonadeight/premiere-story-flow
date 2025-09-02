@@ -21,6 +21,7 @@ import { Marketplace } from "./pages/Marketplace";
 import { Train } from "./pages/Train";
 import { Settings } from "./pages/Settings";
 import { StatsBreakdown } from "./pages/StatsBreakdown";
+import { ShonaCoinContribution } from "./pages/ShonaCoinContribution";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -271,6 +272,7 @@ const App = () => {
               
               {/* Full screen pushed pages without navbar/bottomnav */}
               <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter ios-full-screen"><TimelineDetail /></div>} />
+              <Route path="/contribute/:timelineId" element={<div className="page-transition ios-push-enter ios-full-screen"><ShonaCoinContribution /></div>} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={

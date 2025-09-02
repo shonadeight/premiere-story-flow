@@ -3,7 +3,6 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -28,7 +27,6 @@ import { Timeline } from '@/types/timeline';
 import { TimelineEditModal } from './TimelineEditModal';
 import { useNavigate } from 'react-router-dom';
 import { ContributionBreakdown } from './ContributionBreakdown';
-import { ContributionFlow } from './ContributionFlow';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SubtimelinesModal } from './SubtimelinesModal';
 import { ImpactRatingModal } from './ImpactRatingModal';
@@ -46,7 +44,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showContribution, setShowContribution] = useState(false);
+  
   const [isLiked, setIsLiked] = useState(false);
   const [showSubtimelines, setShowSubtimelines] = useState(false);
   const [showImpactRating, setShowImpactRating] = useState(false);
@@ -332,65 +330,22 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
             </div>
 
             {/* Contribute Button */}
-            {isMobile ? (
-              <Drawer open={showContribution} onOpenChange={setShowContribution}>
-                <DrawerTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span className="text-xs">Contribute</span>
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[85vh]">
-                  <div className="overflow-y-auto p-4">
-                    <ContributionFlow 
-                      targetTimeline={timeline} 
-                      onComplete={(data) => {
-                        console.log('Contribution completed:', data);
-                        setShowContribution(false);
-                      }}
-                      onCancel={() => setShowContribution(false)}
-                    />
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            ) : (
-              <Button
-                variant="default"
-                size="sm"
-                className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowContribution(true);
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="text-xs">Contribute</span>
-              </Button>
-            )}
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `/contribute/${timeline.id}`;
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="text-xs">Contribute</span>
+            </Button>
           </div>
         </div>
       </CardFooter>
 
-      {/* Contribution Flow for Desktop */}
-      {!isMobile && showContribution && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowContribution(false)}>
-          <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto m-4" onClick={(e) => e.stopPropagation()}>
-            <ContributionFlow 
-              targetTimeline={timeline} 
-              onComplete={(data) => {
-                console.log('Contribution completed:', data);
-                setShowContribution(false);
-              }}
-              onCancel={() => setShowContribution(false)}
-            />
-          </div>
-        </div>
-      )}
       
       <TimelineEditModal
         open={showEditModal}
