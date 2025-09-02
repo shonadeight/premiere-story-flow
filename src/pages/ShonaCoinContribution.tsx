@@ -44,6 +44,8 @@ interface ContributionData {
   expectedOutcomes: {
     toGive: string[];
     toReceive: string[];
+    customToGive: string[];
+    customToReceive: string[];
   };
   contributionTypes: {
     financial: { enabled: boolean; subtypes: any[]; },
@@ -70,7 +72,12 @@ export function ShonaCoinContribution() {
   const [data, setData] = useState<ContributionData>({
     timeline: null,
     accessGranted: false,
-    expectedOutcomes: { toGive: [], toReceive: [] },
+    expectedOutcomes: { 
+      toGive: [], 
+      toReceive: [], 
+      customToGive: [], 
+      customToReceive: [] 
+    },
     contributionTypes: {
       financial: { enabled: false, subtypes: [] },
       intellectual: { enabled: false, subtypes: [] },
@@ -85,6 +92,7 @@ export function ShonaCoinContribution() {
   });
 
   const [showTypeConfig, setShowTypeConfig] = useState<string | null>(null);
+  const [newCustomOutcome, setNewCustomOutcome] = useState({ toGive: '', toReceive: '' });
 
   useEffect(() => {
     // Load timeline data
@@ -169,6 +177,32 @@ export function ShonaCoinContribution() {
         [type]: prev.expectedOutcomes[type].includes(outcome)
           ? prev.expectedOutcomes[type].filter(o => o !== outcome)
           : [...prev.expectedOutcomes[type], outcome]
+      }
+    }));
+  };
+
+  const handleAddCustomOutcome = (type: 'toGive' | 'toReceive') => {
+    const value = newCustomOutcome[type].trim();
+    if (value) {
+      const customKey = type === 'toGive' ? 'customToGive' : 'customToReceive';
+      setData(prev => ({
+        ...prev,
+        expectedOutcomes: {
+          ...prev.expectedOutcomes,
+          [customKey]: [...prev.expectedOutcomes[customKey], value]
+        }
+      }));
+      setNewCustomOutcome(prev => ({ ...prev, [type]: '' }));
+    }
+  };
+
+  const handleRemoveCustomOutcome = (index: number, type: 'toGive' | 'toReceive') => {
+    const customKey = type === 'toGive' ? 'customToGive' : 'customToReceive';
+    setData(prev => ({
+      ...prev,
+      expectedOutcomes: {
+        ...prev.expectedOutcomes,
+        [customKey]: prev.expectedOutcomes[customKey].filter((_, i) => i !== index)
       }
     }));
   };
@@ -373,6 +407,43 @@ export function ShonaCoinContribution() {
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Custom Outcomes Section */}
+                  {data.expectedOutcomes.toGive.includes('Custom option') && (
+                    <div className="mt-4 p-3 border rounded-lg bg-muted/30">
+                      <Label className="text-sm font-medium">Custom Outcomes to Give</Label>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="e.g., Brand visibility in local market"
+                            value={newCustomOutcome.toGive}
+                            onChange={(e) => setNewCustomOutcome(prev => ({ ...prev, toGive: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomOutcome('toGive')}
+                          />
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAddCustomOutcome('toGive')}
+                            disabled={!newCustomOutcome.toGive.trim()}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {data.expectedOutcomes.customToGive.map((custom, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-background rounded border">
+                            <span className="text-sm">{custom}</span>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleRemoveCustomOutcome(index, 'toGive')}
+                              className="h-6 w-6 p-0"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="toReceive" className="space-y-3">
@@ -388,6 +459,43 @@ export function ShonaCoinContribution() {
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Custom Outcomes Section */}
+                  {data.expectedOutcomes.toReceive.includes('Custom option') && (
+                    <div className="mt-4 p-3 border rounded-lg bg-muted/30">
+                      <Label className="text-sm font-medium">Custom Outcomes to Receive</Label>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="e.g., Beta testing feedback, Access to mentorship"
+                            value={newCustomOutcome.toReceive}
+                            onChange={(e) => setNewCustomOutcome(prev => ({ ...prev, toReceive: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomOutcome('toReceive')}
+                          />
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleAddCustomOutcome('toReceive')}
+                            disabled={!newCustomOutcome.toReceive.trim()}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {data.expectedOutcomes.customToReceive.map((custom, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-background rounded border">
+                            <span className="text-sm">{custom}</span>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              onClick={() => handleRemoveCustomOutcome(index, 'toReceive')}
+                              className="h-6 w-6 p-0"
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>
