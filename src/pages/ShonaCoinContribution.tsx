@@ -93,6 +93,17 @@ export function ShonaCoinContribution() {
 
   const [showTypeConfig, setShowTypeConfig] = useState<string | null>(null);
   const [newCustomOutcome, setNewCustomOutcome] = useState({ toGive: '', toReceive: '' });
+  const [typeConfigData, setTypeConfigData] = useState<{
+    [key: string]: {
+      selectedSubtypes: string[];
+      customSubtype: string;
+      value: string;
+      valuationMethod: string;
+      notes: string;
+      gainPercentage: number;
+      negotiationRequested: boolean;
+    }
+  }>({});
 
   useEffect(() => {
     // Load timeline data
@@ -220,38 +231,161 @@ export function ShonaCoinContribution() {
     }));
   };
 
+  const handleSubtypeToggle = (type: string, subtypeId: string) => {
+    setTypeConfigData(prev => {
+      const currentData = prev[type] || {
+        selectedSubtypes: [],
+        customSubtype: '',
+        value: '',
+        valuationMethod: 'fixed',
+        notes: '',
+        gainPercentage: 0,
+        negotiationRequested: false
+      };
+      
+      const updatedSubtypes = currentData.selectedSubtypes.includes(subtypeId)
+        ? currentData.selectedSubtypes.filter(s => s !== subtypeId)
+        : [...currentData.selectedSubtypes, subtypeId];
+        
+      return {
+        ...prev,
+        [type]: {
+          ...currentData,
+          selectedSubtypes: updatedSubtypes
+        }
+      };
+    });
+  };
+
+  const updateTypeConfigField = (type: string, field: string, value: any) => {
+    setTypeConfigData(prev => ({
+      ...prev,
+      [type]: {
+        ...(prev[type] || {
+          selectedSubtypes: [],
+          customSubtype: '',
+          value: '',
+          valuationMethod: 'fixed',
+          notes: '',
+          gainPercentage: 0,
+          negotiationRequested: false
+        }),
+        [field]: value
+      }
+    }));
+  };
+
+  const calculateGainPercentage = (type: string) => {
+    // Simple calculation based on expected outcomes
+    const totalOutcomes = data.expectedOutcomes.toReceive.length + data.expectedOutcomes.customToReceive.length;
+    const typeConfig = typeConfigData[type];
+    if (!typeConfig || !typeConfig.value) return 0;
+    
+    const basePercentage = Math.min(totalOutcomes * 2, 15); // Max 15%
+    const valueMultiplier = parseFloat(typeConfig.value) > 10000 ? 1.5 : 1;
+    return Math.round(basePercentage * valueMultiplier * 100) / 100;
+  };
+
+  const saveTypeConfiguration = (type: string) => {
+    const config = typeConfigData[type];
+    if (config && config.selectedSubtypes.length > 0) {
+      // Update gain percentage before saving
+      const gainPercentage = calculateGainPercentage(type);
+      updateTypeConfigField(type, 'gainPercentage', gainPercentage);
+      
+      setData(prev => ({
+        ...prev,
+        contributionTypes: {
+          ...prev.contributionTypes,
+          [type]: {
+            ...prev.contributionTypes[type],
+            subtypes: [config]
+          }
+        }
+      }));
+      
+      toast.success(`${type} contribution configured successfully!`);
+    }
+    setShowTypeConfig(null);
+  };
+
   const handleSubmit = () => {
     toast.success('Contribution submitted successfully!');
     navigate(`/timeline/${timelineId}`);
   };
 
   const renderTypeConfigModal = (type: string, subtypes: any[]) => {
+    const currentConfig = typeConfigData[type] || {
+      selectedSubtypes: [],
+      customSubtype: '',
+      value: '',
+      valuationMethod: 'fixed',
+      notes: '',
+      gainPercentage: 0,
+      negotiationRequested: false
+    };
+    
     const ConfigContent = (
       <div className="space-y-4">
-        <div className="grid gap-3">
-          {subtypes.map(subtype => (
-            <Card key={subtype.id} className="cursor-pointer hover:bg-muted/50">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{subtype.name}</h4>
-                    <p className="text-sm text-muted-foreground">{subtype.description}</p>
+        {/* Subtype Selection */}
+        <div>
+          <Label className="text-sm font-medium mb-3 block">Select Contribution Subtypes</Label>
+          <div className="grid gap-2">
+            {subtypes.map(subtype => (
+              <Card 
+                key={subtype.id} 
+                className={`cursor-pointer transition-colors ${
+                  currentConfig.selectedSubtypes.includes(subtype.id) 
+                    ? 'border-primary bg-primary/5' 
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => handleSubtypeToggle(type, subtype.id)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{subtype.name}</h4>
+                      <p className="text-sm text-muted-foreground">{subtype.description}</p>
+                    </div>
+                    <Checkbox 
+                      checked={currentConfig.selectedSubtypes.includes(subtype.id)}
+                    />
                   </div>
-                  <Checkbox />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Subtype */}
+        <div>
+          <Label className="text-sm font-medium">Custom Subtype (Optional)</Label>
+          <Input 
+            placeholder="e.g., UX Case Study, Market Analysis..."
+            value={currentConfig.customSubtype}
+            onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
+          />
         </div>
         
-        <div className="space-y-3">
+        {/* Valuation Section */}
+        <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+          <h4 className="font-medium">Valuation & Terms</h4>
+          
           <div>
-            <Label>Value/Amount</Label>
-            <Input placeholder="Enter value" />
+            <Label>Contribution Value/Amount</Label>
+            <Input 
+              placeholder="Enter monetary value or quantity"
+              value={currentConfig.value}
+              onChange={(e) => updateTypeConfigField(type, 'value', e.target.value)}
+            />
           </div>
+          
           <div>
             <Label>Valuation Method</Label>
-            <Select>
+            <Select 
+              value={currentConfig.valuationMethod}
+              onValueChange={(value) => updateTypeConfigField(type, 'valuationMethod', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select method" />
               </SelectTrigger>
@@ -259,12 +393,41 @@ export function ShonaCoinContribution() {
                 <SelectItem value="fixed">Fixed Value</SelectItem>
                 <SelectItem value="negotiable">Negotiable</SelectItem>
                 <SelectItem value="formula">Custom Formula</SelectItem>
+                <SelectItem value="market">Market Rate</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Gain Summary */}
+          {currentConfig.value && (
+            <div className="p-2 bg-green-50 border border-green-200 rounded">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Expected Gain %:</span>
+                <span className="text-green-600 font-bold">
+                  {calculateGainPercentage(type)}%
+                </span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                Based on your expected outcomes from Step 2
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              checked={currentConfig.negotiationRequested}
+              onCheckedChange={(checked) => updateTypeConfigField(type, 'negotiationRequested', checked)}
+            />
+            <Label className="text-sm">Request negotiation with timeline owner</Label>
+          </div>
+          
           <div>
             <Label>Additional Notes</Label>
-            <Textarea placeholder="Any additional details..." />
+            <Textarea 
+              placeholder="Any additional details, terms, or conditions..."
+              value={currentConfig.notes}
+              onChange={(e) => updateTypeConfigField(type, 'notes', e.target.value)}
+            />
           </div>
         </div>
       </div>
@@ -299,8 +462,12 @@ export function ShonaCoinContribution() {
               <Button onClick={() => setShowTypeConfig(null)} variant="outline" className="flex-1">
                 Cancel
               </Button>
-              <Button onClick={() => setShowTypeConfig(null)} className="flex-1">
-                Save
+              <Button 
+                onClick={() => saveTypeConfiguration(type)} 
+                className="flex-1"
+                disabled={!currentConfig.selectedSubtypes.length && !currentConfig.customSubtype}
+              >
+                Save Configuration
               </Button>
             </div>
           </CardContent>
@@ -504,57 +671,116 @@ export function ShonaCoinContribution() {
 
         {/* Step 3: Contribution Types */}
         {currentStep === 3 && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="h-5 w-5" />
-                  Select Contribution Types
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Configure Contribution Types & Subtypes
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Select multiple contribution types and configure their subtypes, valuation, and terms.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 {[
-                  { key: 'financial', name: 'Financial', icon: DollarSign, subtypes: financialSubtypes },
-                  { key: 'intellectual', name: 'Intellectual', icon: Brain, subtypes: intellectualSubtypes },
-                  { key: 'network', name: 'Network/Marketing', icon: Network, subtypes: networkSubtypes },
-                  { key: 'asset', name: 'Asset', icon: Building, subtypes: assetSubtypes }
-                ].map(({ key, name, icon: Icon, subtypes }) => (
-                  <Card key={key} className={`cursor-pointer transition-all ${
-                    data.contributionTypes[key as keyof typeof data.contributionTypes].enabled 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
-                  }`}>
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Icon className="h-5 w-5 text-primary" />
-                          <div>
-                            <h3 className="font-medium">{name}</h3>
-                            <p className="text-sm text-muted-foreground">{subtypes.length} options</p>
+                  { key: 'financial', icon: DollarSign, title: 'Financial', description: 'Cash, debt, pledge contributions' },
+                  { key: 'intellectual', icon: Brain, title: 'Intellectual', description: 'Ideas, research, consulting' },
+                  { key: 'network', icon: Network, title: 'Network & Marketing', description: 'Referrals, leads, traffic' },
+                  { key: 'asset', icon: Building, title: 'Asset', description: 'Equipment, property, digital assets' }
+                ].map(({ key, icon: Icon, title, description }) => {
+                  const isEnabled = data.contributionTypes[key as keyof typeof data.contributionTypes].enabled;
+                  const isConfigured = typeConfigData[key]?.selectedSubtypes?.length > 0 || typeConfigData[key]?.customSubtype;
+                  
+                  return (
+                    <Card 
+                      key={key} 
+                      className={`transition-colors ${
+                        isEnabled ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Icon className={`h-5 w-5 ${isEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-medium">{title}</h3>
+                                {isConfigured && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Configured
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{description}</p>
+                              
+                              {/* Show configuration summary */}
+                              {isEnabled && isConfigured && (
+                                <div className="mt-2 p-2 bg-background rounded border text-xs">
+                                  <div className="flex justify-between items-center">
+                                    <span>
+                                      {typeConfigData[key]?.selectedSubtypes?.length || 0} subtypes selected
+                                      {typeConfigData[key]?.customSubtype && ' + custom'}
+                                    </span>
+                                    {typeConfigData[key]?.value && (
+                                      <span className="font-medium">
+                                        Value: {typeConfigData[key].value}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {typeConfigData[key]?.gainPercentage > 0 && (
+                                    <div className="text-green-600 font-medium">
+                                      Expected gain: {typeConfigData[key].gainPercentage}%
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={isEnabled}
+                              onCheckedChange={() => handleContributionTypeToggle(key as keyof typeof data.contributionTypes)}
+                            />
+                            {isEnabled && (
+                              <Button
+                                size="sm"
+                                variant={isConfigured ? "default" : "outline"}
+                                onClick={() => setShowTypeConfig(key)}
+                              >
+                                {isConfigured ? 'Reconfigure' : 'Configure'}
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={data.contributionTypes[key as keyof typeof data.contributionTypes].enabled}
-                            onCheckedChange={() => handleContributionTypeToggle(key as keyof typeof data.contributionTypes)}
-                          />
-                          {data.contributionTypes[key as keyof typeof data.contributionTypes].enabled && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => setShowTypeConfig(key)}
-                            >
-                              Configure
-                            </Button>
-                          )}
-                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              
+              {/* Summary of selected types */}
+              <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium mb-2">Selected Contribution Types</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {Object.entries(data.contributionTypes).map(([type, config]) => (
+                    config.enabled && (
+                      <div key={type} className="flex items-center gap-2">
+                        <Check className="h-3 w-3 text-green-600" />
+                        <span className="capitalize">{type}</span>
+                        {typeConfigData[type]?.negotiationRequested && (
+                          <Badge variant="outline" className="text-xs">Negotiation</Badge>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                    )
+                  ))}
+                </div>
+                {Object.values(data.contributionTypes).every(config => !config.enabled) && (
+                  <p className="text-sm text-muted-foreground">No contribution types selected yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Step 4: Link Timelines */}
