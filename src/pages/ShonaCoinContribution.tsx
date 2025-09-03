@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import * as mockData from '@/data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -165,13 +166,14 @@ export function ShonaCoinContribution() {
       network: { enabled: false, subtypes: [] },
       asset: { enabled: false, subtypes: [] }
     },
-    linkedTimelines: [
-      { id: '1', name: 'Solar Energy Project', type: 'financial', value: '$25,000', percentage: 0, selected: false },
-      { id: '2', name: 'Marketing Campaign Q1', type: 'network', value: '$8,500', percentage: 0, selected: false },
-      { id: '3', name: 'Research & Development', type: 'intellectual', value: '$15,000', percentage: 0, selected: false },
-      { id: '4', name: 'Community Outreach', type: 'network', value: '$5,200', percentage: 0, selected: false },
-      { id: '5', name: 'Tech Infrastructure', type: 'asset', value: '$18,000', percentage: 0, selected: false },
-    ],
+    linkedTimelines: mockData.mockTimelines.map(timeline => ({
+      id: timeline.id,
+      name: timeline.title,
+      type: timeline.type,
+      value: `$${timeline.value.toLocaleString()}`,
+      percentage: 0,
+      selected: false
+    })),
     customInputs: {
       title: '',
       description: '',
