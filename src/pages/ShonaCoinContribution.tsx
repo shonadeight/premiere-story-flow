@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter } from '@/components/ui/drawer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
@@ -74,6 +74,8 @@ interface ContributionData {
   linkedTimelines: Array<{
     id: string;
     name: string;
+    type: string;
+    value: string;
     percentage: number;
     selected: boolean;
   }>;
@@ -142,7 +144,12 @@ export function ShonaCoinContribution() {
       network: { enabled: false, subtypes: [] },
       asset: { enabled: false, subtypes: [] }
     },
-    linkedTimelines: [],
+    linkedTimelines: [
+      { id: '1', name: 'Solar Energy Project', type: 'financial', value: '$25,000', percentage: 0, selected: false },
+      { id: '2', name: 'Marketing Campaign Q1', type: 'network', value: '$8,500', percentage: 0, selected: false },
+      { id: '3', name: 'Research & Development', type: 'intellectual', value: '$15,000', percentage: 0, selected: false },
+      { id: '4', name: 'Community Outreach', type: 'network', value: '$5,200', percentage: 0, selected: false },
+    ],
     customInputs: {
       title: '',
       description: '',
@@ -394,25 +401,103 @@ export function ShonaCoinContribution() {
   };
 
   const handleTimelineSelection = (timelineId: string) => {
-    setData(prev => ({
-      ...prev,
-      linkedTimelines: prev.linkedTimelines.map(t => 
+    setData(prev => {
+      const updatedLinkedTimelines = prev.linkedTimelines.map(t => 
         t.id === timelineId 
-          ? { ...t, selected: !t.selected }
+          ? { ...t, selected: !t.selected, percentage: t.selected ? 0 : t.percentage }
           : t
-      )
-    }));
+      );
+      
+      // Recalculate valuations when timeline selection changes
+      updateValuationsFromLinkedTimelines(updatedLinkedTimelines);
+      
+      return {
+        ...prev,
+        linkedTimelines: updatedLinkedTimelines
+      };
+    });
   };
 
   const updateTimelinePercentage = (timelineId: string, percentage: number) => {
-    setData(prev => ({
-      ...prev,
-      linkedTimelines: prev.linkedTimelines.map(t => 
+    // Validate percentage
+    if (percentage < 0 || percentage > 100) {
+      toast.error('Percentage must be between 0 and 100');
+      return;
+    }
+
+    setData(prev => {
+      const updatedLinkedTimelines = prev.linkedTimelines.map(t => 
         t.id === timelineId 
           ? { ...t, percentage }
           : t
-      )
-    }));
+      );
+      
+      // Validate total percentage doesn't exceed 100%
+      const totalPercentage = updatedLinkedTimelines
+        .filter(t => t.selected)
+        .reduce((sum, t) => sum + t.percentage, 0);
+      
+      if (totalPercentage > 100) {
+        toast.error('Total percentage allocation cannot exceed 100%');
+        return prev;
+      }
+      
+      // Recalculate valuations when percentages change
+      updateValuationsFromLinkedTimelines(updatedLinkedTimelines);
+      
+      return {
+        ...prev,
+        linkedTimelines: updatedLinkedTimelines
+      };
+    });
+  };
+
+  const updateValuationsFromLinkedTimelines = (linkedTimelines: any[]) => {
+    // Calculate additional value from linked timelines
+    const linkedValue = linkedTimelines
+      .filter(t => t.selected && t.percentage > 0)
+      .reduce((sum, t) => {
+        const timelineValue = parseFloat(t.value.replace(/[^0-9.]/g, '')) || 0;
+        return sum + (timelineValue * t.percentage / 100);
+      }, 0);
+
+    // Update contribution types valuations
+    setData(prev => {
+      const updatedContributionTypes = { ...prev.contributionTypes };
+      
+      Object.keys(updatedContributionTypes).forEach(type => {
+        if (updatedContributionTypes[type].subtypes.length > 0) {
+          updatedContributionTypes[type].subtypes = updatedContributionTypes[type].subtypes.map(subtype => ({
+            ...subtype,
+            linkedValue: linkedValue,
+            totalValue: (parseFloat(subtype.value.replace(/[^0-9.]/g, '')) || 0) + linkedValue
+          }));
+        }
+      });
+      
+      return {
+        ...prev,
+        contributionTypes: updatedContributionTypes
+      };
+    });
+  };
+
+  const getFilteredTimelines = () => {
+    // Filter timelines based on parent timeline restrictions
+    return data.linkedTimelines.filter(timeline => {
+      // Check if timeline matches search query
+      if (!timeline.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      // Check if timeline type is supported (if restrictions exist)
+      const allowedTypes = ['financial', 'intellectual', 'network', 'asset']; // From parent config
+      if (allowedTypes.length > 0 && !allowedTypes.includes(timeline.type.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
+    });
   };
 
   const handleFileUpload = (files: FileList | null) => {
@@ -488,6 +573,8 @@ export function ShonaCoinContribution() {
   const availableTimelines = mockTimelines.filter(t => t.id !== timelineId).map(t => ({
     id: t.id,
     name: t.title,
+    type: t.type.toLowerCase(),
+    value: `$${t.value.toLocaleString()}`,
     percentage: 0,
     selected: false
   }));
@@ -720,18 +807,19 @@ export function ShonaCoinContribution() {
   };
 
   const renderLinkedTimelinesModal = () => {
-    const filteredTimelines = data.linkedTimelines.filter(timeline =>
-      timeline.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredTimelines = getFilteredTimelines();
+    const selectedTimelines = filteredTimelines.filter(t => t.selected);
+    const totalPercentage = selectedTimelines.reduce((sum, t) => sum + t.percentage, 0);
+    const hasInvalidPercentage = totalPercentage > 100;
 
     const LinkedTimelinesContent = (
       <div className="space-y-4">
         <div>
-          <Label className="text-sm font-medium mb-2 block">Search Timelines</Label>
+          <Label className="text-sm font-medium mb-2 block">Search Timelines from Portfolio</Label>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search from your portfolio..."
+              placeholder="Search timeline names, types..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -739,46 +827,83 @@ export function ShonaCoinContribution() {
           </div>
         </div>
 
+        {selectedTimelines.length > 0 && (
+          <div className="bg-muted/30 p-3 rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Selected Timelines:</span>
+              <span className="text-sm">{selectedTimelines.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Total % Allocation:</span>
+              <span className={`text-sm font-medium ${hasInvalidPercentage ? 'text-destructive' : 'text-primary'}`}>
+                {totalPercentage}%
+              </span>
+            </div>
+            {hasInvalidPercentage && (
+              <div className="text-xs text-destructive">
+                ⚠️ Total percentage cannot exceed 100%
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          {filteredTimelines.map(timeline => (
-            <Card 
-              key={timeline.id}
-              className={`cursor-pointer transition-colors ${
-                timeline.selected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
-              }`}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={timeline.selected}
-                      onCheckedChange={() => handleTimelineSelection(timeline.id)}
-                    />
-                    <span className="font-medium">{timeline.name}</span>
-                  </div>
-                  {timeline.selected && (
-                    <div className="flex items-center space-x-2">
-                      <Label className="text-xs">%</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={timeline.percentage}
-                        onChange={(e) => updateTimelinePercentage(timeline.id, parseInt(e.target.value) || 0)}
-                        className="w-16 h-8 text-xs"
-                        placeholder="0"
+          {filteredTimelines.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No timelines found matching your search</p>
+            </div>
+          ) : (
+            filteredTimelines.map(timeline => (
+              <Card 
+                key={timeline.id}
+                className={`cursor-pointer transition-colors ${
+                  timeline.selected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                }`}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={timeline.selected}
+                        onCheckedChange={() => handleTimelineSelection(timeline.id)}
                       />
+                      <div className="flex-1">
+                        <div className="font-medium">{timeline.name}</div>
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <span className="capitalize">{timeline.type}</span>
+                          <span>•</span>
+                          <span>{timeline.value}</span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {timeline.selected && (
+                      <div className="flex items-center space-x-2">
+                        <Label className="text-xs text-muted-foreground">%</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={timeline.percentage}
+                          onChange={(e) => updateTimelinePercentage(timeline.id, parseInt(e.target.value) || 0)}
+                          className="w-16 h-8 text-xs"
+                          placeholder="0"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         <div className="flex gap-2">
           <Button 
-            onClick={() => setShowLinkedTimelines(false)}
+            onClick={() => {
+              setShowLinkedTimelines(false);
+              setSearchQuery('');
+            }}
             variant="outline"
             className="flex-1"
           >
@@ -786,10 +911,20 @@ export function ShonaCoinContribution() {
           </Button>
           <Button 
             onClick={() => {
+              if (hasInvalidPercentage) {
+                toast.error('Please adjust percentages to not exceed 100%');
+                return;
+              }
               setShowLinkedTimelines(false);
-              toast.success('Timeline linkages saved!');
+              setSearchQuery('');
+              toast.success(
+                selectedTimelines.length > 0 
+                  ? `${selectedTimelines.length} timeline(s) linked successfully!`
+                  : 'Timeline linkages saved!'
+              );
             }}
             className="flex-1"
+            disabled={hasInvalidPercentage}
           >
             Save Linkages
           </Button>
@@ -799,24 +934,36 @@ export function ShonaCoinContribution() {
 
     if (isMobile) {
       return (
-        <Drawer open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Link / Merge Timelines</DrawerTitle>
-            </DrawerHeader>
-            <div className="px-4 pb-4">
-              {LinkedTimelinesContent}
+        <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowLinkedTimelines(false);
+                  setSearchQuery('');
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="font-semibold">Link / Merge Timelines</h2>
             </div>
-          </DrawerContent>
-        </Drawer>
+            {LinkedTimelinesContent}
+          </div>
+        </div>
       );
     }
 
     return (
       <Dialog open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Link / Merge Timelines</DialogTitle>
+            <DialogDescription>
+              Select and configure timelines from your portfolio to link with this contribution. 
+              Set percentage allocations to dynamically update valuations.
+            </DialogDescription>
           </DialogHeader>
           {LinkedTimelinesContent}
         </DialogContent>
@@ -1245,6 +1392,57 @@ export function ShonaCoinContribution() {
               </CardContent>
             </Card>
             
+            {/* Linked Timelines Impact Summary */}
+            {data.linkedTimelines.some(t => t.selected && t.percentage > 0) && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-primary">
+                    <Link className="h-4 w-4" />
+                    Linked Timelines Impact
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {data.linkedTimelines.filter(t => t.selected && t.percentage > 0).map(timeline => {
+                      const timelineValue = parseFloat(timeline.value.replace(/[^0-9.]/g, '')) || 0;
+                      const contributionValue = timelineValue * timeline.percentage / 100;
+                      
+                      return (
+                        <div key={timeline.id} className="flex items-center justify-between p-2 bg-background rounded border">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{timeline.name}</div>
+                            <div className="text-xs text-muted-foreground capitalize">{timeline.type} • {timeline.value}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium text-sm">{timeline.percentage}%</div>
+                            <div className="text-xs text-primary">+${contributionValue.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t pt-2">
+                      <div className="flex items-center justify-between text-sm font-medium">
+                        <span>Total Additional Value:</span>
+                        <span className="text-primary">
+                          +${data.linkedTimelines
+                            .filter(t => t.selected && t.percentage > 0)
+                            .reduce((sum, t) => {
+                              const timelineValue = parseFloat(t.value.replace(/[^0-9.]/g, '')) || 0;
+                              return sum + (timelineValue * t.percentage / 100);
+                            }, 0)
+                            .toLocaleString()
+                          }
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This value is automatically added to your contribution valuations
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {showTypeConfig && renderTypeConfigModal(showTypeConfig, 
               showTypeConfig === 'financial' ? financialSubtypes :
               showTypeConfig === 'intellectual' ? intellectualSubtypes :
