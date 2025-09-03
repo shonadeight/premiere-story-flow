@@ -551,7 +551,7 @@ export function ShonaCoinContribution() {
                   </div>
                   <Checkbox 
                     checked={config.selectedSubtypes.includes(subtype.id)}
-                    onChange={() => {}}
+                    onCheckedChange={() => {}}
                   />
                 </div>
               </div>
@@ -582,7 +582,7 @@ export function ShonaCoinContribution() {
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border z-50">
               <SelectItem value="fixed">Fixed Amount</SelectItem>
               <SelectItem value="formula">Custom Formula</SelectItem>
               <SelectItem value="rule">Custom Rule</SelectItem>
@@ -721,15 +721,15 @@ export function ShonaCoinContribution() {
 
     if (isMobile) {
       return (
-        <Drawer open={showTypeConfig === type} onOpenChange={() => setShowTypeConfig(null)}>
-          <DrawerContent className="h-[90vh]">
-            <DrawerHeader>
+        <Drawer open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
+          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background">
+            <DrawerHeader className="border-b">
               <DrawerTitle>Configure Contribution</DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4">
+            <ScrollArea className="flex-1 px-4 py-6">
               <ConfigContent />
             </ScrollArea>
-            <DrawerFooter className="flex-row gap-2">
+            <DrawerFooter className="flex-row gap-2 border-t">
               <Button variant="outline" onClick={() => setShowTypeConfig(null)} className="flex-1">
                 Cancel
               </Button>
@@ -747,13 +747,15 @@ export function ShonaCoinContribution() {
     }
 
     return (
-      <Dialog open={showTypeConfig === type} onOpenChange={() => setShowTypeConfig(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+      <Dialog open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
+        <DialogContent className="max-w-3xl max-h-[95vh] overflow-hidden bg-background border-border">
           <DialogHeader>
             <DialogTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh]">
-            <ConfigContent />
+          <ScrollArea className="max-h-[75vh] pr-6">
+            <div className="space-y-6 pb-6">
+              <ConfigContent />
+            </div>
           </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTypeConfig(null)}>
