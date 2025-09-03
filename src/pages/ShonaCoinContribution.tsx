@@ -879,74 +879,154 @@ export function ShonaCoinContribution() {
     const totalPercentage = selectedTimelines.reduce((sum, t) => sum + t.percentage, 0);
 
     const TimelinesContent = () => (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Header Info */}
+        <div className="text-center pb-4 border-b">
+          <p className="text-sm text-muted-foreground">
+            Select timelines from your portfolio to link with this contribution. Linked timelines can contribute a percentage of their value to enhance your total contribution.
+          </p>
+        </div>
+
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search timelines..."
+            placeholder="Search by timeline name or type..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
+            className="pl-10 h-12"
           />
         </div>
 
         {/* Timeline List */}
-        <ScrollArea className="h-64">
-          <div className="space-y-2">
-            {filteredTimelines.map(timeline => (
-              <div 
-                key={timeline.id}
-                className={`p-3 border rounded-lg ${
-                  timeline.selected ? 'border-primary bg-primary/5' : 'border-border'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={timeline.selected}
-                      onCheckedChange={() => handleTimelineSelection(timeline.id)}
-                    />
-                    <div>
-                      <div className="font-medium">{timeline.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {timeline.type} • {timeline.value}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
+            <span>Available Timelines ({filteredTimelines.length})</span>
+            <span>Select & Set %</span>
+          </div>
+          
+          <ScrollArea className={`${isMobile ? 'h-64' : 'h-80'} pr-2`}>
+            <div className="space-y-3">
+              {filteredTimelines.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Search className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">No timelines found</p>
+                  <p className="text-sm text-muted-foreground">Try adjusting your search terms</p>
+                </div>
+              ) : (
+                filteredTimelines.map(timeline => (
+                  <div 
+                    key={timeline.id}
+                    className={`p-4 border-2 rounded-xl transition-all duration-200 ${
+                      timeline.selected 
+                        ? 'border-primary bg-primary/10 shadow-sm' 
+                        : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      {/* Timeline Header */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Checkbox
+                            checked={timeline.selected}
+                            onCheckedChange={() => handleTimelineSelection(timeline.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-foreground">{timeline.name}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {timeline.type}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              Current Value: {timeline.value}
+                            </div>
+                          </div>
+                        </div>
                       </div>
+                      
+                      {/* Percentage Input (shown when selected) */}
+                      {timeline.selected && (
+                        <div className="ml-7 space-y-2 pt-2 border-t border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Allocation Percentage</Label>
+                            <span className="text-xs text-muted-foreground">Max: 100%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={timeline.percentage || ''}
+                              onChange={(e) => updateTimelinePercentage(timeline.id, parseFloat(e.target.value) || 0)}
+                              placeholder="0"
+                              className="h-10"
+                            />
+                            <span className="text-sm font-medium">%</span>
+                          </div>
+                          
+                          {timeline.percentage > 0 && (
+                            <div className="text-sm text-primary font-medium">
+                              Contribution: ${((parseFloat(timeline.value.replace(/[^0-9.]/g, '')) || 0) * timeline.percentage / 100).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <Badge variant="secondary">{timeline.type}</Badge>
-                </div>
-                
-                {timeline.selected && (
-                  <div className="space-y-2">
-                    <Label className="text-sm">Percentage Allocation (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={timeline.percentage}
-                      onChange={(e) => updateTimelinePercentage(timeline.id, parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-
-        {/* Summary */}
-        {selectedTimelines.length > 0 && (
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Selected Timelines: {selectedTimelines.length}</span>
-              <span className={`font-medium ${totalPercentage > 100 ? 'text-destructive' : 'text-primary'}`}>
-                Total: {totalPercentage}%
-              </span>
+                ))
+              )}
             </div>
+          </ScrollArea>
+        </div>
+
+        {/* Summary Section */}
+        {selectedTimelines.length > 0 && (
+          <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold flex items-center gap-2">
+                <BarChart className="h-4 w-4" />
+                Selection Summary
+              </h4>
+              <Badge variant={totalPercentage > 100 ? "destructive" : "secondary"}>
+                {selectedTimelines.length} selected
+              </Badge>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Total Allocation:</span>
+                <div className={`font-bold text-lg ${totalPercentage > 100 ? 'text-destructive' : 'text-primary'}`}>
+                  {totalPercentage}%
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Additional Value:</span>
+                <div className="font-bold text-lg text-green-600">
+                  ${selectedTimelines.reduce((sum, t) => {
+                    if (t.percentage > 0) {
+                      const value = parseFloat(t.value.replace(/[^0-9.]/g, '')) || 0;
+                      return sum + (value * t.percentage / 100);
+                    }
+                    return sum;
+                  }, 0).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            
             {totalPercentage > 100 && (
-              <div className="text-sm text-destructive">
-                Warning: Total percentage exceeds 100%
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <div className="flex items-center gap-2 text-destructive">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-sm font-medium">Warning: Total allocation exceeds 100%</span>
+                </div>
+                <p className="text-xs text-destructive/80 mt-1">
+                  Please adjust your percentages to stay within the allowed limits.
+                </p>
               </div>
             )}
           </div>
@@ -954,22 +1034,36 @@ export function ShonaCoinContribution() {
       </div>
     );
 
+    // Mobile Implementation with Bottom Drawer
     if (isMobile) {
       return (
         <Drawer open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-          <DrawerContent className="h-[80vh]">
-            <DrawerHeader>
-              <DrawerTitle>Link/Merge Timelines</DrawerTitle>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader className="text-left">
+              <DrawerTitle className="flex items-center gap-2">
+                <Link className="h-5 w-5" />
+                Link/Merge Timelines
+              </DrawerTitle>
             </DrawerHeader>
-            <div className="px-4 flex-1">
+            <div className="px-4 flex-1 overflow-hidden">
               <TimelinesContent />
             </div>
-            <DrawerFooter className="flex-row gap-2">
-              <Button variant="outline" onClick={() => setShowLinkedTimelines(false)} className="flex-1">
+            <DrawerFooter className="flex-row gap-3 px-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowLinkedTimelines(false)} 
+                className="flex-1"
+                disabled={totalPercentage > 100}
+              >
                 Cancel
               </Button>
-              <Button onClick={saveLinkedTimelines} className="flex-1">
-                Save
+              <Button 
+                onClick={saveLinkedTimelines} 
+                className="flex-1"
+                disabled={totalPercentage > 100}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Save Links
               </Button>
             </DrawerFooter>
           </DrawerContent>
@@ -977,19 +1071,33 @@ export function ShonaCoinContribution() {
       );
     }
 
+    // Desktop Implementation with Modal Dialog
     return (
       <Dialog open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Link/Merge Timelines</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Link/Merge Timelines
+            </DialogTitle>
           </DialogHeader>
-          <TimelinesContent />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLinkedTimelines(false)}>
+          <div className="flex-1 overflow-hidden">
+            <TimelinesContent />
+          </div>
+          <DialogFooter className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLinkedTimelines(false)}
+              disabled={totalPercentage > 100}
+            >
               Cancel
             </Button>
-            <Button onClick={saveLinkedTimelines}>
-              Save
+            <Button 
+              onClick={saveLinkedTimelines}
+              disabled={totalPercentage > 100}
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Save Links
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1393,68 +1501,186 @@ export function ShonaCoinContribution() {
 
       case 4: // Link Timelines
         return (
-          <Card>
+          <Card className="w-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Link className="h-5 w-5" />
                 Link/Merge Timelines
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Link other timelines from your portfolio to enhance this contribution's value.
+              <p className="text-sm text-muted-foreground">
+                Connect other timelines from your portfolio to enhance this contribution's value through strategic linking.
               </p>
-              
-              <Button 
-                onClick={() => setShowLinkedTimelines(true)}
-                className="w-full"
-              >
-                <Link className="h-4 w-4 mr-2" />
-                Select Timelines to Link
-              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Instructions */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-blue-500 text-white rounded-lg">
+                    <Link className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100">Timeline Linking Benefits</h4>
+                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                      <li>• Cross-timeline value amplification</li>
+                      <li>• Percentage-based contribution allocation</li>
+                      <li>• Dynamic valuation updates</li>
+                      <li>• Portfolio synergy enhancement</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Action Button */}
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => setShowLinkedTimelines(true)}
+                  className="w-full h-12 text-base font-medium"
+                  size="lg"
+                >
+                  <Link className="h-5 w-5 mr-2" />
+                  Select Timelines to Link
+                </Button>
+                
+                <p className="text-center text-sm text-muted-foreground">
+                  Choose from {data.linkedTimelines.length} available timelines in your portfolio
+                </p>
+              </div>
 
               {/* Linked Timelines Summary */}
               {data.linkedTimelines.some(t => t.selected) && (
-                <div className="space-y-3">
-                  <h4 className="font-medium">Linked Timelines Summary</h4>
-                  {data.linkedTimelines
-                    .filter(t => t.selected)
-                    .map(timeline => (
-                      <div key={timeline.id} className="p-3 border rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h5 className="font-medium">{timeline.name}</h5>
-                            <p className="text-sm text-muted-foreground">
-                              {timeline.type} • {timeline.value}
-                            </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Linked Timelines Summary
+                    </h4>
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {data.linkedTimelines.filter(t => t.selected).length} linked
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid gap-3">
+                    {data.linkedTimelines
+                      .filter(t => t.selected)
+                      .map(timeline => (
+                        <div key={timeline.id} className="p-4 border-2 border-primary/20 bg-primary/5 rounded-xl">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-semibold text-foreground">{timeline.name}</h5>
+                                <Badge variant="outline" className="text-xs">
+                                  {timeline.type}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Base Value: {timeline.value}
+                              </p>
+                            </div>
+                            <div className="flex flex-col sm:text-right gap-1">
+                              <div className="flex items-center gap-2 sm:justify-end">
+                                <Percent className="h-4 w-4 text-primary" />
+                                <span className="font-bold text-primary">{timeline.percentage}%</span>
+                                <span className="text-sm text-muted-foreground">allocation</span>
+                              </div>
+                              {timeline.percentage > 0 && (
+                                <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                                  +${((parseFloat(timeline.value.replace(/[^0-9.]/g, '')) || 0) * timeline.percentage / 100).toLocaleString()} contribution
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{timeline.percentage}%</div>
-                            <div className="text-xs text-muted-foreground">allocation</div>
+                          
+                          {/* Timeline Preview */}
+                          <div className="mt-3 pt-3 border-t border-primary/10">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Timeline Status: Active</span>
+                              <span>Last Updated: Today</span>
+                            </div>
                           </div>
                         </div>
-                        {timeline.percentage > 0 && (
-                          <div className="mt-2 text-sm text-primary">
-                            Additional value: ${((parseFloat(timeline.value.replace(/[^0-9.]/g, '')) || 0) * timeline.percentage / 100).toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                  </div>
                   
-                  <div className="p-3 bg-primary/5 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span>Total linked value:</span>
-                      <span className="font-medium">
-                        ${data.linkedTimelines
-                          .filter(t => t.selected && t.percentage > 0)
-                          .reduce((sum, t) => {
-                            const value = parseFloat(t.value.replace(/[^0-9.]/g, '')) || 0;
-                            return sum + (value * t.percentage / 100);
-                          }, 0)
-                          .toLocaleString()}
-                      </span>
+                  {/* Total Summary Card */}
+                  <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/20 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-lg">Total Linked Value</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary">
+                          ${data.linkedTimelines
+                            .filter(t => t.selected && t.percentage > 0)
+                            .reduce((sum, t) => {
+                              const value = parseFloat(t.value.replace(/[^0-9.]/g, '')) || 0;
+                              return sum + (value * t.percentage / 100);
+                            }, 0)
+                            .toLocaleString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          from {data.linkedTimelines.filter(t => t.selected).length} linked timeline(s)
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="mt-3">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Total Allocation</span>
+                        <span>{data.linkedTimelines.filter(t => t.selected).reduce((sum, t) => sum + t.percentage, 0)}%</span>
+                      </div>
+                      <Progress 
+                        value={data.linkedTimelines.filter(t => t.selected).reduce((sum, t) => sum + t.percentage, 0)} 
+                        className="h-2"
+                      />
                     </div>
                   </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowLinkedTimelines(true)}
+                      className="flex-1"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Links
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setData(prev => ({
+                          ...prev,
+                          linkedTimelines: prev.linkedTimelines.map(t => ({ ...t, selected: false, percentage: 0 }))
+                        }));
+                        toast.success('All timeline links cleared');
+                      }}
+                      className="flex-1"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty State */}
+              {!data.linkedTimelines.some(t => t.selected) && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Link className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h4 className="font-medium text-lg mb-2">No Timelines Linked Yet</h4>
+                  <p className="text-muted-foreground mb-4">
+                    Start by selecting timelines from your portfolio to amplify your contribution value.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowLinkedTimelines(true)}
+                  >
+                    Browse Available Timelines
+                  </Button>
                 </div>
               )}
             </CardContent>
