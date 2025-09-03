@@ -49,7 +49,9 @@ import {
   Trash2,
   Calculator,
   MessageSquare,
-  Handshake
+  Handshake,
+  CheckCircle,
+  TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -524,70 +526,117 @@ export function ShonaCoinContribution() {
 
     const ConfigContent = () => (
       <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">
-            Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution
-          </h3>
+        {/* Header Section */}
+        <div className="text-center md:text-left">
+          <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
+            {type === 'financial' && <DollarSign className="h-5 w-5 text-primary" />}
+            {type === 'intellectual' && <Brain className="h-5 w-5 text-primary" />}
+            {type === 'network' && <Network className="h-5 w-5 text-primary" />}
+            {type === 'asset' && <Building className="h-5 w-5 text-primary" />}
+            <h3 className="text-lg font-semibold">
+              {type.charAt(0).toUpperCase() + type.slice(1)} Contribution Options
+            </h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Select and configure your contribution subtypes below
+          </p>
         </div>
 
         {/* Subtypes Selection */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Select Subtypes</Label>
-          <div className="grid grid-cols-1 gap-2">
+        <div className="space-y-4">
+          <Label className="text-base font-medium flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Available Subtypes
+          </Label>
+          <div className="grid gap-3">
             {subtypes.map(subtype => (
               <div 
                 key={subtype.id}
-                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                className={`group relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
                   config.selectedSubtypes.includes(subtype.id) 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/50'
+                    ? 'border-primary bg-primary/5 shadow-sm' 
+                    : 'border-border hover:border-primary/50 hover:shadow-sm'
                 }`}
                 onClick={() => handleSubtypeToggle(type, subtype.id)}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{subtype.name}</div>
-                    <div className="text-sm text-muted-foreground">{subtype.description}</div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium text-base mb-1">{subtype.name}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">
+                      {subtype.description}
+                    </div>
                   </div>
-                  <Checkbox 
-                    checked={config.selectedSubtypes.includes(subtype.id)}
-                    onCheckedChange={() => handleSubtypeToggle(type, subtype.id)}
-                  />
+                  <div className="flex-shrink-0">
+                    <Checkbox 
+                      checked={config.selectedSubtypes.includes(subtype.id)}
+                      onCheckedChange={() => handleSubtypeToggle(type, subtype.id)}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                  </div>
                 </div>
+                {config.selectedSubtypes.includes(subtype.id) && (
+                  <div className="absolute top-2 right-2">
+                    <CheckCircle className="h-5 w-5 text-primary fill-current" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
 
         {/* Custom Subtype Input */}
-        {config.selectedSubtypes.includes('custom') && (
-          <div className="space-y-2">
-            <Label htmlFor="customSubtype">Custom Subtype</Label>
-            <Input
-              id="customSubtype"
-              placeholder="e.g., UX Design Framework"
-              value={config.customSubtype}
-              onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
-            />
-          </div>
-        )}
+        <div className="space-y-3">
+          <Label className="text-base font-medium flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Custom Subtype (Optional)
+          </Label>
+          <Input
+            placeholder="e.g., UX Design Framework, Patent Research, etc."
+            value={config.customSubtype}
+            onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
+            className="w-full"
+          />
+          <p className="text-xs text-muted-foreground">
+            Add your own contribution type if none of the above options fit your needs
+          </p>
+        </div>
 
         {/* Valuation Method */}
-        <div className="space-y-2">
-          <Label>Valuation Method</Label>
-          <Select 
-            value={config.valuationMethod} 
-            onValueChange={(value) => updateTypeConfigField(type, 'valuationMethod', value as 'fixed' | 'formula' | 'rule')}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-background border-border z-50">
-              <SelectItem value="fixed">Fixed Amount</SelectItem>
-              <SelectItem value="formula">Custom Formula</SelectItem>
-              <SelectItem value="rule">Custom Rule</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="space-y-4">
+          <Label className="text-base font-medium flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Valuation Method
+          </Label>
+          <div className="grid gap-3">
+            {[
+              { value: 'fixed', label: 'Fixed Amount', desc: 'Set a specific dollar amount' },
+              { value: 'formula', label: 'Custom Formula', desc: 'Use a calculation formula' },
+              { value: 'rule', label: 'Custom Rule', desc: 'Define custom valuation rules' }
+            ].map(method => (
+              <div 
+                key={method.value}
+                className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                  config.valuationMethod === method.value 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => updateTypeConfigField(type, 'valuationMethod', method.value as 'fixed' | 'formula' | 'rule')}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{method.label}</div>
+                    <div className="text-sm text-muted-foreground">{method.desc}</div>
+                  </div>
+                  <input
+                    type="radio"
+                    checked={config.valuationMethod === method.value}
+                    onChange={() => updateTypeConfigField(type, 'valuationMethod', method.value as 'fixed' | 'formula' | 'rule')}
+                    className="text-primary focus:ring-primary"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Value Input Based on Method */}
@@ -681,62 +730,97 @@ export function ShonaCoinContribution() {
           />
         </div>
 
-        {/* Gain Summary */}
-        {config.gainPercentage > 0 && (
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Percent className="h-4 w-4 text-primary" />
-              <span className="font-medium">Expected Gain Summary</span>
+        {/* Expected Gain Summary */}
+        <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-base">Expected Gain Summary</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Base contribution:</span>
+              <span className="font-medium">${config.totalValue?.toLocaleString() || '0'}</span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Based on parent timeline rate and your contribution: <strong>{config.gainPercentage}%</strong>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Expected return rate:</span>
+              <span className="text-primary font-semibold">{config.gainPercentage || 12}%</span>
+            </div>
+            <div className="border-t border-primary/20 pt-2 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Projected payout:</span>
+                <span className="text-primary font-bold text-lg">
+                  ${((config.totalValue || 0) * ((config.gainPercentage || 12) / 100)).toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Negotiation Option */}
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-2">
-            <Handshake className="h-4 w-4" />
-            <span className="font-medium">Request Negotiation</span>
+        <div className="p-4 border-2 border-muted rounded-xl bg-muted/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Handshake className="h-5 w-5 text-primary" />
+              <div>
+                <span className="font-medium">Request Negotiation</span>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Request to negotiate terms with the timeline owner
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={config.negotiationRequested}
+              onCheckedChange={(checked) => updateTypeConfigField(type, 'negotiationRequested', checked)}
+              className="data-[state=checked]:bg-primary"
+            />
           </div>
-          <Switch
-            checked={config.negotiationRequested}
-            onCheckedChange={(checked) => updateTypeConfigField(type, 'negotiationRequested', checked)}
-          />
         </div>
 
         {/* Notes */}
-        <div className="space-y-2">
-          <Label htmlFor="notes">Additional Notes</Label>
+        <div className="space-y-3">
+          <Label htmlFor="notes" className="text-base font-medium flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Additional Notes
+          </Label>
           <Textarea
             id="notes"
-            placeholder="Any additional details..."
+            placeholder="Add any additional details about your contribution, terms, or special requirements..."
             value={config.notes}
             onChange={(e) => updateTypeConfigField(type, 'notes', e.target.value)}
+            rows={4}
+            className="w-full resize-none"
           />
         </div>
       </div>
     );
 
+    // Mobile: Bottom Drawer with full-screen on very small screens
     if (isMobile) {
       return (
         <Drawer open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
-          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background border-border z-50">
-            <DrawerHeader className="border-b">
-              <DrawerTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DrawerTitle>
+          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background border-border z-[100] rounded-t-xl shadow-2xl">
+            <DrawerHeader className="border-b border-border bg-background px-6 py-4 rounded-t-xl">
+              <DrawerTitle className="text-xl font-semibold text-center">
+                Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution
+              </DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4 py-6">
+            <ScrollArea className="flex-1 px-6 py-4">
               <ConfigContent />
             </ScrollArea>
-            <DrawerFooter className="flex-row gap-2 border-t bg-background">
-              <Button variant="outline" onClick={() => setShowTypeConfig(null)} className="flex-1">
+            <DrawerFooter className="flex-row gap-3 border-t border-border bg-background p-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowTypeConfig(null)} 
+                className="flex-1 h-12"
+                size="lg"
+              >
                 Cancel
               </Button>
               <Button 
                 onClick={() => saveTypeConfiguration(type)} 
                 disabled={!isConfigComplete}
-                className="flex-1"
+                className="flex-1 h-12"
+                size="lg"
               >
                 Save Configuration
               </Button>
@@ -746,24 +830,32 @@ export function ShonaCoinContribution() {
       );
     }
 
+    // Desktop/Tablet: Modal Dialog
     return (
       <Dialog open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden bg-background border-border z-50">
-          <DialogHeader>
-            <DialogTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden bg-background border-border z-[100] shadow-2xl">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="text-2xl font-semibold">
+              Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution
+            </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[75vh] pr-6">
-            <div className="space-y-6 pb-6">
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="py-6">
               <ConfigContent />
             </div>
           </ScrollArea>
-          <DialogFooter className="bg-background border-t pt-4">
-            <Button variant="outline" onClick={() => setShowTypeConfig(null)}>
+          <DialogFooter className="bg-background border-t border-border pt-4 gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTypeConfig(null)}
+              className="min-w-[120px]"
+            >
               Cancel
             </Button>
             <Button 
               onClick={() => saveTypeConfiguration(type)} 
               disabled={!isConfigComplete}
+              className="min-w-[120px]"
             >
               Save Configuration
             </Button>
