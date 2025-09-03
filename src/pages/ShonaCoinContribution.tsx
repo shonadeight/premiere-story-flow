@@ -23,6 +23,8 @@ import {
   DollarSign, 
   Brain, 
   Network, 
+  Edit,
+  Zap,
   Building,
   Link,
   Upload,
@@ -82,6 +84,8 @@ interface ContributionData {
     title: string;
     description: string;
     context: string;
+    inputMethod: string;
+    additionalData: any;
     additionalFields: Array<{
       label: string;
       value: string;
@@ -172,6 +176,8 @@ export function ShonaCoinContribution() {
       title: '',
       description: '',
       context: '',
+      inputMethod: '',
+      additionalData: {},
       additionalFields: []
     },
     attachments: [],
@@ -192,6 +198,7 @@ export function ShonaCoinContribution() {
 
   const [showTypeConfig, setShowTypeConfig] = useState<string | null>(null);
   const [showLinkedTimelines, setShowLinkedTimelines] = useState(false);
+  const [showCustomInputs, setShowCustomInputs] = useState<string | null>(null);
   const [newCustomOutcome, setNewCustomOutcome] = useState({ toGive: '', toReceive: '' });
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -1460,68 +1467,131 @@ export function ShonaCoinContribution() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Capture Custom Inputs
+                Capture Custom Contribution Inputs
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              {/* Required Fields */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Contribution title..."
-                    value={data.customInputs.title}
-                    onChange={(e) => setData(prev => ({
-                      ...prev,
-                      customInputs: { ...prev.customInputs, title: e.target.value }
-                    }))}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your contribution..."
-                    value={data.customInputs.description}
-                    onChange={(e) => setData(prev => ({
-                      ...prev,
-                      customInputs: { ...prev.customInputs, description: e.target.value }
-                    }))}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="context">Context *</Label>
-                  <Textarea
-                    id="context"
-                    placeholder="Provide context for your contribution..."
-                    value={data.customInputs.context}
-                    onChange={(e) => setData(prev => ({
-                      ...prev,
-                      customInputs: { ...prev.customInputs, context: e.target.value }
-                    }))}
-                  />
+                <h4 className="font-medium">Required Information</h4>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title *</Label>
+                    <Input
+                      id="title"
+                      placeholder="Contribution title..."
+                      value={data.customInputs.title}
+                      onChange={(e) => setData(prev => ({
+                        ...prev,
+                        customInputs: { ...prev.customInputs, title: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description *</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Describe your contribution..."
+                      rows={3}
+                      value={data.customInputs.description}
+                      onChange={(e) => setData(prev => ({
+                        ...prev,
+                        customInputs: { ...prev.customInputs, description: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="context">Context *</Label>
+                    <Textarea
+                      id="context"
+                      placeholder="Provide context for your contribution..."
+                      rows={3}
+                      value={data.customInputs.context}
+                      onChange={(e) => setData(prev => ({
+                        ...prev,
+                        customInputs: { ...prev.customInputs, context: e.target.value }
+                      }))}
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Input Methods */}
               <div className="space-y-4">
-                <h4 className="font-medium">Input Options</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-20 flex-col gap-2">
+                <h4 className="font-medium">Choose Input Method</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    onClick={() => setShowCustomInputs('manual')}
+                  >
                     <FileText className="h-6 w-6" />
-                    <span>Manual Entry</span>
+                    <span className="text-sm font-medium">Manual Entry</span>
+                    <span className="text-xs text-muted-foreground">Fill forms manually</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col gap-2">
+                  
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    onClick={() => setShowCustomInputs('api')}
+                  >
                     <Network className="h-6 w-6" />
-                    <span>API Connection</span>
+                    <span className="text-sm font-medium">API Connection</span>
+                    <span className="text-xs text-muted-foreground">Connect external APIs</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col gap-2">
+                  
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    onClick={() => setShowCustomInputs('excel')}
+                  >
                     <Upload className="h-6 w-6" />
-                    <span>Excel Import</span>
+                    <span className="text-sm font-medium">Excel Import</span>
+                    <span className="text-xs text-muted-foreground">Import from spreadsheet</span>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    onClick={() => setShowCustomInputs('ai')}
+                  >
+                    <Zap className="h-6 w-6" />
+                    <span className="text-sm font-medium">AI Generated</span>
+                    <span className="text-xs text-muted-foreground">Auto-generate inputs</span>
                   </Button>
                 </div>
               </div>
+
+              {/* Current Input Summary */}
+              {data.customInputs.inputMethod && (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium">Current Input Method</h5>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setShowCustomInputs(data.customInputs.inputMethod)}
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {data.customInputs.inputMethod} - 
+                    {data.customInputs.inputMethod === 'manual' && ' Form-based data entry'}
+                    {data.customInputs.inputMethod === 'api' && ' External API integration'}
+                    {data.customInputs.inputMethod === 'excel' && ' Spreadsheet import'}
+                    {data.customInputs.inputMethod === 'ai' && ' AI-generated content'}
+                  </p>
+                  {data.customInputs.additionalData && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {Object.keys(data.customInputs.additionalData).length} additional fields configured
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         );
