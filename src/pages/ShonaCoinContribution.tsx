@@ -551,7 +551,7 @@ export function ShonaCoinContribution() {
                   </div>
                   <Checkbox 
                     checked={config.selectedSubtypes.includes(subtype.id)}
-                    onCheckedChange={() => {}}
+                    onCheckedChange={() => handleSubtypeToggle(type, subtype.id)}
                   />
                 </div>
               </div>
@@ -722,14 +722,14 @@ export function ShonaCoinContribution() {
     if (isMobile) {
       return (
         <Drawer open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
-          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background">
+          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background border-border z-50">
             <DrawerHeader className="border-b">
-              <DrawerTitle>Configure Contribution</DrawerTitle>
+              <DrawerTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 px-4 py-6">
               <ConfigContent />
             </ScrollArea>
-            <DrawerFooter className="flex-row gap-2 border-t">
+            <DrawerFooter className="flex-row gap-2 border-t bg-background">
               <Button variant="outline" onClick={() => setShowTypeConfig(null)} className="flex-1">
                 Cancel
               </Button>
@@ -748,7 +748,7 @@ export function ShonaCoinContribution() {
 
     return (
       <Dialog open={showTypeConfig === type} onOpenChange={(open) => !open && setShowTypeConfig(null)}>
-        <DialogContent className="max-w-3xl max-h-[95vh] overflow-hidden bg-background border-border">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden bg-background border-border z-50">
           <DialogHeader>
             <DialogTitle>Configure {type.charAt(0).toUpperCase() + type.slice(1)} Contribution</DialogTitle>
           </DialogHeader>
@@ -757,7 +757,7 @@ export function ShonaCoinContribution() {
               <ConfigContent />
             </div>
           </ScrollArea>
-          <DialogFooter>
+          <DialogFooter className="bg-background border-t pt-4">
             <Button variant="outline" onClick={() => setShowTypeConfig(null)}>
               Cancel
             </Button>
