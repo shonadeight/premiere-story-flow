@@ -54,7 +54,8 @@ import {
   MessageSquare,
   Handshake,
   CheckCircle,
-  TrendingUp
+  TrendingUp,
+  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -1507,54 +1508,62 @@ export function ShonaCoinContribution() {
           </Card>
         );
 
-      case 4: // Link Timelines
+      case 4: // Link / Merge / Knot with Other Timelines
         return (
           <Card className="w-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Link className="h-5 w-5" />
-                Link/Merge Timelines
+                Link / Merge / Knot with Other Timelines
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Connect other timelines from your portfolio to enhance this contribution's value through strategic linking.
+                Connect timelines from your portfolio to enhance this contribution. Each linked timeline can contribute a percentage of its value.
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Instructions */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-500 text-white rounded-lg">
-                    <Link className="h-4 w-4" />
+              {/* Instructions Section */}
+              <div className="p-4 bg-muted/30 rounded-lg border border-muted">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Info className="h-4 w-4 text-primary" />
+                  How Timeline Linking Works
+                </h4>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                    <p>Select timelines from your portfolio that are eligible for linking (based on parent timeline configuration)</p>
                   </div>
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-blue-900 dark:text-blue-100">Timeline Linking Benefits</h4>
-                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                      <li>• Cross-timeline value amplification</li>
-                      <li>• Percentage-based contribution allocation</li>
-                      <li>• Dynamic valuation updates</li>
-                      <li>• Portfolio synergy enhancement</li>
-                    </ul>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                    <p>Set allocation percentages (0-100%) for each linked timeline</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                    <p>Linked timeline values automatically update your Step 3 valuation</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                    <p>Future changes to linked timeline valuations will dynamically update your contribution value</p>
                   </div>
                 </div>
               </div>
 
-              {/* Main Action Button */}
-              <div className="space-y-4">
+              {/* Main Action Section */}
+              <div className="text-center space-y-4">
                 <Button 
                   onClick={() => {
                     console.log('Button clicked, opening timeline selection');
                     console.log('Available timelines:', data.linkedTimelines);
                     setShowLinkedTimelines(true);
                   }}
-                  className="w-full h-12 text-base font-medium"
+                  className="w-full h-14 text-lg font-medium bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
                   size="lg"
                 >
                   <Link className="h-5 w-5 mr-2" />
                   Select Timelines to Link
                 </Button>
                 
-                <p className="text-center text-sm text-muted-foreground">
-                  Choose from {data.linkedTimelines?.length || 0} available timelines in your portfolio
+                <p className="text-sm text-muted-foreground">
+                  Browse and select from {data.linkedTimelines?.length || 0} available timelines in your portfolio
                 </p>
               </div>
 
@@ -1599,14 +1608,6 @@ export function ShonaCoinContribution() {
                                   +${((parseFloat(timeline.value.replace(/[^0-9.]/g, '')) || 0) * timeline.percentage / 100).toLocaleString()} contribution
                                 </div>
                               )}
-                            </div>
-                          </div>
-                          
-                          {/* Timeline Preview */}
-                          <div className="mt-3 pt-3 border-t border-primary/10">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Timeline Status: Active</span>
-                              <span>Last Updated: Today</span>
                             </div>
                           </div>
                         </div>
@@ -1684,13 +1685,15 @@ export function ShonaCoinContribution() {
                     <Link className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <h4 className="font-medium text-lg mb-2">No Timelines Linked Yet</h4>
-                  <p className="text-muted-foreground mb-4">
-                    Start by selecting timelines from your portfolio to amplify your contribution value.
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    Start by selecting timelines from your portfolio to amplify your contribution value through strategic linking.
                   </p>
                   <Button 
                     variant="outline" 
                     onClick={() => setShowLinkedTimelines(true)}
+                    className="h-12 px-6"
                   >
+                    <Search className="h-4 w-4 mr-2" />
                     Browse Available Timelines
                   </Button>
                 </div>
