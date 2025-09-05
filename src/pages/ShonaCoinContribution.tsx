@@ -497,6 +497,9 @@ export function ShonaCoinContribution() {
   };
 
   const getFilteredTimelines = () => {
+    if (!data.linkedTimelines || data.linkedTimelines.length === 0) {
+      return [];
+    }
     return data.linkedTimelines.filter(timeline => 
       timeline.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -876,7 +879,10 @@ export function ShonaCoinContribution() {
 
   // Render linked timelines modal/drawer
   const renderLinkedTimelinesModal = () => {
+    console.log('Rendering linked timelines modal, showLinkedTimelines:', showLinkedTimelines);
+    console.log('isMobile:', isMobile);
     const filteredTimelines = getFilteredTimelines();
+    console.log('Filtered timelines:', filteredTimelines);
     const selectedTimelines = data.linkedTimelines.filter(t => t.selected);
     const totalPercentage = selectedTimelines.reduce((sum, t) => sum + t.percentage, 0);
 
@@ -1535,7 +1541,11 @@ export function ShonaCoinContribution() {
               {/* Main Action Button */}
               <div className="space-y-4">
                 <Button 
-                  onClick={() => setShowLinkedTimelines(true)}
+                  onClick={() => {
+                    console.log('Button clicked, opening timeline selection');
+                    console.log('Available timelines:', data.linkedTimelines);
+                    setShowLinkedTimelines(true);
+                  }}
                   className="w-full h-12 text-base font-medium"
                   size="lg"
                 >
@@ -1544,7 +1554,7 @@ export function ShonaCoinContribution() {
                 </Button>
                 
                 <p className="text-center text-sm text-muted-foreground">
-                  Choose from {data.linkedTimelines.length} available timelines in your portfolio
+                  Choose from {data.linkedTimelines?.length || 0} available timelines in your portfolio
                 </p>
               </div>
 
