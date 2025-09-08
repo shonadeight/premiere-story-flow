@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -204,6 +205,36 @@ export function ShonaCoinContribution() {
   const [showCustomInputs, setShowCustomInputs] = useState<string | null>(null);
   const [newCustomOutcome, setNewCustomOutcome] = useState({ toGive: '', toReceive: '' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showOutcomesModal, setShowOutcomesModal] = useState(false);
+  const [activeOutcomeTab, setActiveOutcomeTab] = useState<'toGive' | 'toReceive'>('toGive');
+  const [selectedOutcomes, setSelectedOutcomes] = useState({
+    toGive: {
+      financial: [] as string[],
+      intellectual: [] as string[],
+      network: [] as string[],
+      asset: [] as string[]
+    },
+    toReceive: {
+      financial: [] as string[],
+      intellectual: [] as string[],
+      network: [] as string[],
+      asset: [] as string[]
+    }
+  });
+  const [customOutcomes, setCustomOutcomes] = useState({
+    toGive: {
+      financial: [] as string[],
+      intellectual: [] as string[],
+      network: [] as string[],
+      asset: [] as string[]
+    },
+    toReceive: {
+      financial: [] as string[],
+      intellectual: [] as string[],
+      network: [] as string[],
+      asset: [] as string[]
+    }
+  });
   
   const [typeConfigData, setTypeConfigData] = useState<{
     [key: string]: TypeConfig;
@@ -231,11 +262,26 @@ export function ShonaCoinContribution() {
     { id: 9, title: 'Review & Submit', icon: Check }
   ];
 
-  const outcomeOptions = [
-    'Equity share', 'Profit share', 'Revenue share', 'Milestones',
-    'Traffic', 'Downloads', 'Impressions', 'Leads', 'Usage rights',
-    'Asset appreciation', 'Custom option'
-  ];
+  // Categorized outcome options
+  const outcomeCategories = {
+    financial: [
+      'Equity share (ownership % on timeline)',
+      'Profit share (net earnings % on timeline revenues)',
+      'Revenue share (gross income split % on timeline revenues)',
+      'Milestones wedge (amount)'
+    ],
+    intellectual: [
+      'Usage / Access rights',
+      'Asset appreciations'
+    ],
+    network: [
+      'Traffic',
+      'Downloads',
+      'Impressions (likes, comments, reach)',
+      'Leads, referrals, mentions'
+    ],
+    asset: []
+  };
 
   const financialSubtypes = [
     { id: 'cash', name: 'Cash', description: 'Direct cash contribution' },
@@ -286,42 +332,79 @@ export function ShonaCoinContribution() {
     }
   };
 
-  const handleOutcomeToggle = (outcome: string, type: 'toGive' | 'toReceive') => {
-    setData(prev => ({
+  const handleCategoryOutcomeToggle = (outcome: string, category: 'financial' | 'intellectual' | 'network' | 'asset', type: 'toGive' | 'toReceive') => {
+    setSelectedOutcomes(prev => ({
       ...prev,
-      expectedOutcomes: {
-        ...prev.expectedOutcomes,
-        [type]: prev.expectedOutcomes[type].includes(outcome)
-          ? prev.expectedOutcomes[type].filter(o => o !== outcome)
-          : [...prev.expectedOutcomes[type], outcome]
+      [type]: {
+        ...prev[type],
+        [category]: prev[type][category].includes(outcome)
+          ? prev[type][category].filter(o => o !== outcome)
+          : [...prev[type][category], outcome]
       }
     }));
   };
 
-  const handleAddCustomOutcome = (type: 'toGive' | 'toReceive') => {
-    const value = newCustomOutcome[type].trim();
-    if (value) {
-      const customKey = type === 'toGive' ? 'customToGive' : 'customToReceive';
-      setData(prev => ({
+  const handleAddCustomCategoryOutcome = (category: 'financial' | 'intellectual' | 'network' | 'asset', type: 'toGive' | 'toReceive', value: string) => {
+    if (value.trim()) {
+      setCustomOutcomes(prev => ({
         ...prev,
-        expectedOutcomes: {
-          ...prev.expectedOutcomes,
-          [customKey]: [...prev.expectedOutcomes[customKey], value]
+        [type]: {
+          ...prev[type],
+          [category]: [...prev[type][category], value.trim()]
         }
       }));
-      setNewCustomOutcome(prev => ({ ...prev, [type]: '' }));
     }
   };
 
-  const handleRemoveCustomOutcome = (index: number, type: 'toGive' | 'toReceive') => {
-    const customKey = type === 'toGive' ? 'customToGive' : 'customToReceive';
+  const handleRemoveCustomCategoryOutcome = (index: number, category: 'financial' | 'intellectual' | 'network' | 'asset', type: 'toGive' | 'toReceive') => {
+    setCustomOutcomes(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [category]: prev[type][category].filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const saveOutcomesConfiguration = () => {
+    // Persist all selected and custom outcomes
+    const allToGive = [
+      ...selectedOutcomes.toGive.financial,
+      ...selectedOutcomes.toGive.intellectual,
+      ...selectedOutcomes.toGive.network,
+      ...selectedOutcomes.toGive.asset
+    ];
+    const allToReceive = [
+      ...selectedOutcomes.toReceive.financial,
+      ...selectedOutcomes.toReceive.intellectual,
+      ...selectedOutcomes.toReceive.network,
+      ...selectedOutcomes.toReceive.asset
+    ];
+    const allCustomToGive = [
+      ...customOutcomes.toGive.financial,
+      ...customOutcomes.toGive.intellectual,
+      ...customOutcomes.toGive.network,
+      ...customOutcomes.toGive.asset
+    ];
+    const allCustomToReceive = [
+      ...customOutcomes.toReceive.financial,
+      ...customOutcomes.toReceive.intellectual,
+      ...customOutcomes.toReceive.network,
+      ...customOutcomes.toReceive.asset
+    ];
+
     setData(prev => ({
       ...prev,
       expectedOutcomes: {
-        ...prev.expectedOutcomes,
-        [customKey]: prev.expectedOutcomes[customKey].filter((_, i) => i !== index)
+        toGive: allToGive,
+        toReceive: allToReceive,
+        customToGive: allCustomToGive,
+        customToReceive: allCustomToReceive
       }
     }));
+    
+    setShowOutcomesModal(false);
+    toast.success('Outcomes configuration saved successfully!');
   };
 
   const handleContributionTypeToggle = (type: keyof typeof data.contributionTypes) => {
@@ -1114,6 +1197,382 @@ export function ShonaCoinContribution() {
     );
   };
 
+  // Render outcomes configuration modal/drawer
+  const renderOutcomesModal = () => {
+    const [newCustomInput, setNewCustomInput] = useState('');
+
+    const OutcomesContent = () => (
+      <div className="space-y-6">
+        <Tabs value={activeOutcomeTab} onValueChange={(value) => setActiveOutcomeTab(value as 'toGive' | 'toReceive')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="toGive" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              To Give
+            </TabsTrigger>
+            <TabsTrigger value="toReceive" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              To Receive
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="toGive" className="space-y-6 mt-6">
+            <div className="text-center pb-4">
+              <p className="text-sm text-muted-foreground">
+                Configure what outcomes you plan to contribute, organized by category
+              </p>
+            </div>
+            {renderOutcomeCategories('toGive')}
+          </TabsContent>
+
+          <TabsContent value="toReceive" className="space-y-6 mt-6">
+            <div className="text-center pb-4">
+              <p className="text-sm text-muted-foreground">
+                Configure what outcomes you expect to receive in return, organized by category
+              </p>
+            </div>
+            {renderOutcomeCategories('toReceive')}
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+
+    // Mobile: Bottom Drawer
+    if (isMobile) {
+      return (
+        <Drawer open={showOutcomesModal} onOpenChange={setShowOutcomesModal}>
+          <DrawerContent className="h-[95vh] max-h-[95vh] bg-background border-border z-[100]">
+            <DrawerHeader className="border-b border-border bg-background px-6 py-4">
+              <DrawerTitle className="text-xl font-semibold text-center">
+                Configure Outcomes
+              </DrawerTitle>
+            </DrawerHeader>
+            <ScrollArea className="flex-1 px-6 py-4">
+              <OutcomesContent />
+            </ScrollArea>
+            <DrawerFooter className="flex-row gap-3 border-t border-border bg-background p-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowOutcomesModal(false)} 
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={saveOutcomesConfiguration} 
+                className="flex-1"
+              >
+                Save Configuration
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    // Desktop/Tablet: Modal Dialog
+    return (
+      <Dialog open={showOutcomesModal} onOpenChange={setShowOutcomesModal}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden bg-background border-border z-[100]">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="text-2xl font-semibold">
+              Configure Outcomes
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="py-6">
+              <OutcomesContent />
+            </div>
+          </ScrollArea>
+          <DialogFooter className="bg-background border-t border-border pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowOutcomesModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveOutcomesConfiguration}
+            >
+              Save Configuration
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderOutcomeCategories = (type: 'toGive' | 'toReceive') => {
+    const [newCustomInputs, setNewCustomInputs] = useState({
+      financial: '',
+      intellectual: '',
+      network: '',
+      asset: ''
+    });
+
+    return (
+      <div className="space-y-6">
+        {/* Financial Contributions */}
+        <div className="p-4 border rounded-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <DollarSign className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Financial Contributions</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="grid gap-2">
+              {outcomeCategories.financial.map(outcome => (
+                <div 
+                  key={outcome}
+                  className={`p-3 border rounded cursor-pointer text-sm transition-colors ${
+                    selectedOutcomes[type].financial.includes(outcome) 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => handleCategoryOutcomeToggle(outcome, 'financial', type)}
+                >
+                  <Checkbox 
+                    checked={selectedOutcomes[type].financial.includes(outcome)}
+                    className="mr-2" 
+                  />
+                  {outcome}
+                </div>
+              ))}
+            </div>
+            
+            {/* Custom Financial Outcome */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom financial outcome..."
+                  value={newCustomInputs.financial}
+                  onChange={(e) => setNewCustomInputs(prev => ({ ...prev, financial: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddCustomCategoryOutcome('financial', type, newCustomInputs.financial);
+                      setNewCustomInputs(prev => ({ ...prev, financial: '' }));
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={() => {
+                    handleAddCustomCategoryOutcome('financial', type, newCustomInputs.financial);
+                    setNewCustomInputs(prev => ({ ...prev, financial: '' }));
+                  }}
+                  disabled={!newCustomInputs.financial.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {customOutcomes[type].financial.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {customOutcomes[type].financial.map((outcome, index) => (
+                    <Badge key={index} variant="outline" className="gap-1">
+                      {outcome}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => handleRemoveCustomCategoryOutcome(index, 'financial', type)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Intellectual Contributions */}
+        <div className="p-4 border rounded-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <Brain className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Intellectual Contributions</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="grid gap-2">
+              {outcomeCategories.intellectual.map(outcome => (
+                <div 
+                  key={outcome}
+                  className={`p-3 border rounded cursor-pointer text-sm transition-colors ${
+                    selectedOutcomes[type].intellectual.includes(outcome) 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => handleCategoryOutcomeToggle(outcome, 'intellectual', type)}
+                >
+                  <Checkbox 
+                    checked={selectedOutcomes[type].intellectual.includes(outcome)}
+                    className="mr-2" 
+                  />
+                  {outcome}
+                </div>
+              ))}
+            </div>
+            
+            {/* Custom Intellectual Outcome */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom intellectual outcome..."
+                  value={newCustomInputs.intellectual}
+                  onChange={(e) => setNewCustomInputs(prev => ({ ...prev, intellectual: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddCustomCategoryOutcome('intellectual', type, newCustomInputs.intellectual);
+                      setNewCustomInputs(prev => ({ ...prev, intellectual: '' }));
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={() => {
+                    handleAddCustomCategoryOutcome('intellectual', type, newCustomInputs.intellectual);
+                    setNewCustomInputs(prev => ({ ...prev, intellectual: '' }));
+                  }}
+                  disabled={!newCustomInputs.intellectual.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {customOutcomes[type].intellectual.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {customOutcomes[type].intellectual.map((outcome, index) => (
+                    <Badge key={index} variant="outline" className="gap-1">
+                      {outcome}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => handleRemoveCustomCategoryOutcome(index, 'intellectual', type)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Network/Marketing Contributions */}
+        <div className="p-4 border rounded-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <Network className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Network / Marketing Contributions</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="grid gap-2">
+              {outcomeCategories.network.map(outcome => (
+                <div 
+                  key={outcome}
+                  className={`p-3 border rounded cursor-pointer text-sm transition-colors ${
+                    selectedOutcomes[type].network.includes(outcome) 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => handleCategoryOutcomeToggle(outcome, 'network', type)}
+                >
+                  <Checkbox 
+                    checked={selectedOutcomes[type].network.includes(outcome)}
+                    className="mr-2" 
+                  />
+                  {outcome}
+                </div>
+              ))}
+            </div>
+            
+            {/* Custom Network Outcome */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom network/marketing outcome..."
+                  value={newCustomInputs.network}
+                  onChange={(e) => setNewCustomInputs(prev => ({ ...prev, network: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddCustomCategoryOutcome('network', type, newCustomInputs.network);
+                      setNewCustomInputs(prev => ({ ...prev, network: '' }));
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={() => {
+                    handleAddCustomCategoryOutcome('network', type, newCustomInputs.network);
+                    setNewCustomInputs(prev => ({ ...prev, network: '' }));
+                  }}
+                  disabled={!newCustomInputs.network.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {customOutcomes[type].network.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {customOutcomes[type].network.map((outcome, index) => (
+                    <Badge key={index} variant="outline" className="gap-1">
+                      {outcome}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => handleRemoveCustomCategoryOutcome(index, 'network', type)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Asset Contributions */}
+        <div className="p-4 border rounded-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <Building className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Asset Contributions</h3>
+          </div>
+          <div className="space-y-3">
+            {/* Only Custom Asset Outcome */}
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Add custom asset-related outcomes you would like to gain/give:
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add custom asset outcome..."
+                  value={newCustomInputs.asset}
+                  onChange={(e) => setNewCustomInputs(prev => ({ ...prev, asset: e.target.value }))}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddCustomCategoryOutcome('asset', type, newCustomInputs.asset);
+                      setNewCustomInputs(prev => ({ ...prev, asset: '' }));
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={() => {
+                    handleAddCustomCategoryOutcome('asset', type, newCustomInputs.asset);
+                    setNewCustomInputs(prev => ({ ...prev, asset: '' }));
+                  }}
+                  disabled={!newCustomInputs.asset.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {customOutcomes[type].asset.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {customOutcomes[type].asset.map((outcome, index) => (
+                    <Badge key={index} variant="outline" className="gap-1">
+                      {outcome}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => handleRemoveCustomCategoryOutcome(index, 'asset', type)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1: // Access Check
@@ -1164,113 +1623,81 @@ export function ShonaCoinContribution() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />
-                Expected Outcomes Configuration
+                Configure Outcomes to Give or Receive
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                Configure what you plan to contribute and what you expect to receive in return, organized by contribution categories.
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* What to Give */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">What I Plan to Give</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {outcomeOptions.map(outcome => (
-                    <div 
-                      key={outcome}
-                      className={`p-2 border rounded cursor-pointer text-sm transition-colors ${
-                        data.expectedOutcomes.toGive.includes(outcome) 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => handleOutcomeToggle(outcome, 'toGive')}
-                    >
-                      {outcome}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Custom outcomes for giving */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add custom outcome..."
-                      value={newCustomOutcome.toGive}
-                      onChange={(e) => setNewCustomOutcome(prev => ({ ...prev, toGive: e.target.value }))}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddCustomOutcome('toGive')}
-                    />
-                    <Button 
-                      onClick={() => handleAddCustomOutcome('toGive')}
-                      disabled={!newCustomOutcome.toGive.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {data.expectedOutcomes.customToGive.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {data.expectedOutcomes.customToGive.map((outcome, index) => (
-                        <Badge key={index} variant="secondary" className="gap-1">
-                          {outcome}
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => handleRemoveCustomOutcome(index, 'toGive')}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {/* Main Configure Button */}
+              <div className="text-center space-y-4">
+                <Button 
+                  onClick={() => setShowOutcomesModal(true)}
+                  size="lg"
+                  className="w-full max-w-md"
+                >
+                  <Settings className="h-5 w-5 mr-2" />
+                  Configure Outcomes
+                </Button>
               </div>
 
-              {/* What to Receive */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">What I Expect to Receive</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {outcomeOptions.map(outcome => (
-                    <div 
-                      key={outcome}
-                      className={`p-2 border rounded cursor-pointer text-sm transition-colors ${
-                        data.expectedOutcomes.toReceive.includes(outcome) 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => handleOutcomeToggle(outcome, 'toReceive')}
-                    >
-                      {outcome}
+              {/* Summary of Current Configuration */}
+              {(data.expectedOutcomes.toGive.length > 0 || data.expectedOutcomes.toReceive.length > 0 || 
+                data.expectedOutcomes.customToGive.length > 0 || data.expectedOutcomes.customToReceive.length > 0) && (
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* To Give Summary */}
+                    <div className="p-4 border rounded-lg bg-muted/30">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-green-600" />
+                        What I Plan to Give
+                      </h4>
+                      <div className="space-y-2">
+                        {data.expectedOutcomes.toGive.map((outcome, index) => (
+                          <Badge key={index} variant="secondary" className="mr-1 mb-1">
+                            {outcome}
+                          </Badge>
+                        ))}
+                        {data.expectedOutcomes.customToGive.map((outcome, index) => (
+                          <Badge key={`custom-${index}`} variant="outline" className="mr-1 mb-1">
+                            {outcome}
+                          </Badge>
+                        ))}
+                        {data.expectedOutcomes.toGive.length === 0 && data.expectedOutcomes.customToGive.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No outcomes configured</p>
+                        )}
+                      </div>
                     </div>
-                  ))}
-                </div>
-                
-                {/* Custom outcomes for receiving */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add custom outcome..."
-                      value={newCustomOutcome.toReceive}
-                      onChange={(e) => setNewCustomOutcome(prev => ({ ...prev, toReceive: e.target.value }))}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddCustomOutcome('toReceive')}
-                    />
-                    <Button 
-                      onClick={() => handleAddCustomOutcome('toReceive')}
-                      disabled={!newCustomOutcome.toReceive.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+
+                    {/* To Receive Summary */}
+                    <div className="p-4 border rounded-lg bg-muted/30">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        What I Expect to Receive
+                      </h4>
+                      <div className="space-y-2">
+                        {data.expectedOutcomes.toReceive.map((outcome, index) => (
+                          <Badge key={index} variant="secondary" className="mr-1 mb-1">
+                            {outcome}
+                          </Badge>
+                        ))}
+                        {data.expectedOutcomes.customToReceive.map((outcome, index) => (
+                          <Badge key={`custom-${index}`} variant="outline" className="mr-1 mb-1">
+                            {outcome}
+                          </Badge>
+                        ))}
+                        {data.expectedOutcomes.toReceive.length === 0 && data.expectedOutcomes.customToReceive.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No outcomes configured</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  
-                  {data.expectedOutcomes.customToReceive.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {data.expectedOutcomes.customToReceive.map((outcome, index) => (
-                        <Badge key={index} variant="secondary" className="gap-1">
-                          {outcome}
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => handleRemoveCustomOutcome(index, 'toReceive')}
-                          />
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
+
+              {/* Outcomes Configuration Modal/Drawer */}
+              {renderOutcomesModal()}
             </CardContent>
           </Card>
         );
