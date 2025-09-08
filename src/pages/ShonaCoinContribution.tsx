@@ -520,10 +520,11 @@ export function ShonaCoinContribution() {
     setData(prev => {
       const updatedLinkedTimelines = prev.linkedTimelines.map(t => 
         t.id === timelineId 
-          ? { ...t, selected: !t.selected, percentage: t.selected ? 0 : t.percentage }
+          ? { ...t, selected: !t.selected, percentage: t.selected ? 0 : t.percentage || 0 }
           : t
       );
       
+      // Update valuations immediately when selection changes
       updateValuationsFromLinkedTimelines(updatedLinkedTimelines);
       
       return {
@@ -534,25 +535,25 @@ export function ShonaCoinContribution() {
   };
 
   const updateTimelinePercentage = (timelineId: string, percentage: number) => {
-    if (percentage < 0 || percentage > 100) {
-      toast.error('Percentage must be between 0 and 100');
-      return;
-    }
+    // Validate input - ensure it's between 0 and 100
+    const validPercentage = Math.max(0, Math.min(100, percentage || 0));
 
     setData(prev => {
       const updatedLinkedTimelines = prev.linkedTimelines.map(t => 
-        t.id === timelineId ? { ...t, percentage } : t
+        t.id === timelineId ? { ...t, percentage: validPercentage } : t
       );
       
+      // Check total allocation doesn't exceed 100%
       const totalPercentage = updatedLinkedTimelines
         .filter(t => t.selected)
-        .reduce((sum, t) => sum + t.percentage, 0);
+        .reduce((sum, t) => sum + (t.percentage || 0), 0);
       
       if (totalPercentage > 100) {
         toast.error('Total percentage allocation cannot exceed 100%');
         return prev;
       }
       
+      // Update valuations in real-time
       updateValuationsFromLinkedTimelines(updatedLinkedTimelines);
       
       return {
@@ -591,14 +592,28 @@ export function ShonaCoinContribution() {
       return [];
     }
     return data.linkedTimelines.filter(timeline => 
-      timeline.name.toLowerCase().includes(searchQuery.toLowerCase())
+      timeline.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      timeline.type.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
   const saveLinkedTimelines = () => {
     const selectedTimelines = data.linkedTimelines.filter(t => t.selected);
+    const totalPercentage = selectedTimelines.reduce((sum, t) => sum + (t.percentage || 0), 0);
+    
+    if (totalPercentage > 100) {
+      toast.error('Cannot save: Total allocation exceeds 100%');
+      return;
+    }
+    
+    // Persist timeline links and update Step 3 valuation
+    updateValuationsFromLinkedTimelines(data.linkedTimelines);
+    
     toast.success(`${selectedTimelines.length} timeline(s) linked successfully!`);
     setShowLinkedTimelines(false);
+    
+    // Clear search when closing
+    setSearchQuery('');
   };
 
   // Render configuration modal/drawer for contribution types
