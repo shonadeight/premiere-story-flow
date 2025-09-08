@@ -235,6 +235,12 @@ export function ShonaCoinContribution() {
       asset: [] as string[]
     }
   });
+  const [newCustomInputs, setNewCustomInputs] = useState({
+    financial: '',
+    intellectual: '',
+    network: '',
+    asset: ''
+  });
   
   const [typeConfigData, setTypeConfigData] = useState<{
     [key: string]: TypeConfig;
@@ -1199,7 +1205,6 @@ export function ShonaCoinContribution() {
 
   // Render outcomes configuration modal/drawer
   const renderOutcomesModal = () => {
-    const [newCustomInput, setNewCustomInput] = useState('');
 
     const OutcomesContent = () => (
       <div className="space-y-6">
@@ -1302,13 +1307,6 @@ export function ShonaCoinContribution() {
   };
 
   const renderOutcomeCategories = (type: 'toGive' | 'toReceive') => {
-    const [newCustomInputs, setNewCustomInputs] = useState({
-      financial: '',
-      intellectual: '',
-      network: '',
-      asset: ''
-    });
-
     return (
       <div className="space-y-6">
         {/* Financial Contributions */}
