@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
@@ -996,8 +996,7 @@ export function ShonaCoinContribution() {
 
   // Render linked timelines modal/drawer
   const renderLinkedTimelinesModal = () => {
-    // Only render when showLinkedTimelines is true
-    if (!showLinkedTimelines) return null;
+    console.log('renderLinkedTimelinesModal called, showLinkedTimelines:', showLinkedTimelines, 'isMobile:', isMobile);
     
     const filteredTimelines = getFilteredTimelines();
     const selectedTimelines = data.linkedTimelines.filter(t => t.selected);
@@ -1162,7 +1161,7 @@ export function ShonaCoinContribution() {
     // Mobile Implementation with Bottom Drawer
     if (isMobile) {
       return (
-        <Drawer open={true} onOpenChange={(open) => {
+        <Drawer open={showLinkedTimelines} onOpenChange={(open) => {
           if (!open) {
             setShowLinkedTimelines(false);
             setSearchQuery('');
@@ -1206,7 +1205,7 @@ export function ShonaCoinContribution() {
 
     // Desktop Implementation with Modal Dialog
     return (
-      <Dialog open={true} onOpenChange={(open) => {
+      <Dialog open={showLinkedTimelines} onOpenChange={(open) => {
         if (!open) {
           setShowLinkedTimelines(false);
           setSearchQuery('');
@@ -1218,6 +1217,9 @@ export function ShonaCoinContribution() {
               <Link className="h-5 w-5" />
               Link/Merge Timelines
             </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Select timelines from your portfolio to link with this contribution. Linked timelines can contribute a percentage of their value to enhance your total contribution.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-hidden py-2">
             <TimelinesContent />
