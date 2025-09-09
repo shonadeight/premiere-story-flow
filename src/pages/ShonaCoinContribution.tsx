@@ -998,6 +998,11 @@ export function ShonaCoinContribution() {
   const renderLinkedTimelinesModal = () => {
     console.log('renderLinkedTimelinesModal called, showLinkedTimelines:', showLinkedTimelines, 'isMobile:', isMobile);
     
+    // Early return if modal shouldn't be shown
+    if (!showLinkedTimelines) {
+      return null;
+    }
+    
     const filteredTimelines = getFilteredTimelines();
     const selectedTimelines = data.linkedTimelines.filter(t => t.selected);
     const totalPercentage = selectedTimelines.reduce((sum, t) => sum + (t.percentage || 0), 0);
@@ -1160,27 +1165,30 @@ export function ShonaCoinContribution() {
 
     // Mobile Implementation with Bottom Drawer
     if (isMobile) {
+      console.log('Rendering mobile drawer, showLinkedTimelines:', showLinkedTimelines);
       return (
         <Drawer open={showLinkedTimelines} onOpenChange={(open) => {
+          console.log('Drawer onOpenChange:', open);
           if (!open) {
             setShowLinkedTimelines(false);
             setSearchQuery('');
           }
         }}>
-          <DrawerContent className="max-h-[90vh] z-[60]">
+          <DrawerContent className="max-h-[90vh] z-[100]">
             <DrawerHeader className="text-left pb-4">
               <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Link className="h-5 w-5" />
                 Link/Merge Timelines
               </DrawerTitle>
             </DrawerHeader>
-            <div className="px-4 flex-1 overflow-hidden">
+            <div className="px-4 flex-1 overflow-auto">
               <TimelinesContent />
             </div>
             <DrawerFooter className="flex-row gap-3 px-4 pt-4 border-t">
               <Button 
                 variant="outline" 
                 onClick={() => {
+                  console.log('Cancel clicked');
                   setShowLinkedTimelines(false);
                   setSearchQuery('');
                 }} 
@@ -1190,7 +1198,10 @@ export function ShonaCoinContribution() {
                 Cancel
               </Button>
               <Button 
-                onClick={saveLinkedTimelines} 
+                onClick={() => {
+                  console.log('Save clicked');
+                  saveLinkedTimelines();
+                }} 
                 className="flex-1"
                 disabled={totalPercentage > 100}
               >
@@ -1204,14 +1215,16 @@ export function ShonaCoinContribution() {
     }
 
     // Desktop Implementation with Modal Dialog
+    console.log('Rendering desktop dialog, showLinkedTimelines:', showLinkedTimelines);
     return (
       <Dialog open={showLinkedTimelines} onOpenChange={(open) => {
+        console.log('Dialog onOpenChange:', open);
         if (!open) {
           setShowLinkedTimelines(false);
           setSearchQuery('');
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col z-[60]">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col z-[100]">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
               <Link className="h-5 w-5" />
@@ -1221,13 +1234,14 @@ export function ShonaCoinContribution() {
               Select timelines from your portfolio to link with this contribution. Linked timelines can contribute a percentage of their value to enhance your total contribution.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden py-2">
+          <div className="flex-1 overflow-auto py-2">
             <TimelinesContent />
           </div>
           <DialogFooter className="flex gap-3 pt-4 border-t">
             <Button 
               variant="outline" 
               onClick={() => {
+                console.log('Cancel clicked');
                 setShowLinkedTimelines(false);
                 setSearchQuery('');
               }}
@@ -1236,7 +1250,10 @@ export function ShonaCoinContribution() {
               Cancel
             </Button>
             <Button 
-              onClick={saveLinkedTimelines}
+              onClick={() => {
+                console.log('Save clicked');
+                saveLinkedTimelines();
+              }}
               disabled={totalPercentage > 100}
             >
               <Check className="h-4 w-4 mr-2" />
