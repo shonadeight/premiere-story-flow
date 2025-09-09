@@ -152,6 +152,11 @@ export function ShonaCoinContribution() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
+  // Debug responsive state
+  React.useEffect(() => {
+    console.log('isMobile state changed:', isMobile, 'window width:', window.innerWidth);
+  }, [isMobile]);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<ContributionData>({
     timeline: null,
@@ -591,9 +596,16 @@ export function ShonaCoinContribution() {
     if (!data.linkedTimelines || data.linkedTimelines.length === 0) {
       return [];
     }
+    
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return data.linkedTimelines;
+    }
+    
     return data.linkedTimelines.filter(timeline => 
-      timeline.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      timeline.type.toLowerCase().includes(searchQuery.toLowerCase())
+      timeline.name.toLowerCase().includes(query) ||
+      timeline.type.toLowerCase().includes(query) ||
+      timeline.value.toLowerCase().includes(query)
     );
   };
 
@@ -984,12 +996,12 @@ export function ShonaCoinContribution() {
 
   // Render linked timelines modal/drawer
   const renderLinkedTimelinesModal = () => {
-    console.log('Rendering linked timelines modal, showLinkedTimelines:', showLinkedTimelines);
-    console.log('isMobile:', isMobile);
+    // Only render when showLinkedTimelines is true
+    if (!showLinkedTimelines) return null;
+    
     const filteredTimelines = getFilteredTimelines();
-    console.log('Filtered timelines:', filteredTimelines);
     const selectedTimelines = data.linkedTimelines.filter(t => t.selected);
-    const totalPercentage = selectedTimelines.reduce((sum, t) => sum + t.percentage, 0);
+    const totalPercentage = selectedTimelines.reduce((sum, t) => sum + (t.percentage || 0), 0);
 
     const TimelinesContent = () => (
       <div className="space-y-6">
@@ -1150,10 +1162,15 @@ export function ShonaCoinContribution() {
     // Mobile Implementation with Bottom Drawer
     if (isMobile) {
       return (
-        <Drawer open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-          <DrawerContent className="max-h-[90vh]">
-            <DrawerHeader className="text-left">
-              <DrawerTitle className="flex items-center gap-2">
+        <Drawer open={true} onOpenChange={(open) => {
+          if (!open) {
+            setShowLinkedTimelines(false);
+            setSearchQuery('');
+          }
+        }}>
+          <DrawerContent className="max-h-[90vh] z-[60]">
+            <DrawerHeader className="text-left pb-4">
+              <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Link className="h-5 w-5" />
                 Link/Merge Timelines
               </DrawerTitle>
@@ -1161,10 +1178,13 @@ export function ShonaCoinContribution() {
             <div className="px-4 flex-1 overflow-hidden">
               <TimelinesContent />
             </div>
-            <DrawerFooter className="flex-row gap-3 px-4">
+            <DrawerFooter className="flex-row gap-3 px-4 pt-4 border-t">
               <Button 
                 variant="outline" 
-                onClick={() => setShowLinkedTimelines(false)} 
+                onClick={() => {
+                  setShowLinkedTimelines(false);
+                  setSearchQuery('');
+                }} 
                 className="flex-1"
                 disabled={totalPercentage > 100}
               >
@@ -1186,21 +1206,29 @@ export function ShonaCoinContribution() {
 
     // Desktop Implementation with Modal Dialog
     return (
-      <Dialog open={showLinkedTimelines} onOpenChange={setShowLinkedTimelines}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Dialog open={true} onOpenChange={(open) => {
+        if (!open) {
+          setShowLinkedTimelines(false);
+          setSearchQuery('');
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col z-[60]">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
               <Link className="h-5 w-5" />
               Link/Merge Timelines
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden py-2">
             <TimelinesContent />
           </div>
-          <DialogFooter className="flex gap-3">
+          <DialogFooter className="flex gap-3 pt-4 border-t">
             <Button 
               variant="outline" 
-              onClick={() => setShowLinkedTimelines(false)}
+              onClick={() => {
+                setShowLinkedTimelines(false);
+                setSearchQuery('');
+              }}
               disabled={totalPercentage > 100}
             >
               Cancel
@@ -1210,7 +1238,7 @@ export function ShonaCoinContribution() {
               disabled={totalPercentage > 100}
             >
               <Check className="h-4 w-4 mr-2" />
-              Save Links
+              Save Links ({selectedTimelines.length})
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1993,9 +2021,10 @@ export function ShonaCoinContribution() {
                   onClick={() => {
                     console.log('Button clicked, opening timeline selection');
                     console.log('Available timelines:', data.linkedTimelines);
+                    console.log('Current isMobile state:', isMobile);
                     setShowLinkedTimelines(true);
                   }}
-                  className="w-full h-14 text-lg font-medium bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  className="w-full h-14 text-lg font-medium bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200"
                   size="lg"
                 >
                   <Link className="h-5 w-5 mr-2" />
@@ -2094,8 +2123,12 @@ export function ShonaCoinContribution() {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
-                      onClick={() => setShowLinkedTimelines(true)}
-                      className="flex-1"
+                      onClick={() => {
+                        console.log('Edit Links clicked, opening timeline selection');
+                        console.log('Current isMobile state:', isMobile);
+                        setShowLinkedTimelines(true);
+                      }}
+                      className="flex-1 transition-all duration-200"
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Links
@@ -2130,8 +2163,12 @@ export function ShonaCoinContribution() {
                   </p>
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowLinkedTimelines(true)}
-                    className="h-12 px-6"
+                    onClick={() => {
+                      console.log('Browse Available Timelines clicked');
+                      console.log('Current isMobile state:', isMobile);
+                      setShowLinkedTimelines(true);
+                    }}
+                    className="h-12 px-6 transition-all duration-200"
                   >
                     <Search className="h-4 w-4 mr-2" />
                     Browse Available Timelines
