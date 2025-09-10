@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import * as mockData from '@/data/mockData';
@@ -59,7 +59,8 @@ import {
   Info,
   Table,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -1241,92 +1242,233 @@ export function ShonaCoinContribution() {
         </div>
       );
 
-      const renderExcelImport = () => (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h4 className="font-medium flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Excel File Import
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              Upload an Excel file and map columns to the parent timeline's required fields.
-            </p>
-          </div>
+      const renderExcelImport = () => {
+        const [validationErrors, setValidationErrors] = useState<string[]>([]);
+        const [isValidating, setIsValidating] = useState(false);
+        const [isValidData, setIsValidData] = useState(false);
+        const fileInputRef = useRef<HTMLInputElement>(null);
 
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h5 className="font-medium mb-2">Upload Excel File</h5>
-              <p className="text-sm text-muted-foreground mb-4">
-                Drag and drop your Excel file here, or click to browse
+        const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            // Validate file type
+            const validTypes = [
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ];
+            
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(xls|xlsx)$/i)) {
+              toast.error('Please select a valid Excel file (.xls or .xlsx)');
+              return;
+            }
+
+            setUploadedFile(file);
+            setValidationErrors([]);
+            setIsValidData(false);
+            toast.success('File selected successfully!');
+            
+            // Reset file input
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }
+        };
+
+        const validateData = async () => {
+          if (!uploadedFile) return;
+          
+          setIsValidating(true);
+          setValidationErrors([]);
+          
+          // Simulate validation process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Mock validation results
+          const errors: string[] = [];
+          const mappedFields = Object.keys(columnMapping);
+          const requiredFields = mockParentTimelineFields.filter(f => f.required).map(f => f.id);
+          
+          // Check if all required fields are mapped
+          const missingRequired = requiredFields.filter(field => !mappedFields.includes(field));
+          if (missingRequired.length > 0) {
+            errors.push(`Missing required field mappings: ${missingRequired.join(', ')}`);
+          }
+          
+          // Simulate data validation errors
+          if (Math.random() > 0.7) {
+            errors.push('Row 45: Invalid date format in timeline field');
+          }
+          if (Math.random() > 0.8) {
+            errors.push('Row 78: Budget value exceeds maximum allowed');
+          }
+          
+          setValidationErrors(errors);
+          setIsValidData(errors.length === 0);
+          setIsValidating(false);
+          
+          if (errors.length === 0) {
+            toast.success('Data validation passed! Ready to import.');
+          } else {
+            toast.error(`Validation failed with ${errors.length} error(s)`);
+          }
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Excel File Import
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Upload an Excel file (.xls, .xlsx) and map columns to the parent timeline's required fields.
               </p>
-              <Button variant="outline" onClick={() => {
-                // Simulate file upload
-                const mockFile = new File([''], 'contribution_data.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                setUploadedFile(mockFile);
-                toast.success('File uploaded successfully!');
-              }}>
-                Choose File
-              </Button>
-              {uploadedFile && (
-                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span className="font-medium">{uploadedFile.name}</span>
-                    <span className="text-muted-foreground">(150 rows detected)</span>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h5 className="font-medium mb-2">Upload Excel File</h5>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Select an Excel file (.xls or .xlsx) to import data
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Choose File
+                </Button>
+                
+                {uploadedFile && (
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">{uploadedFile.name}</span>
+                      <span className="text-muted-foreground">
+                        ({(uploadedFile.size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {uploadedFile && (
+                <div className="space-y-4">
+                  <h5 className="font-medium">Column Mapping</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Map Excel columns to timeline fields. Required fields must be mapped.
+                  </p>
+                  <div className="grid gap-3">
+                    {mockParentTimelineFields.map(field => (
+                      <div key={field.id} className="flex items-center gap-3">
+                        <div className="w-1/3">
+                          <Label className={`text-sm ${field.required ? 'font-medium' : ''}`}>
+                            {field.label}
+                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                          </Label>
+                        </div>
+                        <div className="w-2/3">
+                          <Select
+                            value={columnMapping[field.id] || ''}
+                            onValueChange={(value) => setColumnMapping(prev => ({ ...prev, [field.id]: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Excel column..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">-- None --</SelectItem>
+                              <SelectItem value="column_a">Column A - Project Name</SelectItem>
+                              <SelectItem value="column_b">Column B - Description</SelectItem>
+                              <SelectItem value="column_c">Column C - Budget Amount</SelectItem>
+                              <SelectItem value="column_d">Column D - Due Date</SelectItem>
+                              <SelectItem value="column_e">Column E - Category</SelectItem>
+                              <SelectItem value="column_f">Column F - Priority</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {Object.keys(columnMapping).length > 0 && (
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={validateData}
+                        disabled={isValidating}
+                        className="flex-1"
+                      >
+                        {isValidating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
+                            Validating...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-4 w-4 mr-2" />
+                            Validate Data
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
+                  {validationErrors.length > 0 && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <h6 className="font-medium text-red-800 mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Validation Errors
+                      </h6>
+                      <ul className="text-sm text-red-700 space-y-1">
+                        {validationErrors.map((error, index) => (
+                          <li key={index}>• {error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {isValidData && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h6 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                        <Check className="h-4 w-4" />
+                        Ready to Import
+                      </h6>
+                      <div className="text-sm text-green-700 space-y-1">
+                        <p>• Data validation passed successfully</p>
+                        <p>• 150 records will be imported as sub-timelines</p>
+                        <p>• All required fields are properly mapped</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            {uploadedFile && (
-              <div className="space-y-4">
-                <h5 className="font-medium">Column Mapping</h5>
-                <div className="grid gap-3">
-                  {mockParentTimelineFields.map(field => (
-                    <div key={field.id} className="flex items-center gap-3">
-                      <div className="w-1/3">
-                        <Label className="text-sm">{field.label}</Label>
-                      </div>
-                      <div className="w-2/3">
-                        <Select
-                          value={columnMapping[field.id] || ''}
-                          onValueChange={(value) => setColumnMapping(prev => ({ ...prev, [field.id]: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Excel column..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="column_a">Column A - Title</SelectItem>
-                            <SelectItem value="column_b">Column B - Description</SelectItem>
-                            <SelectItem value="column_c">Column C - Amount</SelectItem>
-                            <SelectItem value="column_d">Column D - Date</SelectItem>
-                            <SelectItem value="column_e">Column E - Category</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))}
+            {uploadedFile && isValidData && (
+              <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+                <h5 className="font-medium mb-2 flex items-center gap-2">
+                  <Table className="h-4 w-4" />
+                  Import Summary
+                </h5>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>• File: {uploadedFile.name}</p>
+                  <p>• Records: 150 rows ready for import</p>
+                  <p>• Mapped fields: {Object.keys(columnMapping).length}</p>
+                  <p>• Sub-timelines will be created in parent contribution timeline</p>
                 </div>
               </div>
             )}
           </div>
-
-          {uploadedFile && Object.keys(columnMapping).length > 0 && (
-            <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
-              <h5 className="font-medium mb-2 flex items-center gap-2">
-                <Table className="h-4 w-4" />
-                Import Preview
-              </h5>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>• 150 records ready for import</p>
-                <p>• {Object.keys(columnMapping).length} fields mapped</p>
-                <p>• Data will be validated before creating sub-timelines</p>
-              </div>
-            </div>
-          )}
-        </div>
-      );
+        );
+      };
 
       const renderAIGenerated = () => (
         <div className="space-y-6">
