@@ -56,7 +56,10 @@ import {
   Handshake,
   CheckCircle,
   TrendingUp,
-  Info
+  Info,
+  Table,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -989,6 +992,533 @@ export function ShonaCoinContribution() {
               Save Configuration
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  // Save custom inputs method
+  const saveCustomInputsMethod = (method: string, inputData: any) => {
+    setData(prev => ({
+      ...prev,
+      customInputs: {
+        ...prev.customInputs,
+        inputMethod: method,
+        additionalData: inputData,
+        lastUpdated: new Date().toISOString()
+      }
+    }));
+    setShowCustomInputs(null);
+    toast.success(`${method.charAt(0).toUpperCase() + method.slice(1)} input method configured successfully!`);
+  };
+
+  // Render custom inputs modal/drawer
+  const renderCustomInputsModal = () => {
+    if (!showCustomInputs) return null;
+
+    const mockParentTimelineFields = [
+      { id: 'project_title', label: 'Project Title', type: 'text', required: true },
+      { id: 'description', label: 'Description', type: 'textarea', required: true },
+      { id: 'budget', label: 'Budget Estimate', type: 'number', required: false },
+      { id: 'timeline', label: 'Timeline', type: 'date', required: true },
+      { id: 'category', label: 'Category', type: 'select', options: ['Development', 'Marketing', 'Research'], required: true },
+      { id: 'priority', label: 'Priority', type: 'select', options: ['High', 'Medium', 'Low'], required: false }
+    ];
+
+    const mockAPIs = [
+      { 
+        id: 'google-sheets', 
+        name: 'Google Sheets', 
+        icon: '📊', 
+        description: 'Import data from Google Sheets',
+        fields: ['spreadsheet_id', 'sheet_name', 'range']
+      },
+      { 
+        id: 'airtable', 
+        name: 'Airtable', 
+        icon: '🗃️', 
+        description: 'Connect to Airtable database',
+        fields: ['base_id', 'table_name', 'api_key']
+      },
+      { 
+        id: 'notion', 
+        name: 'Notion', 
+        icon: '📝', 
+        description: 'Sync with Notion database',
+        fields: ['database_id', 'integration_token']
+      },
+      { 
+        id: 'zapier', 
+        name: 'Zapier', 
+        icon: '⚡', 
+        description: 'Connect via Zapier webhook',
+        fields: ['webhook_url', 'trigger_event']
+      }
+    ];
+
+    const ContentComponent = () => {
+      const [isLoading, setIsLoading] = useState(false);
+      const [formData, setFormData] = useState<any>({});
+      const [selectedAPI, setSelectedAPI] = useState<string | null>(null);
+      const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+      const [columnMapping, setColumnMapping] = useState<any>({});
+      const [aiPrompt, setAiPrompt] = useState('');
+      const [generatedData, setGeneratedData] = useState<any>(null);
+
+      const handleSave = async () => {
+        setIsLoading(true);
+        
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        let saveData: any = {};
+        
+        switch (showCustomInputs) {
+          case 'manual':
+            saveData = { formData, fieldsCount: Object.keys(formData).length };
+            break;
+          case 'api':
+            saveData = { selectedAPI, apiConfig: formData };
+            break;
+          case 'excel':
+            saveData = { fileName: uploadedFile?.name, columnMapping, recordsCount: 150 };
+            break;
+          case 'ai':
+            saveData = { prompt: aiPrompt, generatedData, fieldsGenerated: generatedData ? Object.keys(generatedData).length : 0 };
+            break;
+        }
+        
+        saveCustomInputsMethod(showCustomInputs, saveData);
+        setIsLoading(false);
+      };
+
+      const renderManualEntry = () => (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Parent Timeline Required Fields
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Fill in the custom fields required by the parent timeline. These will be saved as sub-timelines.
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            {mockParentTimelineFields.map(field => (
+              <div key={field.id} className="space-y-2">
+                <Label htmlFor={field.id} className="flex items-center gap-2">
+                  {field.label} {field.required && <span className="text-destructive">*</span>}
+                </Label>
+                {field.type === 'text' && (
+                  <Input
+                    id={field.id}
+                    placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    value={formData[field.id] || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                  />
+                )}
+                {field.type === 'textarea' && (
+                  <Textarea
+                    id={field.id}
+                    placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    rows={3}
+                    value={formData[field.id] || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                  />
+                )}
+                {field.type === 'number' && (
+                  <Input
+                    id={field.id}
+                    type="number"
+                    placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    value={formData[field.id] || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                  />
+                )}
+                {field.type === 'date' && (
+                  <Input
+                    id={field.id}
+                    type="date"
+                    value={formData[field.id] || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                  />
+                )}
+                {field.type === 'select' && (
+                  <Select
+                    value={formData[field.id] || ''}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, [field.id]: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}...`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options?.map(option => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Settings className="h-4 w-4" />
+              Drag and drop support for reordering fields will be available in next version
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderAPIConnection = () => (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              Available API Connections
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Connect to external data sources that match the parent timeline's input structure.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            {mockAPIs.map(api => (
+              <div
+                key={api.id}
+                className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary/50 ${
+                  selectedAPI === api.id ? 'border-primary bg-primary/5' : ''
+                }`}
+                onClick={() => setSelectedAPI(api.id)}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{api.icon}</span>
+                  <div className="flex-1">
+                    <h5 className="font-medium">{api.name}</h5>
+                    <p className="text-sm text-muted-foreground mb-3">{api.description}</p>
+                    {selectedAPI === api.id && (
+                      <div className="space-y-3 mt-4 pt-3 border-t">
+                        <h6 className="text-sm font-medium">Configuration</h6>
+                        {api.fields.map(field => (
+                          <div key={field} className="space-y-1">
+                            <Label htmlFor={field} className="text-xs">
+                              {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Label>
+                            <Input
+                              id={field}
+                              placeholder={`Enter ${field.replace('_', ' ')}...`}
+                              value={formData[field] || ''}
+                              onChange={(e) => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedAPI === api.id && (
+                    <Check className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedAPI && (
+            <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+              <h5 className="font-medium mb-2 flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                API Input Preview
+              </h5>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>• Data will be mapped to parent timeline fields</p>
+                <p>• Real-time sync available for supported APIs</p>
+                <p>• Validation will occur before saving to database</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+      const renderExcelImport = () => (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Excel File Import
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Upload an Excel file and map columns to the parent timeline's required fields.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h5 className="font-medium mb-2">Upload Excel File</h5>
+              <p className="text-sm text-muted-foreground mb-4">
+                Drag and drop your Excel file here, or click to browse
+              </p>
+              <Button variant="outline" onClick={() => {
+                // Simulate file upload
+                const mockFile = new File([''], 'contribution_data.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                setUploadedFile(mockFile);
+                toast.success('File uploaded successfully!');
+              }}>
+                Choose File
+              </Button>
+              {uploadedFile && (
+                <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">{uploadedFile.name}</span>
+                    <span className="text-muted-foreground">(150 rows detected)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {uploadedFile && (
+              <div className="space-y-4">
+                <h5 className="font-medium">Column Mapping</h5>
+                <div className="grid gap-3">
+                  {mockParentTimelineFields.map(field => (
+                    <div key={field.id} className="flex items-center gap-3">
+                      <div className="w-1/3">
+                        <Label className="text-sm">{field.label}</Label>
+                      </div>
+                      <div className="w-2/3">
+                        <Select
+                          value={columnMapping[field.id] || ''}
+                          onValueChange={(value) => setColumnMapping(prev => ({ ...prev, [field.id]: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Excel column..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="column_a">Column A - Title</SelectItem>
+                            <SelectItem value="column_b">Column B - Description</SelectItem>
+                            <SelectItem value="column_c">Column C - Amount</SelectItem>
+                            <SelectItem value="column_d">Column D - Date</SelectItem>
+                            <SelectItem value="column_e">Column E - Category</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {uploadedFile && Object.keys(columnMapping).length > 0 && (
+            <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+              <h5 className="font-medium mb-2 flex items-center gap-2">
+                <Table className="h-4 w-4" />
+                Import Preview
+              </h5>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p>• 150 records ready for import</p>
+                <p>• {Object.keys(columnMapping).length} fields mapped</p>
+                <p>• Data will be validated before creating sub-timelines</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+      const renderAIGenerated = () => (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="font-medium flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              AI-Generated Inputs
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Generate missing inputs using AI based on your contribution context and parent timeline requirements.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ai-prompt">Generation Instructions</Label>
+              <Textarea
+                id="ai-prompt"
+                placeholder="Describe what you want to generate... (e.g., 'Generate project milestones for a solar panel installation with a budget of $50,000')"
+                rows={4}
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setIsLoading(true);
+                // Simulate AI generation
+                setTimeout(() => {
+                  setGeneratedData({
+                    project_title: 'Solar Panel Installation Project',
+                    description: 'Complete residential solar panel system installation with battery backup',
+                    budget: '50000',
+                    timeline: '2024-06-01',
+                    category: 'Development',
+                    priority: 'High'
+                  });
+                  setIsLoading(false);
+                  toast.success('AI inputs generated successfully!');
+                }, 2000);
+              }}
+              disabled={!aiPrompt.trim() || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Brain className="h-4 w-4 mr-2" />
+                  Generate Inputs
+                </>
+              )}
+            </Button>
+          </div>
+
+          {generatedData && (
+            <div className="space-y-4">
+              <h5 className="font-medium flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Generated Preview
+              </h5>
+              <div className="space-y-3">
+                {Object.entries(generatedData).map(([key, value]) => (
+                  <div key={key} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">
+                        {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{value as string}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-700 mb-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="font-medium">Parent Timeline Approval Required</span>
+                </div>
+                <p className="text-sm text-amber-600">
+                  Generated inputs will be sent to the parent timeline owner for approval before being saved as sub-timelines.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+      return (
+        <div className="space-y-6">
+          {showCustomInputs === 'manual' && renderManualEntry()}
+          {showCustomInputs === 'api' && renderAPIConnection()}
+          {showCustomInputs === 'excel' && renderExcelImport()}
+          {showCustomInputs === 'ai' && renderAIGenerated()}
+
+          <div className="flex gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCustomInputs(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={isLoading || (
+                (showCustomInputs === 'manual' && Object.keys(formData).length === 0) ||
+                (showCustomInputs === 'api' && !selectedAPI) ||
+                (showCustomInputs === 'excel' && !uploadedFile) ||
+                (showCustomInputs === 'ai' && !generatedData)
+              )}
+              className="flex-1"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Save Configuration
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      );
+    };
+
+    const getModalTitle = () => {
+      switch (showCustomInputs) {
+        case 'manual': return 'Manual Entry Configuration';
+        case 'api': return 'API Connection Setup';
+        case 'excel': return 'Excel Import Configuration';
+        case 'ai': return 'AI Input Generation';
+        default: return 'Custom Input Configuration';
+      }
+    };
+
+    // Mobile Implementation with Bottom Drawer
+    if (isMobile) {
+      return (
+        <Drawer open={!!showCustomInputs} onOpenChange={(open) => {
+          if (!open) setShowCustomInputs(null);
+        }}>
+          <DrawerContent className="max-h-[95vh] z-[100]">
+            <DrawerHeader className="text-left pb-4">
+              <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
+                {showCustomInputs === 'manual' && <FileText className="h-5 w-5" />}
+                {showCustomInputs === 'api' && <Network className="h-5 w-5" />}
+                {showCustomInputs === 'excel' && <Upload className="h-5 w-5" />}
+                {showCustomInputs === 'ai' && <Zap className="h-5 w-5" />}
+                {getModalTitle()}
+              </DrawerTitle>
+            </DrawerHeader>
+            <ScrollArea className="flex-1 px-4">
+              <ContentComponent />
+            </ScrollArea>
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    // Desktop Implementation with Modal Dialog
+    return (
+      <Dialog open={!!showCustomInputs} onOpenChange={(open) => {
+        if (!open) setShowCustomInputs(null);
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[100]">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+              {showCustomInputs === 'manual' && <FileText className="h-5 w-5" />}
+              {showCustomInputs === 'api' && <Network className="h-5 w-5" />}
+              {showCustomInputs === 'excel' && <Upload className="h-5 w-5" />}
+              {showCustomInputs === 'ai' && <Zap className="h-5 w-5" />}
+              {getModalTitle()}
+            </DialogTitle>
+            <DialogDescription>
+              Configure your custom contribution input method. Data will be saved as sub-timelines within your contribution.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 py-4">
+            <ContentComponent />
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     );
@@ -2206,127 +2736,110 @@ export function ShonaCoinContribution() {
                 <FileText className="h-5 w-5" />
                 Capture Custom Contribution Inputs
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Choose how you want to provide the required contribution data to this timeline.
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Required Fields */}
-              <div className="space-y-4">
-                <h4 className="font-medium">Required Information</h4>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      placeholder="Contribution title..."
-                      value={data.customInputs.title}
-                      onChange={(e) => setData(prev => ({
-                        ...prev,
-                        customInputs: { ...prev.customInputs, title: e.target.value }
-                      }))}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description *</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe your contribution..."
-                      rows={3}
-                      value={data.customInputs.description}
-                      onChange={(e) => setData(prev => ({
-                        ...prev,
-                        customInputs: { ...prev.customInputs, description: e.target.value }
-                      }))}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="context">Context *</Label>
-                    <Textarea
-                      id="context"
-                      placeholder="Provide context for your contribution..."
-                      rows={3}
-                      value={data.customInputs.context}
-                      onChange={(e) => setData(prev => ({
-                        ...prev,
-                        customInputs: { ...prev.customInputs, context: e.target.value }
-                      }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Input Methods */}
+              {/* Input Methods Grid */}
               <div className="space-y-4">
                 <h4 className="font-medium">Choose Input Method</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button 
                     variant="outline" 
-                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    className={`h-32 flex-col gap-3 hover:border-primary hover:bg-primary/5 transition-all ${
+                      data.customInputs.inputMethod === 'manual' ? 'border-primary bg-primary/5' : ''
+                    }`}
                     onClick={() => setShowCustomInputs('manual')}
                   >
-                    <FileText className="h-6 w-6" />
-                    <span className="text-sm font-medium">Manual Entry</span>
-                    <span className="text-xs text-muted-foreground">Fill forms manually</span>
+                    <FileText className="h-8 w-8 text-primary" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">Manual Entry</span>
+                      <span className="text-xs text-muted-foreground">Fill forms with custom fields</span>
+                    </div>
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    className={`h-32 flex-col gap-3 hover:border-primary hover:bg-primary/5 transition-all ${
+                      data.customInputs.inputMethod === 'api' ? 'border-primary bg-primary/5' : ''
+                    }`}
                     onClick={() => setShowCustomInputs('api')}
                   >
-                    <Network className="h-6 w-6" />
-                    <span className="text-sm font-medium">API Connection</span>
-                    <span className="text-xs text-muted-foreground">Connect external APIs</span>
+                    <Network className="h-8 w-8 text-primary" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">API Connection</span>
+                      <span className="text-xs text-muted-foreground">Connect external data sources</span>
+                    </div>
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    className={`h-32 flex-col gap-3 hover:border-primary hover:bg-primary/5 transition-all ${
+                      data.customInputs.inputMethod === 'excel' ? 'border-primary bg-primary/5' : ''
+                    }`}
                     onClick={() => setShowCustomInputs('excel')}
                   >
-                    <Upload className="h-6 w-6" />
-                    <span className="text-sm font-medium">Excel Import</span>
-                    <span className="text-xs text-muted-foreground">Import from spreadsheet</span>
+                    <Upload className="h-8 w-8 text-primary" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">Excel Import</span>
+                      <span className="text-xs text-muted-foreground">Upload and map spreadsheet data</span>
+                    </div>
                   </Button>
                   
                   <Button 
                     variant="outline" 
-                    className="h-24 flex-col gap-2 hover:border-primary hover:bg-primary/5"
+                    className={`h-32 flex-col gap-3 hover:border-primary hover:bg-primary/5 transition-all ${
+                      data.customInputs.inputMethod === 'ai' ? 'border-primary bg-primary/5' : ''
+                    }`}
                     onClick={() => setShowCustomInputs('ai')}
                   >
-                    <Zap className="h-6 w-6" />
-                    <span className="text-sm font-medium">AI Generated</span>
-                    <span className="text-xs text-muted-foreground">Auto-generate inputs</span>
+                    <Zap className="h-8 w-8 text-primary" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">AI Generated</span>
+                      <span className="text-xs text-muted-foreground">Auto-generate missing inputs</span>
+                    </div>
                   </Button>
                 </div>
               </div>
 
               {/* Current Input Summary */}
               {data.customInputs.inputMethod && (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h5 className="font-medium">Current Input Method</h5>
+                <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-primary" />
+                      <h5 className="font-medium">Active Input Method</h5>
+                    </div>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => setShowCustomInputs(data.customInputs.inputMethod)}
+                      className="text-primary hover:text-primary/80"
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {data.customInputs.inputMethod} - 
-                    {data.customInputs.inputMethod === 'manual' && ' Form-based data entry'}
-                    {data.customInputs.inputMethod === 'api' && ' External API integration'}
-                    {data.customInputs.inputMethod === 'excel' && ' Spreadsheet import'}
-                    {data.customInputs.inputMethod === 'ai' && ' AI-generated content'}
-                  </p>
-                  {data.customInputs.additionalData && (
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {Object.keys(data.customInputs.additionalData).length} additional fields configured
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium capitalize">
+                      {data.customInputs.inputMethod?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {data.customInputs.inputMethod === 'manual' && 'Forms configured with custom fields for data entry'}
+                      {data.customInputs.inputMethod === 'api' && 'External API integration set up for data collection'}
+                      {data.customInputs.inputMethod === 'excel' && 'Excel file mapping configured for data import'}
+                      {data.customInputs.inputMethod === 'ai' && 'AI generation rules defined for automatic input creation'}
+                    </p>
+                    {data.customInputs.additionalData && (
+                      <div className="mt-2 pt-2 border-t border-primary/20">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Settings className="h-3 w-3" />
+                          {Object.keys(data.customInputs.additionalData).length} fields configured
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -2769,6 +3282,7 @@ export function ShonaCoinContribution() {
       {renderTypeConfigModal('network')}
       {renderTypeConfigModal('asset')}
       {renderLinkedTimelinesModal()}
+      {renderCustomInputsModal()}
     </div>
   );
 }
