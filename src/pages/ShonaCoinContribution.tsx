@@ -1658,8 +1658,8 @@ export function ShonaCoinContribution() {
         <Drawer open={!!showCustomInputs} onOpenChange={(open) => {
           if (!open) setShowCustomInputs(null);
         }}>
-          <DrawerContent className="max-h-[95vh] z-[100]">
-            <DrawerHeader className="text-left pb-4">
+          <DrawerContent className="max-h-[95vh] z-[100] flex flex-col">
+            <DrawerHeader className="text-left pb-4 border-b">
               <DrawerTitle className="flex items-center gap-2 text-lg font-semibold">
                 {showCustomInputs === 'manual' && <FileText className="h-5 w-5" />}
                 {showCustomInputs === 'api' && <Network className="h-5 w-5" />}
@@ -1668,9 +1668,9 @@ export function ShonaCoinContribution() {
                 {getModalTitle()}
               </DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4">
+            <div className="flex-1 overflow-hidden flex flex-col px-4 pb-4">
               <ContentComponent />
-            </ScrollArea>
+            </div>
           </DrawerContent>
         </Drawer>
       );
@@ -1694,9 +1694,9 @@ export function ShonaCoinContribution() {
               Configure your custom contribution input method. Data will be saved as sub-timelines within your contribution.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 py-4">
+          <div className="flex-1 overflow-hidden py-4">
             <ContentComponent />
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     );
