@@ -1259,18 +1259,16 @@ export function ShonaCoinContribution() {
             
             if (!validTypes.includes(file.type) && !file.name.match(/\.(xls|xlsx)$/i)) {
               toast.error('Please select a valid Excel file (.xls or .xlsx)');
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
               return;
             }
 
             setUploadedFile(file);
             setValidationErrors([]);
             setIsValidData(false);
-            toast.success('File selected successfully!');
-            
-            // Reset file input
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
+            toast.success(`File selected: ${file.name}`);
           }
         };
 
@@ -1336,26 +1334,53 @@ export function ShonaCoinContribution() {
               
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
                 <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h5 className="font-medium mb-2">Upload Excel File</h5>
+                <h5 className="font-medium mb-2">
+                  {uploadedFile ? 'File Selected' : 'Upload Excel File'}
+                </h5>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Select an Excel file (.xls or .xlsx) to import data
+                  {uploadedFile 
+                    ? 'File ready for column mapping and validation' 
+                    : 'Click below to select an Excel file (.xls or .xlsx) to import data'
+                  }
                 </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Choose File
-                </Button>
                 
-                {uploadedFile && (
-                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center justify-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="font-medium">{uploadedFile.name}</span>
-                      <span className="text-muted-foreground">
-                        ({(uploadedFile.size / 1024).toFixed(1)} KB)
-                      </span>
+                {!uploadedFile ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Choose File
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-green-700">{uploadedFile.name}</span>
+                        <span className="text-green-600">
+                          ({(uploadedFile.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setUploadedFile(null);
+                        setColumnMapping({});
+                        setValidationErrors([]);
+                        setIsValidData(false);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                      className="gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Choose Different File
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1398,28 +1423,28 @@ export function ShonaCoinContribution() {
                     ))}
                   </div>
 
-                  {Object.keys(columnMapping).length > 0 && (
-                    <div className="flex gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={validateData}
-                        disabled={isValidating}
-                        className="flex-1"
-                      >
-                        {isValidating ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                            Validating...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4 mr-2" />
-                            Validate Data
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
+                   {Object.keys(columnMapping).length > 0 && (
+                     <div className="flex gap-3">
+                       <Button
+                         variant="outline"
+                         onClick={validateData}
+                         disabled={isValidating || Object.keys(columnMapping).length === 0}
+                         className="flex-1"
+                       >
+                         {isValidating ? (
+                           <>
+                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                             Validating Data...
+                           </>
+                         ) : (
+                           <>
+                             <Shield className="h-4 w-4 mr-2" />
+                             Validate Data
+                           </>
+                         )}
+                       </Button>
+                     </div>
+                   )}
 
                   {validationErrors.length > 0 && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -1564,6 +1589,22 @@ export function ShonaCoinContribution() {
         </div>
       );
 
+      const getIsValidForMethod = () => {
+        switch (showCustomInputs) {
+          case 'manual':
+            return Object.keys(formData).length > 0;
+          case 'api':
+            return selectedAPI !== null;
+          case 'excel':
+            // For excel, we need a different approach since isValidData is defined inside renderExcelImport
+            return uploadedFile !== null;
+          case 'ai':
+            return generatedData !== null;
+          default:
+            return false;
+        }
+      };
+
       return (
         <div className="space-y-6">
           {showCustomInputs === 'manual' && renderManualEntry()}
@@ -1581,12 +1622,7 @@ export function ShonaCoinContribution() {
             </Button>
             <Button 
               onClick={handleSave}
-              disabled={isLoading || (
-                (showCustomInputs === 'manual' && Object.keys(formData).length === 0) ||
-                (showCustomInputs === 'api' && !selectedAPI) ||
-                (showCustomInputs === 'excel' && !uploadedFile) ||
-                (showCustomInputs === 'ai' && !generatedData)
-              )}
+              disabled={isLoading || !getIsValidForMethod()}
               className="flex-1"
             >
               {isLoading ? (
