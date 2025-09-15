@@ -136,6 +136,7 @@ interface ContributionData {
 interface TypeConfig {
   selectedSubtypes: string[];
   customSubtype: string;
+  customSubtypes: string[];
   value: string;
   valuationMethod: 'fixed' | 'formula' | 'rule';
   notes: string;
@@ -305,11 +306,26 @@ export function ShonaCoinContribution() {
   ];
 
   const intellectualSubtypes = [
-    { id: 'ideas', name: 'Ideas', description: 'Creative concepts and strategies' },
-    { id: 'research', name: 'Research', description: 'Market research and analysis' },
-    { id: 'code', name: 'Code/Algorithms', description: 'Software development' },
-    { id: 'consultations', name: 'Consultations', description: 'Expert advisory services' },
-    { id: 'custom', name: 'Custom Option', description: 'Other intellectual contributions' }
+    { id: 'courses_tutoring', name: 'Courses and Tutoring', description: 'Educational courses and personal tutoring' },
+    { id: 'research', name: 'Research', description: 'Research studies and analysis' },
+    { id: 'ideas_perspectives', name: 'Ideas, Perspective & Strategies', description: 'Strategic insights and innovative perspectives' },
+    { id: 'code_algorithms', name: 'Code and Algorithm Snippets', description: 'Software code and algorithm contributions' },
+    { id: 'mentorship', name: 'Mentorship Program', description: 'Structured mentorship and guidance' },
+    { id: 'project_planning', name: 'Project Planning & Management', description: 'Project coordination and management expertise' },
+    { id: 'consultation', name: 'Consultation', description: 'Expert advisory and consultation services' },
+    { id: 'prime_reviews', name: 'Prime Reviews', description: 'Comprehensive reviews and evaluations' },
+    { id: 'guide_counselling', name: 'Guide and Counselling', description: 'Professional guidance and counselling' },
+    { id: 'customer_support', name: 'Customer Support', description: 'Customer service and support' },
+    { id: 'capacity_building', name: 'Capacity Building', description: 'Skills development and capacity enhancement' },
+    { id: 'knowledge_sessions', name: 'Knowledge Sharing Sessions', description: 'Workshops, seminars, and webinars' },
+    { id: 'technical_documentation', name: 'Technical Documentation & Writing', description: 'Technical writing and documentation' },
+    { id: 'design_thinking', name: 'Design Thinking / Innovation Frameworks', description: 'Innovation methodologies and frameworks' },
+    { id: 'training_modules', name: 'Training Modules & Educational Materials', description: 'Educational content and training materials' },
+    { id: 'policy_governance', name: 'Policy & Governance Advisory', description: 'Policy development and governance advice' },
+    { id: 'content_creation', name: 'Content Creation', description: 'Blogs, whitepapers, case studies' },
+    { id: 'open_source', name: 'Open Source Contributions', description: 'Open source project contributions' },
+    { id: 'intellectual_property', name: 'Intellectual Property Contributions', description: 'Patents, designs, copyrights' },
+    { id: 'expert_reviews', name: 'Expert Reviews & Evaluations', description: 'Professional reviews and assessments' }
   ];
 
   const networkSubtypes = [
@@ -455,6 +471,7 @@ export function ShonaCoinContribution() {
       const currentData = prev[type] || {
         selectedSubtypes: [],
         customSubtype: '',
+        customSubtypes: [],
         value: '',
         valuationMethod: 'fixed' as const,
         notes: '',
@@ -485,6 +502,7 @@ export function ShonaCoinContribution() {
       const currentData = prev[type] || {
         selectedSubtypes: [],
         customSubtype: '',
+        customSubtypes: [],
         value: '',
         valuationMethod: 'fixed' as const,
         notes: '',
@@ -506,16 +524,70 @@ export function ShonaCoinContribution() {
     });
   };
 
+  const addCustomSubtype = (type: string) => {
+    const config = typeConfigData[type];
+    if (config && config.customSubtype.trim()) {
+      setTypeConfigData(prev => {
+        const currentData = prev[type] || {
+          selectedSubtypes: [],
+          customSubtype: '',
+          customSubtypes: [],
+          value: '',
+          valuationMethod: 'fixed' as const,
+          notes: '',
+          gainPercentage: 0,
+          negotiationRequested: false
+        };
+        
+        return {
+          ...prev,
+          [type]: {
+            ...currentData,
+            customSubtypes: [...currentData.customSubtypes, currentData.customSubtype.trim()],
+            customSubtype: ''
+          }
+        };
+      });
+    }
+  };
+
+  const removeCustomSubtype = (type: string, index: number) => {
+    setTypeConfigData(prev => {
+      const currentData = prev[type];
+      if (!currentData) return prev;
+      
+      return {
+        ...prev,
+        [type]: {
+          ...currentData,
+          customSubtypes: currentData.customSubtypes.filter((_, i) => i !== index)
+        }
+      };
+    });
+  };
+
   const saveTypeConfiguration = (type: string) => {
     const config = typeConfigData[type];
-    if (config && (config.selectedSubtypes.length > 0 || config.customSubtype)) {
+    if (config && (config.selectedSubtypes.length > 0 || config.customSubtype.trim() || config.customSubtypes.length > 0)) {
+      // Add current custom subtype if not empty
+      let finalCustomSubtypes = [...config.customSubtypes];
+      if (config.customSubtype.trim()) {
+        finalCustomSubtypes.push(config.customSubtype.trim());
+      }
+      
+      const finalConfig = {
+        ...config,
+        customSubtypes: finalCustomSubtypes,
+        customSubtype: ''
+      };
+      
       setData(prev => ({
         ...prev,
         contributionTypes: {
           ...prev.contributionTypes,
           [type]: {
             ...prev.contributionTypes[type],
-            subtypes: [config]
+            subtypes: [finalConfig]
           }
         }
       }));
@@ -637,11 +709,20 @@ export function ShonaCoinContribution() {
     const config = typeConfigData[type] || {
       selectedSubtypes: [],
       customSubtype: '',
+      customSubtypes: [],
       value: '',
       valuationMethod: 'fixed' as const,
       notes: '',
       gainPercentage: 0,
-      negotiationRequested: false
+      negotiationRequested: false,
+      amount: '',
+      dates: { start: '', end: '' },
+      interestRate: '',
+      expectedReturns: '',
+      formula: '',
+      rule: '',
+      linkedValue: 0,
+      totalValue: 0
     };
 
     const getSubtypes = () => {
@@ -655,7 +736,7 @@ export function ShonaCoinContribution() {
     };
 
     const subtypes = getSubtypes();
-    const isConfigComplete = config.selectedSubtypes.length > 0 || config.customSubtype;
+    const isConfigComplete = config.selectedSubtypes.length > 0 || config.customSubtype.trim() || config.customSubtypes.length > 0;
 
     const ConfigContent = () => (
       <div className="space-y-6">
@@ -718,19 +799,59 @@ export function ShonaCoinContribution() {
         </div>
 
         {/* Custom Subtype Input */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Label className="text-base font-medium flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Custom Subtype (Optional)
+            Add More (Custom Subtypes)
           </Label>
-          <Input
-            placeholder="e.g., UX Design Framework, Patent Research, etc."
-            value={config.customSubtype}
-            onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
-            className="w-full"
-          />
+          
+          {/* Display added custom subtypes */}
+          {config.customSubtypes.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">Added Custom Subtypes:</div>
+              <div className="space-y-2">
+                {config.customSubtypes.map((customSubtype, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-sm font-medium">{customSubtype}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCustomSubtype(type, index)}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Input for new custom subtype */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g., UX Design Framework, Patent Research, etc."
+              value={config.customSubtype}
+              onChange={(e) => updateTypeConfigField(type, 'customSubtype', e.target.value)}
+              className="flex-1"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && config.customSubtype.trim()) {
+                  addCustomSubtype(type);
+                }
+              }}
+            />
+            <Button
+              onClick={() => addCustomSubtype(type)}
+              disabled={!config.customSubtype.trim()}
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Add your own contribution type if none of the above options fit your needs
+            Add your own contribution types that aren't listed above. Press Enter or click + to add.
           </p>
         </div>
 
