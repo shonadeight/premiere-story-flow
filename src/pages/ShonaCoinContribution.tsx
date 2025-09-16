@@ -1121,17 +1121,39 @@ export function ShonaCoinContribution() {
 
   // Save custom inputs method
   const saveCustomInputsMethod = (method: string, inputData: any) => {
+    let displayName = method.charAt(0).toUpperCase() + method.slice(1);
+    
+    // For API connections, show specific type in the summary
+    if (method === 'api' && inputData) {
+      if (inputData.type === 'available_api') {
+        displayName = `API Connection (${inputData.apiName})`;
+      } else if (inputData.type === 'custom_api') {
+        displayName = `Custom API (${inputData.apiName})`;
+      } else if (inputData.activeTab === 'custom' && inputData.customAPIData) {
+        displayName = `Custom API (${inputData.customAPIData.name})`;
+      } else if (inputData.activeTab === 'available' && inputData.selectedAPI) {
+        const selectedApiData = [
+          { id: 'google-sheets', name: 'Google Sheets' },
+          { id: 'airtable', name: 'Airtable' },
+          { id: 'notion', name: 'Notion' },
+          { id: 'zapier', name: 'Zapier' }
+        ].find(api => api.id === inputData.selectedAPI);
+        displayName = `API Connection (${selectedApiData?.name || 'Unknown'})`;
+      }
+    }
+    
     setData(prev => ({
       ...prev,
       customInputs: {
         ...prev.customInputs,
         inputMethod: method,
+        displayName,
         additionalData: inputData,
         lastUpdated: new Date().toISOString()
       }
     }));
     setShowCustomInputs(null);
-    toast.success(`${method.charAt(0).toUpperCase() + method.slice(1)} input method configured successfully!`);
+    toast.success(`${displayName} configured successfully!`);
   };
 
   // Render custom inputs modal/drawer
@@ -1304,6 +1326,29 @@ export function ShonaCoinContribution() {
           requestType: 'GET',
           body: ''
         });
+
+        // Store custom API data in formData for access in parent scope
+        const updateFormDataWithCustomAPI = () => {
+          setFormData(prev => ({
+            ...prev,
+            activeTab,
+            customAPIData: customAPIData
+          }));
+        };
+
+        // Update formData whenever customAPIData or activeTab changes
+        React.useEffect(() => {
+          updateFormDataWithCustomAPI();
+        }, [customAPIData, activeTab]);
+
+        // Check if save should be enabled
+        const canSaveAPI = () => {
+          if (activeTab === 'available') {
+            return selectedAPI && formData && Object.keys(formData).length > 0;
+          } else {
+            return customAPIData.name && customAPIData.baseUrl;
+          }
+        };
 
         const addHeader = () => {
           setCustomAPIData(prev => ({
@@ -1897,7 +1942,8 @@ export function ShonaCoinContribution() {
           case 'manual':
             return Object.keys(formData).length > 0;
           case 'api':
-            return selectedAPI !== null;
+            // For API validation, check if we have either a selected available API or valid custom API data
+            return selectedAPI !== null || (formData.customAPIData && formData.customAPIData.name && formData.customAPIData.baseUrl);
           case 'excel':
             // For excel, we need a different approach since isValidData is defined inside renderExcelImport
             return uploadedFile !== null;
