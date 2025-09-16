@@ -1341,7 +1341,7 @@ export function ShonaCoinContribution() {
           updateFormDataWithCustomAPI();
         }, [customAPIData, activeTab]);
 
-        // Check if save should be enabled
+        // Check if save should be enabled for API connections
         const canSaveAPI = () => {
           if (activeTab === 'available') {
             return selectedAPI && formData && Object.keys(formData).length > 0;
@@ -1382,7 +1382,7 @@ export function ShonaCoinContribution() {
         };
 
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="space-y-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Network className="h-4 w-4" />
@@ -1460,7 +1460,7 @@ export function ShonaCoinContribution() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="api-name">API Name</Label>
+                      <Label htmlFor="api-name">API Name *</Label>
                       <Input
                         id="api-name"
                         placeholder="Enter API name..."
@@ -1469,7 +1469,7 @@ export function ShonaCoinContribution() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="base-url">Base URL</Label>
+                      <Label htmlFor="base-url">Base URL *</Label>
                       <Input
                         id="base-url"
                         placeholder="https://api.example.com"
