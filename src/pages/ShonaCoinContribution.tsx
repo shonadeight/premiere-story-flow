@@ -1382,8 +1382,9 @@ export function ShonaCoinContribution() {
         };
 
         return (
-          <div className="space-y-4">
-            <div className="space-y-4">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="space-y-4 p-6 pb-4">
               <h4 className="font-medium flex items-center gap-2">
                 <Network className="h-4 w-4" />
                 API Connection Setup
@@ -1393,199 +1394,223 @@ export function ShonaCoinContribution() {
               </p>
             </div>
 
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'available' | 'custom')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="available">Available APIs</TabsTrigger>
-                <TabsTrigger value="custom">Custom Connection</TabsTrigger>
-              </TabsList>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'available' | 'custom')}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="available">Available APIs</TabsTrigger>
+                  <TabsTrigger value="custom">Custom Connection</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="available" className="space-y-4 mt-4">
-                <div className="grid gap-4">
-                  {mockAPIs.map(api => (
-                    <div
-                      key={api.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary/50 ${
-                        selectedAPI === api.id ? 'border-primary bg-primary/5' : ''
-                      }`}
-                      onClick={() => setSelectedAPI(api.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">{api.icon}</span>
-                        <div className="flex-1">
-                          <h5 className="font-medium">{api.name}</h5>
-                          <p className="text-sm text-muted-foreground mb-3">{api.description}</p>
+                <TabsContent value="available" className="space-y-4">
+                  <div className="grid gap-4">
+                    {mockAPIs.map(api => (
+                      <div
+                        key={api.id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary/50 ${
+                          selectedAPI === api.id ? 'border-primary bg-primary/5' : ''
+                        }`}
+                        onClick={() => setSelectedAPI(api.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{api.icon}</span>
+                          <div className="flex-1">
+                            <h5 className="font-medium">{api.name}</h5>
+                            <p className="text-sm text-muted-foreground mb-3">{api.description}</p>
+                            {selectedAPI === api.id && (
+                              <div className="space-y-3 mt-4 pt-3 border-t">
+                                <h6 className="text-sm font-medium">Configuration</h6>
+                                {api.fields.map(field => (
+                                  <div key={field} className="space-y-1">
+                                    <Label htmlFor={field} className="text-xs">
+                                      {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </Label>
+                                    <Input
+                                      id={field}
+                                      placeholder={`Enter ${field.replace('_', ' ')}...`}
+                                      value={formData[field] || ''}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           {selectedAPI === api.id && (
-                            <div className="space-y-3 mt-4 pt-3 border-t">
-                              <h6 className="text-sm font-medium">Configuration</h6>
-                              {api.fields.map(field => (
-                                <div key={field} className="space-y-1">
-                                  <Label htmlFor={field} className="text-xs">
-                                    {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                  </Label>
-                                  <Input
-                                    id={field}
-                                    placeholder={`Enter ${field.replace('_', ' ')}...`}
-                                    value={formData[field] || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
-                                  />
-                                </div>
-                              ))}
-                            </div>
+                            <Check className="h-5 w-5 text-primary" />
                           )}
                         </div>
-                        {selectedAPI === api.id && (
-                          <Check className="h-5 w-5 text-primary" />
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {selectedAPI && (
-                  <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
-                    <h5 className="font-medium mb-2 flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      API Input Preview
-                    </h5>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>• Data will be mapped to parent timeline fields</p>
-                      <p>• Real-time sync available for supported APIs</p>
-                      <p>• Validation will occur before saving to database</p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="custom" className="space-y-4 mt-4">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="api-name">API Name *</Label>
-                      <Input
-                        id="api-name"
-                        placeholder="Enter API name..."
-                        value={customAPIData.name}
-                        onChange={(e) => setCustomAPIData(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="base-url">Base URL *</Label>
-                      <Input
-                        id="base-url"
-                        placeholder="https://api.example.com"
-                        value={customAPIData.baseUrl}
-                        onChange={(e) => setCustomAPIData(prev => ({ ...prev, baseUrl: e.target.value }))}
-                      />
-                    </div>
+                    ))}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="auth-method">Authentication Method</Label>
-                      <Select value={customAPIData.authMethod} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, authMethod: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select authentication method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="api-key">API Key</SelectItem>
-                          <SelectItem value="oauth">OAuth</SelectItem>
-                          <SelectItem value="bearer">Bearer Token</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="request-type">Request Type</Label>
-                      <Select value={customAPIData.requestType} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, requestType: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select request type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GET">GET</SelectItem>
-                          <SelectItem value="POST">POST</SelectItem>
-                          <SelectItem value="PUT">PUT</SelectItem>
-                          <SelectItem value="DELETE">DELETE</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Headers</Label>
-                      <Button type="button" size="sm" variant="outline" onClick={addHeader}>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Add Header
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {customAPIData.headers.map((header, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Header key"
-                            value={header.key}
-                            onChange={(e) => updateHeader(index, 'key', e.target.value)}
-                          />
-                          <Input
-                            placeholder="Header value"
-                            value={header.value}
-                            onChange={(e) => updateHeader(index, 'value', e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeHeader(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {(customAPIData.requestType === 'POST' || customAPIData.requestType === 'PUT') && (
-                    <div className="space-y-2">
-                      <Label htmlFor="request-body">Request Body / Payload</Label>
-                      <textarea
-                        id="request-body"
-                        className="w-full h-32 p-3 border rounded-md resize-none"
-                        placeholder="Enter JSON payload or key/value pairs..."
-                        value={customAPIData.body}
-                        onChange={(e) => setCustomAPIData(prev => ({ ...prev, body: e.target.value }))}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={validateCustomConnection}
-                      disabled={!customAPIData.name || !customAPIData.baseUrl}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Validate Connection
-                    </Button>
-                  </div>
-
-                  {customAPIData.name && customAPIData.baseUrl && (
+                  {selectedAPI && (
                     <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
                       <h5 className="font-medium mb-2 flex items-center gap-2">
                         <Eye className="h-4 w-4" />
-                        Custom API Preview
+                        API Input Preview
                       </h5>
-                      <div className="text-sm space-y-1">
-                        <p><span className="font-medium">Name:</span> {customAPIData.name}</p>
-                        <p><span className="font-medium">Endpoint:</span> {customAPIData.baseUrl}</p>
-                        <p><span className="font-medium">Method:</span> {customAPIData.requestType}</p>
-                        <p><span className="font-medium">Auth:</span> {customAPIData.authMethod}</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>• Data will be mapped to parent timeline fields</p>
+                        <p>• Real-time sync available for supported APIs</p>
+                        <p>• Validation will occur before saving to database</p>
                       </div>
                     </div>
                   )}
-                </div>
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+
+                <TabsContent value="custom" className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="api-name">API Name *</Label>
+                        <Input
+                          id="api-name"
+                          placeholder="Enter API name..."
+                          value={customAPIData.name}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="base-url">Base URL *</Label>
+                        <Input
+                          id="base-url"
+                          placeholder="https://api.example.com"
+                          value={customAPIData.baseUrl}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="auth-method">Authentication Method</Label>
+                        <Select value={customAPIData.authMethod} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, authMethod: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select authentication method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="api-key">API Key</SelectItem>
+                            <SelectItem value="oauth">OAuth</SelectItem>
+                            <SelectItem value="bearer">Bearer Token</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="request-type">Request Type</Label>
+                        <Select value={customAPIData.requestType} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, requestType: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select request type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GET">GET</SelectItem>
+                            <SelectItem value="POST">POST</SelectItem>
+                            <SelectItem value="PUT">PUT</SelectItem>
+                            <SelectItem value="DELETE">DELETE</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Headers</Label>
+                        <Button type="button" size="sm" variant="outline" onClick={addHeader}>
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Header
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {customAPIData.headers.map((header, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              placeholder="Header key"
+                              value={header.key}
+                              onChange={(e) => updateHeader(index, 'key', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Header value"
+                              value={header.value}
+                              onChange={(e) => updateHeader(index, 'value', e.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => removeHeader(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {(customAPIData.requestType === 'POST' || customAPIData.requestType === 'PUT') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="request-body">Request Body / Payload</Label>
+                        <textarea
+                          id="request-body"
+                          className="w-full h-32 p-3 border rounded-md resize-none"
+                          placeholder="Enter JSON payload or key/value pairs..."
+                          value={customAPIData.body}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, body: e.target.value }))}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={validateCustomConnection}
+                        disabled={!customAPIData.name || !customAPIData.baseUrl}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Validate Connection
+                      </Button>
+                    </div>
+
+                    {customAPIData.name && customAPIData.baseUrl && (
+                      <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2">
+                          <Eye className="h-4 w-4" />
+                          Custom API Preview
+                        </h5>
+                        <div className="text-sm space-y-1">
+                          <p><span className="font-medium">Name:</span> {customAPIData.name}</p>
+                          <p><span className="font-medium">Endpoint:</span> {customAPIData.baseUrl}</p>
+                          <p><span className="font-medium">Method:</span> {customAPIData.requestType}</p>
+                          <p><span className="font-medium">Auth:</span> {customAPIData.authMethod}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="p-6 pt-4 border-t bg-background">
+              <div className="flex gap-3 justify-end">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowCustomInputs(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={handleSave}
+                  disabled={!canSaveAPI()}
+                  className="min-w-20"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
           </div>
         );
       };
