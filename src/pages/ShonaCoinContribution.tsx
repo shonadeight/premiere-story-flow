@@ -1308,6 +1308,962 @@ export function ShonaCoinContribution() {
 
     const ContentComponent = () => {
       const [isLoading, setIsLoading] = useState(false);
+      const [formData, setFormData] = useState<any>(() => {
+        const autosaved = loadAutosaveData(showCustomInputs);
+        return autosaved?.formData || {};
+      });
+      const [selectedAPI, setSelectedAPI] = useState<string | null>(() => {
+        const autosaved = loadAutosaveData(showCustomInputs);
+        return autosaved?.selectedAPI || null;
+      });
+      const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+      const [columnMapping, setColumnMapping] = useState<any>(() => {
+        const autosaved = loadAutosaveData(showCustomInputs);
+        return autosaved?.columnMapping || {};
+      });
+      const [aiPrompt, setAiPrompt] = useState(() => {
+        const autosaved = loadAutosaveData(showCustomInputs);
+        return autosaved?.aiPrompt || '';
+      });
+      const [generatedData, setGeneratedData] = useState<any>(() => {
+        const autosaved = loadAutosaveData(showCustomInputs);
+        return autosaved?.generatedData || null;
+      });
+      const [customAPIData, setCustomAPIData] = useState({
+        name: '',
+        baseUrl: '',
+        authMethod: 'none',
+        headers: [{ key: '', value: '' }],
+        requestType: 'GET',
+        body: ''
+      });
+      const [activeAPITab, setActiveAPITab] = useState<'available' | 'custom'>('available');
+
+      // Autosave functionality
+      useEffect(() => {
+        if (showCustomInputs) {
+          const dataToSave = {
+            formData,
+            selectedAPI,
+            columnMapping,
+            aiPrompt,
+            generatedData,
+            customAPIData,
+            activeAPITab
+          };
+          autosave(showCustomInputs, dataToSave);
+        }
+      }, [formData, selectedAPI, columnMapping, aiPrompt, generatedData, customAPIData, activeAPITab, showCustomInputs]);
+
+      const handleSave = async () => {
+        setIsLoading(true);
+        
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          let saveData: any = {};
+          
+          switch (showCustomInputs) {
+            case 'manual':
+              saveData = { 
+                type: 'manual',
+                formData, 
+                fieldsCount: Object.keys(formData).length 
+              };
+              break;
+            case 'api':
+              saveData = { 
+                type: 'api',
+                selectedAPI, 
+                apiConfig: formData,
+                customAPIData: activeAPITab === 'custom' ? customAPIData : null
+              };
+              break;
+            case 'excel':
+              saveData = { 
+                type: 'excel',
+                fileName: uploadedFile?.name, 
+                columnMapping, 
+                recordsCount: 150 
+              };
+              break;
+            case 'ai':
+              saveData = { 
+                type: 'ai',
+                prompt: aiPrompt, 
+                generatedData, 
+                fieldsGenerated: generatedData ? Object.keys(generatedData).length : 0 
+              };
+              break;
+          }
+          
+          // Add to saved input methods
+          setData(prev => ({
+            ...prev,
+            savedInputMethods: [
+              ...prev.savedInputMethods,
+              {
+                id: Date.now().toString(),
+                type: showCustomInputs as 'manual' | 'api' | 'excel' | 'ai',
+                data: saveData,
+                savedAt: new Date()
+              }
+            ],
+            customInputs: {
+              ...prev.customInputs,
+              inputMethod: showCustomInputs,
+              additionalData: saveData
+            }
+          }));
+          
+          clearAutosaveData(showCustomInputs);
+          setShowCustomInputs(null);
+          toast.success('Inputs saved successfully as sub-timeline!');
+        } catch (error) {
+          toast.error('Failed to save inputs. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const handleCancel = () => {
+        clearAutosaveData(showCustomInputs);
+        setShowCustomInputs(null);
+      };
+
+      const canSave = () => {
+        switch (showCustomInputs) {
+          case 'manual':
+            const requiredFields = mockParentTimelineFields.filter(f => f.required);
+            return requiredFields.every(field => formData[field.id]?.trim());
+          case 'api':
+            if (activeAPITab === 'available') {
+              return selectedAPI && formData && Object.keys(formData).length > 0;
+            } else {
+              return customAPIData.name && customAPIData.baseUrl;
+            }
+          case 'excel':
+            return uploadedFile && columnMapping && Object.keys(columnMapping).length > 0;
+          case 'ai':
+            return generatedData && Object.keys(generatedData).length > 0;
+          default:
+            return false;
+        }
+      };
+
+      const renderManualEntry = () => (
+        <ScrollArea className="h-full">
+          <div className="space-y-6 p-6">
+            <div className="space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Parent Timeline Required Fields
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Fill in the custom fields required by the parent timeline. These will be saved as sub-timelines.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              {mockParentTimelineFields.map(field => (
+                <div key={field.id} className="space-y-2">
+                  <Label htmlFor={field.id} className="flex items-center gap-2">
+                    {field.label} {field.required && <span className="text-destructive">*</span>}
+                  </Label>
+                  {field.type === 'text' && (
+                    <Input
+                      id={field.id}
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  )}
+                  {field.type === 'textarea' && (
+                    <Textarea
+                      id={field.id}
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                      rows={3}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  )}
+                  {field.type === 'number' && (
+                    <Input
+                      id={field.id}
+                      type="number"
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  )}
+                  {field.type === 'date' && (
+                    <Input
+                      id={field.id}
+                      type="date"
+                      value={formData[field.id] || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    />
+                  )}
+                  {field.type === 'select' && (
+                    <Select
+                      value={formData[field.id] || ''}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, [field.id]: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${field.label.toLowerCase()}...`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options?.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Settings className="h-4 w-4" />
+                Auto-saving enabled - your progress is automatically saved
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+      );
+
+      const renderAPIConnection = () => {
+        const addHeader = () => {
+          setCustomAPIData(prev => ({
+            ...prev,
+            headers: [...prev.headers, { key: '', value: '' }]
+          }));
+        };
+
+        const updateHeader = (index: number, field: 'key' | 'value', value: string) => {
+          setCustomAPIData(prev => ({
+            ...prev,
+            headers: prev.headers.map((header, i) => 
+              i === index ? { ...header, [field]: value } : header
+            )
+          }));
+        };
+
+        const removeHeader = (index: number) => {
+          setCustomAPIData(prev => ({
+            ...prev,
+            headers: prev.headers.filter((_, i) => i !== index)
+          }));
+        };
+
+        const validateCustomConnection = async () => {
+          toast.info('Validating API connection...');
+          setTimeout(() => {
+            toast.success('API connection validated successfully!');
+          }, 2000);
+        };
+
+        return (
+          <div className="flex flex-col h-full">
+            <div className="space-y-4 p-6 pb-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Network className="h-4 w-4" />
+                API Connection Setup
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Connect to external data sources that match the parent timeline's input structure.
+              </p>
+            </div>
+
+            <ScrollArea className="flex-1 px-6">
+              <Tabs value={activeAPITab} onValueChange={(value) => setActiveAPITab(value as 'available' | 'custom')}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="available">Available APIs</TabsTrigger>
+                  <TabsTrigger value="custom">Custom Connection</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="available" className="space-y-4">
+                  <div className="grid gap-4">
+                    {mockAPIs.map(api => (
+                      <div
+                        key={api.id}
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:border-primary/50 ${
+                          selectedAPI === api.id ? 'border-primary bg-primary/5' : ''
+                        }`}
+                        onClick={() => setSelectedAPI(api.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{api.icon}</span>
+                          <div className="flex-1">
+                            <h5 className="font-medium">{api.name}</h5>
+                            <p className="text-sm text-muted-foreground mb-3">{api.description}</p>
+                            {selectedAPI === api.id && (
+                              <div className="space-y-3 mt-4 pt-3 border-t">
+                                <h6 className="text-sm font-medium">Configuration</h6>
+                                {api.fields.map(field => (
+                                  <div key={field} className="space-y-1">
+                                    <Label htmlFor={field} className="text-xs">
+                                      {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </Label>
+                                    <Input
+                                      id={field}
+                                      placeholder={`Enter ${field.replace('_', ' ')}...`}
+                                      value={formData[field] || ''}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {selectedAPI === api.id && (
+                            <Check className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedAPI && (
+                    <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+                      <h5 className="font-medium mb-2 flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        API Input Preview
+                      </h5>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>• Data will be mapped to parent timeline fields</p>
+                        <p>• Real-time sync available for supported APIs</p>
+                        <p>• Validation will occur before saving to database</p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="custom" className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="api-name">API Name *</Label>
+                        <Input
+                          id="api-name"
+                          placeholder="Enter API name..."
+                          value={customAPIData.name}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="base-url">Base URL *</Label>
+                        <Input
+                          id="base-url"
+                          placeholder="https://api.example.com"
+                          value={customAPIData.baseUrl}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, baseUrl: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="auth-method">Authentication Method</Label>
+                        <Select value={customAPIData.authMethod} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, authMethod: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select authentication method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="api-key">API Key</SelectItem>
+                            <SelectItem value="oauth">OAuth</SelectItem>
+                            <SelectItem value="bearer">Bearer Token</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="request-type">Request Type</Label>
+                        <Select value={customAPIData.requestType} onValueChange={(value) => setCustomAPIData(prev => ({ ...prev, requestType: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select request type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GET">GET</SelectItem>
+                            <SelectItem value="POST">POST</SelectItem>
+                            <SelectItem value="PUT">PUT</SelectItem>
+                            <SelectItem value="DELETE">DELETE</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Headers</Label>
+                        <Button type="button" size="sm" variant="outline" onClick={addHeader}>
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Header
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {customAPIData.headers.map((header, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              placeholder="Header key"
+                              value={header.key}
+                              onChange={(e) => updateHeader(index, 'key', e.target.value)}
+                            />
+                            <Input
+                              placeholder="Header value"
+                              value={header.value}
+                              onChange={(e) => updateHeader(index, 'value', e.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => removeHeader(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {(customAPIData.requestType === 'POST' || customAPIData.requestType === 'PUT') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="request-body">Request Body / Payload</Label>
+                        <Textarea
+                          id="request-body"
+                          className="h-32 resize-none"
+                          placeholder="Enter JSON payload or key/value pairs..."
+                          value={customAPIData.body}
+                          onChange={(e) => setCustomAPIData(prev => ({ ...prev, body: e.target.value }))}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={validateCustomConnection}
+                        disabled={!customAPIData.name || !customAPIData.baseUrl}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Validate Connection
+                      </Button>
+                    </div>
+
+                    {customAPIData.name && customAPIData.baseUrl && (
+                      <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+                        <h5 className="font-medium mb-2 flex items-center gap-2">
+                          <Eye className="h-4 w-4" />
+                          Custom API Preview
+                        </h5>
+                        <div className="text-sm space-y-1">
+                          <p><span className="font-medium">Name:</span> {customAPIData.name}</p>
+                          <p><span className="font-medium">Endpoint:</span> {customAPIData.baseUrl}</p>
+                          <p><span className="font-medium">Method:</span> {customAPIData.requestType}</p>
+                          <p><span className="font-medium">Auth:</span> {customAPIData.authMethod}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </ScrollArea>
+          </div>
+        );
+      };
+
+      const renderExcelImport = () => {
+        const [validationErrors, setValidationErrors] = useState<string[]>([]);
+        const [isValidating, setIsValidating] = useState(false);
+        const [isValidData, setIsValidData] = useState(false);
+        const fileInputRef = useRef<HTMLInputElement>(null);
+
+        const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            const validTypes = [
+              'application/vnd.ms-excel',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ];
+            
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(xls|xlsx)$/i)) {
+              toast.error('Please select a valid Excel file (.xls or .xlsx)');
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+              return;
+            }
+
+            setUploadedFile(file);
+            setValidationErrors([]);
+            setIsValidData(false);
+            toast.success(`File selected: ${file.name}`);
+          }
+        };
+
+        const validateData = async () => {
+          if (!uploadedFile) return;
+          
+          setIsValidating(true);
+          setValidationErrors([]);
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const errors: string[] = [];
+          const mappedFields = Object.keys(columnMapping);
+          const requiredFields = mockParentTimelineFields.filter(f => f.required).map(f => f.id);
+          
+          const missingRequired = requiredFields.filter(field => !mappedFields.includes(field));
+          if (missingRequired.length > 0) {
+            errors.push(`Missing required field mappings: ${missingRequired.join(', ')}`);
+          }
+          
+          if (Math.random() > 0.7) {
+            errors.push('Row 45: Invalid date format in timeline field');
+          }
+          if (Math.random() > 0.8) {
+            errors.push('Row 78: Budget value exceeds maximum allowed');
+          }
+          
+          setValidationErrors(errors);
+          setIsValidData(errors.length === 0);
+          setIsValidating(false);
+          
+          if (errors.length === 0) {
+            toast.success('Data validation passed! Ready to import.');
+          } else {
+            toast.error(`Validation failed with ${errors.length} error(s)`);
+          }
+        };
+
+        return (
+          <ScrollArea className="h-full">
+            <div className="space-y-6 p-6">
+              <div className="space-y-4">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Excel File Import
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Upload an Excel file (.xls, .xlsx) and map columns to the parent timeline's required fields.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h5 className="font-medium mb-2">
+                    {uploadedFile ? 'File Selected' : 'Upload Excel File'}
+                  </h5>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {uploadedFile 
+                      ? 'File ready for column mapping and validation' 
+                      : 'Click below to select an Excel file (.xls or .xlsx) to import data'
+                    }
+                  </p>
+                  
+                  {!uploadedFile ? (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Choose File
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-center gap-2 text-sm">
+                          <Check className="h-4 w-4 text-green-600" />
+                          <span className="font-medium text-green-700">{uploadedFile.name}</span>
+                          <span className="text-green-600">
+                            ({(uploadedFile.size / 1024).toFixed(1)} KB)
+                          </span>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setUploadedFile(null);
+                          setColumnMapping({});
+                          setValidationErrors([]);
+                          setIsValidData(false);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Choose Different File
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {uploadedFile && (
+                  <div className="space-y-4">
+                    <h5 className="font-medium">Column Mapping</h5>
+                    <p className="text-sm text-muted-foreground">
+                      Map Excel columns to timeline fields. Required fields must be mapped.
+                    </p>
+                    <div className="grid gap-3">
+                      {mockParentTimelineFields.map(field => (
+                        <div key={field.id} className="flex items-center gap-3">
+                          <div className="w-1/3">
+                            <Label className={`text-sm ${field.required ? 'font-medium' : ''}`}>
+                              {field.label}
+                              {field.required && <span className="text-red-500 ml-1">*</span>}
+                            </Label>
+                          </div>
+                          <div className="w-2/3">
+                            <Select
+                              value={columnMapping[field.id] || ''}
+                              onValueChange={(value) => setColumnMapping(prev => ({ ...prev, [field.id]: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Excel column..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">-- None --</SelectItem>
+                                <SelectItem value="column_a">Column A - Project Name</SelectItem>
+                                <SelectItem value="column_b">Column B - Description</SelectItem>
+                                <SelectItem value="column_c">Column C - Budget Amount</SelectItem>
+                                <SelectItem value="column_d">Column D - Due Date</SelectItem>
+                                <SelectItem value="column_e">Column E - Category</SelectItem>
+                                <SelectItem value="column_f">Column F - Priority</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                     {Object.keys(columnMapping).length > 0 && (
+                       <div className="flex gap-3">
+                         <Button
+                           variant="outline"
+                           onClick={validateData}
+                           disabled={isValidating || Object.keys(columnMapping).length === 0}
+                           className="flex-1"
+                         >
+                           {isValidating ? (
+                             <>
+                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                               Validating Data...
+                             </>
+                           ) : (
+                             <>
+                               <Shield className="h-4 w-4 mr-2" />
+                               Validate Data
+                             </>
+                           )}
+                         </Button>
+                       </div>
+                     )}
+
+                    {validationErrors.length > 0 && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h6 className="font-medium text-red-800 mb-2 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Validation Errors
+                        </h6>
+                        <ul className="text-sm text-red-700 space-y-1">
+                          {validationErrors.map((error, index) => (
+                            <li key={index}>• {error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {isValidData && (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h6 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+                          <Check className="h-4 w-4" />
+                          Ready to Import
+                        </h6>
+                        <div className="text-sm text-green-700 space-y-1">
+                          <p>• Data validation passed successfully</p>
+                          <p>• 150 records will be imported as sub-timelines</p>
+                          <p>• All required fields are properly mapped</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {uploadedFile && isValidData && (
+                  <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg">
+                    <h5 className="font-medium mb-2 flex items-center gap-2">
+                      <Table className="h-4 w-4" />
+                      Import Summary
+                    </h5>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>• File: {uploadedFile.name}</p>
+                      <p>• Records: 150 rows ready for import</p>
+                      <p>• Mapped fields: {Object.keys(columnMapping).length}</p>
+                      <p>• Sub-timelines will be created in parent contribution timeline</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+        );
+      };
+
+      const renderAIGenerated = () => (
+        <ScrollArea className="h-full">
+          <div className="space-y-6 p-6">
+            <div className="space-y-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                AI-Generated Inputs
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Generate missing inputs using AI based on your contribution context and parent timeline requirements.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ai-prompt">Generation Instructions</Label>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="Describe what you want to generate... (e.g., 'Generate project milestones for a solar panel installation with a budget of $50,000')"
+                  rows={4}
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setIsLoading(true);
+                  setTimeout(() => {
+                    setGeneratedData({
+                      project_title: 'Solar Panel Installation Project',
+                      description: 'Complete residential solar panel system installation with battery backup',
+                      budget: '50000',
+                      timeline: '2024-06-01',
+                      category: 'Development',
+                      priority: 'High'
+                    });
+                    setIsLoading(false);
+                    toast.success('AI inputs generated successfully!');
+                  }, 2000);
+                }}
+                disabled={!aiPrompt.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Generate Inputs
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {generatedData && (
+              <div className="space-y-4">
+                <h5 className="font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Generated Preview
+                </h5>
+                <div className="space-y-3">
+                  {Object.entries(generatedData).map(([key, value]) => (
+                    <div key={key} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-medium">
+                          {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Label>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{value as string}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-700 mb-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">Review Required</span>
+                  </div>
+                  <p className="text-sm text-amber-600">
+                    Please review the generated inputs above and approve them before saving. You can edit any field as needed.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      );
+
+      const renderContent = () => {
+        switch (showCustomInputs) {
+          case 'manual':
+            return renderManualEntry();
+          case 'api':
+            return renderAPIConnection();
+          case 'excel':
+            return renderExcelImport();
+          case 'ai':
+            return renderAIGenerated();
+          default:
+            return null;
+        }
+      };
+
+      const renderFooter = () => (
+        <div className="p-6 pt-4 border-t bg-background">
+          <div className="flex gap-3 justify-end">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSave}
+              disabled={!canSave() || isLoading}
+              className="min-w-20"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        </div>
+      );
+
+      if (showCustomInputs === 'api') {
+        return (
+          <div className="flex flex-col h-full">
+            {renderAPIConnection()}
+            {renderFooter()}
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-hidden">
+            {renderContent()}
+          </div>
+          {renderFooter()}
+        </div>
+      );
+    };
+
+    const displayName = {
+      manual: 'Manual Entry',
+      api: 'API Connection', 
+      excel: 'Excel Import',
+      ai: 'AI Generated'
+    }[showCustomInputs] || 'Input Method';
+
+    if (isMobile) {
+      return (
+        <Drawer open={!!showCustomInputs} onOpenChange={(open) => !open && setShowCustomInputs(null)}>
+          <DrawerContent className="h-[90vh] flex flex-col">
+            <DrawerHeader className="pb-2">
+              <DrawerTitle className="flex items-center gap-2">
+                {showCustomInputs === 'manual' && <FileText className="h-5 w-5" />}
+                {showCustomInputs === 'api' && <Network className="h-5 w-5" />}
+                {showCustomInputs === 'excel' && <Upload className="h-5 w-5" />}
+                {showCustomInputs === 'ai' && <Zap className="h-5 w-5" />}
+                {displayName}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-hidden">
+              <ContentComponent />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    return (
+      <Dialog open={!!showCustomInputs} onOpenChange={(open) => !open && setShowCustomInputs(null)}>
+        <DialogContent className="max-w-4xl w-[90vw] h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              {showCustomInputs === 'manual' && <FileText className="h-5 w-5" />}
+              {showCustomInputs === 'api' && <Network className="h-5 w-5" />}
+              {showCustomInputs === 'excel' && <Upload className="h-5 w-5" />}
+              {showCustomInputs === 'ai' && <Zap className="h-5 w-5" />}
+              {displayName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <ContentComponent />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+    const mockAPIs = [
+      { 
+        id: 'google-sheets', 
+        name: 'Google Sheets', 
+        icon: '📊', 
+        description: 'Import data from Google Sheets',
+        fields: ['spreadsheet_id', 'sheet_name', 'range']
+      },
+      { 
+        id: 'airtable', 
+        name: 'Airtable', 
+        icon: '🗃️', 
+        description: 'Connect to Airtable database',
+        fields: ['base_id', 'table_name', 'api_key']
+      },
+      { 
+        id: 'notion', 
+        name: 'Notion', 
+        icon: '📝', 
+        description: 'Sync with Notion database',
+        fields: ['database_id', 'integration_token']
+      },
+      { 
+        id: 'zapier', 
+        name: 'Zapier', 
+        icon: '⚡', 
+        description: 'Connect via Zapier webhook',
+        fields: ['webhook_url', 'trigger_event']
+      }
+    ];
+
+    const ContentComponent = () => {
+      const [isLoading, setIsLoading] = useState(false);
       const [formData, setFormData] = useState<any>({});
       const [selectedAPI, setSelectedAPI] = useState<string | null>(null);
       const [uploadedFile, setUploadedFile] = useState<File | null>(null);
