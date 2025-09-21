@@ -4925,3 +4925,5 @@ export function ShonaCoinContribution() {
     </div>
   );
 }
+
+export default ShonaCoinContribution;
