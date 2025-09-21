@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
@@ -63,6 +64,61 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface ManualEntryData {
+  title: string;
+  description: string;
+  context: string;
+  customFields: Array<{
+    id: string;
+    label: string;
+    value: string;
+    type: 'text' | 'textarea' | 'number' | 'date';
+    required: boolean;
+  }>;
+}
+
+interface APIConnectionData {
+  type: 'available' | 'custom';
+  selectedAPI?: string;
+  apiName?: string;
+  baseURL?: string;
+  authentication?: {
+    type: 'none' | 'bearer' | 'apikey' | 'basic';
+    value?: string;
+  };
+  headers?: Array<{
+    key: string;
+    value: string;
+  }>;
+  requestType?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  parameters?: Array<{
+    key: string;
+    value: string;
+  }>;
+  payload?: string;
+  webhookURL?: string;
+}
+
+interface ExcelImportData {
+  fileName?: string;
+  fileData?: any;
+  columnMapping?: Array<{
+    excelColumn: string;
+    schemaField: string;
+    required: boolean;
+  }>;
+}
+
+interface AIInputsData {
+  prompt: string;
+  generatedInputs?: Array<{
+    field: string;
+    value: string;
+    confidence: number;
+  }>;
+  approved: boolean;
+}
 
 interface ContributionData {
   timeline: Timeline | null;
@@ -131,6 +187,12 @@ interface ContributionData {
       };
     };
   };
+  savedInputMethods: Array<{
+    id: string;
+    type: 'manual' | 'api' | 'excel' | 'ai';
+    data: ManualEntryData | APIConnectionData | ExcelImportData | AIInputsData;
+    savedAt: Date;
+  }>;
 }
 
 interface TypeConfig {
@@ -207,7 +269,8 @@ export function ShonaCoinContribution() {
         followUpWorkflows: false,
         fileUploadRules: { types: ['pdf', 'doc', 'image'], maxSize: 10 }
       }
-    }
+    },
+    savedInputMethods: []
   });
 
   const [showTypeConfig, setShowTypeConfig] = useState<string | null>(null);
@@ -255,6 +318,49 @@ export function ShonaCoinContribution() {
   const [typeConfigData, setTypeConfigData] = useState<{
     [key: string]: TypeConfig;
   }>({});
+
+  // Input method states
+  const [currentInputMethod, setCurrentInputMethod] = useState<string | null>(null);
+  const [manualEntryData, setManualEntryData] = useState<ManualEntryData>({
+    title: '',
+    description: '',
+    context: '',
+    customFields: []
+  });
+  const [apiConnectionData, setAPIConnectionData] = useState<APIConnectionData>({
+    type: 'available',
+    authentication: { type: 'none' },
+    headers: [],
+    parameters: []
+  });
+  const [excelImportData, setExcelImportData] = useState<ExcelImportData>({
+    columnMapping: []
+  });
+  const [aiInputsData, setAIInputsData] = useState<AIInputsData>({
+    prompt: '',
+    approved: false
+  });
+
+  // Autosave functionality
+  const autosaveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const autosave = (methodType: string, data: any) => {
+    if (autosaveTimeout.current) {
+      clearTimeout(autosaveTimeout.current);
+    }
+    autosaveTimeout.current = setTimeout(() => {
+      localStorage.setItem(`contribution_autosave_${methodType}`, JSON.stringify(data));
+    }, 1000);
+  };
+
+  const loadAutosaveData = (methodType: string) => {
+    const saved = localStorage.getItem(`contribution_autosave_${methodType}`);
+    return saved ? JSON.parse(saved) : null;
+  };
+
+  const clearAutosaveData = (methodType: string) => {
+    localStorage.removeItem(`contribution_autosave_${methodType}`);
+  };
 
   useEffect(() => {
     // Load timeline data
@@ -3387,11 +3493,36 @@ export function ShonaCoinContribution() {
                       <div className="mt-2 pt-2 border-t border-primary/20">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Settings className="h-3 w-3" />
-                          {Object.keys(data.customInputs.additionalData).length} fields configured
+                          Configuration saved with autosave enabled
                         </div>
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* Saved Input Methods Summary */}
+              {data.savedInputMethods.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Saved Input Methods</h4>
+                  {data.savedInputMethods.map((method) => (
+                    <div key={method.id} className="p-3 border rounded-lg bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="capitalize">{method.type}</Badge>
+                          <span className="text-sm font-medium">
+                            {method.type === 'manual' && 'Manual Entry'}
+                            {method.type === 'api' && 'API Connection'}
+                            {method.type === 'excel' && 'Excel Import'}
+                            {method.type === 'ai' && 'AI Generated'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Saved {new Date(method.savedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
