@@ -336,7 +336,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
               className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
               onClick={(e) => {
                 e.stopPropagation();
-                window.location.href = `/contribute/${timeline.id}`;
+                navigate(`/contribute?timelineId=${timeline.id}`);
               }}
             >
               <Plus className="h-3.5 w-3.5" />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ import { TransactionsTab } from '@/components/timeline/tabs/TransactionsTab';
 import { ValuationTab } from '@/components/timeline/tabs/ValuationTab';
 
 export const Portfolio = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('subtimelines');
   const [sortBy, setSortBy] = useState('');
@@ -132,7 +134,7 @@ export const Portfolio = () => {
   ];
 
   const handleInvest = () => {
-    console.log('Opening investment modal');
+    navigate(`/contribute?timelineId=${profileTimeline.id}`);
   };
 
   const handleFollow = () => {
