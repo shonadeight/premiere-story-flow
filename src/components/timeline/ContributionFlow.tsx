@@ -185,23 +185,29 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   // Predefined outcome options
   const predefinedOutcomes = {
     toGive: [
-      { id: 'funding', label: 'Financial Support' },
-      { id: 'expertise', label: 'Technical Expertise' },
-      { id: 'network', label: 'Network Connections' },
-      { id: 'mentorship', label: 'Mentorship' },
-      { id: 'resources', label: 'Physical Resources' },
-      { id: 'time', label: 'Time Commitment' },
-      { id: 'promotion', label: 'Marketing/Promotion' },
+      { id: 'equity-share', label: 'Equity Share' },
+      { id: 'profit-share', label: 'Profit Share' },
+      { id: 'revenue-share', label: 'Revenue Share' },
+      { id: 'milestones', label: 'Milestones' },
+      { id: 'traffic', label: 'Traffic' },
+      { id: 'downloads', label: 'Downloads' },
+      { id: 'impressions', label: 'Impressions' },
+      { id: 'leads', label: 'Leads' },
+      { id: 'usage-rights', label: 'Usage Rights' },
+      { id: 'asset-appreciation', label: 'Asset Appreciation' },
       { id: 'custom', label: 'Custom Option' }
     ],
     toReceive: [
-      { id: 'roi', label: 'Return on Investment' },
-      { id: 'equity', label: 'Equity Stake' },
+      { id: 'equity-share', label: 'Equity Share' },
+      { id: 'profit-share', label: 'Profit Share' },
       { id: 'revenue-share', label: 'Revenue Share' },
-      { id: 'access', label: 'Early Access' },
-      { id: 'recognition', label: 'Public Recognition' },
-      { id: 'learning', label: 'Learning Opportunity' },
-      { id: 'network-growth', label: 'Network Growth' },
+      { id: 'milestones', label: 'Milestones' },
+      { id: 'traffic', label: 'Traffic' },
+      { id: 'downloads', label: 'Downloads' },
+      { id: 'impressions', label: 'Impressions' },
+      { id: 'leads', label: 'Leads' },
+      { id: 'usage-rights', label: 'Usage Rights' },
+      { id: 'asset-appreciation', label: 'Asset Appreciation' },
       { id: 'custom', label: 'Custom Option' }
     ]
   };
