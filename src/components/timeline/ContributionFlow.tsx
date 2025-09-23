@@ -69,15 +69,23 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   });
 
-  // State for Step 2 Expected Outcomes modal/drawer
-  const [showOutcomesModal, setShowOutcomesModal] = useState(false);
+  // State for Step 2 Expected Outcomes - now directly embedded in step
   const [activeTab, setActiveTab] = useState<'toGive' | 'toReceive'>('toGive');
   const [customInput, setCustomInput] = useState({ toGive: '', toReceive: '' });
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [tempOutcomes, setTempOutcomes] = useState({
     toGive: [],
     toReceive: []
   });
+
+  // Initialize temp outcomes with saved data on mount and when switching to step 2
+  useEffect(() => {
+    if (currentStep === 2) {
+      setTempOutcomes({
+        toGive: [...(formData.outcomes.toGive || [])],
+        toReceive: [...(formData.outcomes.toReceive || [])]
+      });
+    }
+  }, [currentStep, formData.outcomes]);
 
   const contributionTypes = [
     {
@@ -262,8 +270,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   const handleOutcomeToggle = (type: 'toGive' | 'toReceive', outcomeId: string) => {
     const outcomeData = findOutcomeById(outcomeId);
     if (!outcomeData) return;
-
-    setHasUnsavedChanges(true);
     
     setTempOutcomes(prev => {
       const currentOutcomes = prev[type];
@@ -293,7 +299,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   };
 
   const handleOutcomeValueChange = (type: 'toGive' | 'toReceive', outcomeId: string, value: string) => {
-    setHasUnsavedChanges(true);
     setTempOutcomes(prev => ({
       ...prev,
       [type]: prev[type].map((outcome: any) => 
@@ -306,7 +311,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     const customText = customInput[type].trim();
     if (!customText) return;
     
-    setHasUnsavedChanges(true);
     const customOutcome = {
       id: `custom-${Date.now()}`,
       label: customText,
@@ -324,7 +328,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   };
 
   const handleCustomOutcomeRemove = (type: 'toGive' | 'toReceive', outcomeId: string) => {
-    setHasUnsavedChanges(true);
     setTempOutcomes(prev => ({
       ...prev,
       [type]: prev[type].filter((outcome: any) => outcome.id !== outcomeId)
@@ -332,7 +335,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   };
 
   const handleCustomOutcomeEdit = (type: 'toGive' | 'toReceive', outcomeId: string, newLabel: string) => {
-    setHasUnsavedChanges(true);
     setTempOutcomes(prev => ({
       ...prev,
       [type]: prev[type].map((outcome: any) => 
@@ -362,45 +364,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     return { valid: true, error: null };
   };
 
-  const saveOutcomes = () => {
-    const validation = validateOutcomes();
-    if (!validation.valid) {
-      alert(validation.error);
-      return false;
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      outcomes: {
-        toGive: [...tempOutcomes.toGive],
-        toReceive: [...tempOutcomes.toReceive]
-      }
-    }));
-    
-    setHasUnsavedChanges(false);
-    setShowOutcomesModal(false);
-    return true;
-  };
-
-  const cancelOutcomes = () => {
-    if (hasUnsavedChanges) {
-      if (confirm('You have unsaved changes. Are you sure you want to cancel?')) {
-        initializeTempOutcomes();
-        setHasUnsavedChanges(false);
-        setShowOutcomesModal(false);
-        setCustomInput({ toGive: '', toReceive: '' });
-      }
-    } else {
-      setShowOutcomesModal(false);
-    }
-  };
-
-  const openOutcomesModal = () => {
-    initializeTempOutcomes();
-    setShowOutcomesModal(true);
-    setHasUnsavedChanges(false);
-    setCustomInput({ toGive: '', toReceive: '' });
-  };
+  // Removed old modal functions since tabs are now embedded directly in Step 2
 
   // Legacy helper function for backward compatibility 
   const findOutcomeLabel = (id: string): string => {
@@ -504,56 +468,318 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
             </Card>
           )}
 
-          {/* Step 2: Expected Outcomes */}
+          {/* Step 2: Configure Expected Outcomes */}
           {currentStep === 2 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Configure Expected Outcomes</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  Configure Expected Outcomes
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Define what you will give and what you expect to receive from this contribution.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button
-                  onClick={openOutcomesModal}
-                  variant="outline"
-                  className="w-full touch-manipulation"
-                >
-                  Configure Outcomes
-                </Button>
+                {/* Direct tabs inside Step 2 - no modal/drawer needed */}
+                <div className="border rounded-lg bg-background">
+                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'toGive' | 'toReceive')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 rounded-t-lg">
+                      <TabsTrigger value="toGive" className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
+                        To Give
+                      </TabsTrigger>
+                      <TabsTrigger value="toReceive" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+                        To Receive
+                      </TabsTrigger>
+                    </TabsList>
 
-                {/* Summary of configured outcomes */}
+                    <div className="p-4">
+                      <TabsContent value="toGive" className="mt-0">
+                        <ScrollArea className="h-64">
+                          <div className="space-y-4">
+                            {outcomeCategories.map((category) => (
+                              <div key={category.category} className="space-y-2">
+                                <h4 className="font-medium text-sm text-muted-foreground">
+                                  {category.category}
+                                </h4>
+                                <div className="space-y-2 ml-2">
+                                  {category.options.map((option) => {
+                                    const isSelected = isOutcomeSelected('toGive', option.id);
+                                    const selectedOutcome = tempOutcomes.toGive.find((o: any) => o.id === option.id);
+                                    
+                                    return (
+                                      <div key={option.id} className="space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`toGive-${option.id}`}
+                                            checked={isSelected}
+                                            onCheckedChange={() => handleOutcomeToggle('toGive', option.id)}
+                                          />
+                                          <Label
+                                            htmlFor={`toGive-${option.id}`}
+                                            className="text-sm cursor-pointer flex-1"
+                                          >
+                                            {option.label}
+                                          </Label>
+                                        </div>
+                                        
+                                        {isSelected && option.requiresValue && (
+                                          <div className="ml-6">
+                                            <Input
+                                              type="number"
+                                              placeholder={option.valueType === 'percentage' ? 'Enter %' : 'Enter amount'}
+                                              value={selectedOutcome?.value || ''}
+                                              onChange={(e) => handleOutcomeValueChange('toGive', option.id, e.target.value)}
+                                              className="w-32 h-8 text-sm"
+                                              min="0"
+                                              max={option.valueType === 'percentage' ? "100" : undefined}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Custom outcomes for toGive */}
+                            {tempOutcomes.toGive.filter((o: any) => o.custom).length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm text-muted-foreground">Custom</h4>
+                                <div className="space-y-2 ml-2">
+                                  {tempOutcomes.toGive.filter((o: any) => o.custom).map((outcome: any) => (
+                                    <div key={outcome.id} className="flex items-center space-x-2">
+                                      <Checkbox checked={true} disabled />
+                                      <Input
+                                        value={outcome.label}
+                                        onChange={(e) => handleCustomOutcomeEdit('toGive', outcome.id, e.target.value)}
+                                        className="flex-1 h-8 text-sm"
+                                        placeholder="Custom outcome"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleCustomOutcomeRemove('toGive', outcome.id)}
+                                        className="h-8 w-8 p-0 text-destructive"
+                                      >
+                                        ×
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Add custom outcome */}
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm text-muted-foreground">Add Custom</h4>
+                              <div className="flex items-center space-x-2 ml-2">
+                                <Input
+                                  value={customInput.toGive}
+                                  onChange={(e) => setCustomInput(prev => ({ ...prev, toGive: e.target.value }))}
+                                  placeholder="Add custom outcome"
+                                  className="flex-1 h-8 text-sm"
+                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomOutcomeAdd('toGive')}
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCustomOutcomeAdd('toGive')}
+                                  disabled={!customInput.toGive.trim()}
+                                  className="h-8"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+
+                      <TabsContent value="toReceive" className="mt-0">
+                        <ScrollArea className="h-64">
+                          <div className="space-y-4">
+                            {outcomeCategories.map((category) => (
+                              <div key={category.category} className="space-y-2">
+                                <h4 className="font-medium text-sm text-muted-foreground">
+                                  {category.category}
+                                </h4>
+                                <div className="space-y-2 ml-2">
+                                  {category.options.map((option) => {
+                                    const isSelected = isOutcomeSelected('toReceive', option.id);
+                                    const selectedOutcome = tempOutcomes.toReceive.find((o: any) => o.id === option.id);
+                                    
+                                    return (
+                                      <div key={option.id} className="space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`toReceive-${option.id}`}
+                                            checked={isSelected}
+                                            onCheckedChange={() => handleOutcomeToggle('toReceive', option.id)}
+                                          />
+                                          <Label
+                                            htmlFor={`toReceive-${option.id}`}
+                                            className="text-sm cursor-pointer flex-1"
+                                          >
+                                            {option.label}
+                                          </Label>
+                                        </div>
+                                        
+                                        {isSelected && option.requiresValue && (
+                                          <div className="ml-6">
+                                            <Input
+                                              type="number"
+                                              placeholder={option.valueType === 'percentage' ? 'Enter %' : 'Enter amount'}
+                                              value={selectedOutcome?.value || ''}
+                                              onChange={(e) => handleOutcomeValueChange('toReceive', option.id, e.target.value)}
+                                              className="w-32 h-8 text-sm"
+                                              min="0"
+                                              max={option.valueType === 'percentage' ? "100" : undefined}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Custom outcomes for toReceive */}
+                            {tempOutcomes.toReceive.filter((o: any) => o.custom).length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-sm text-muted-foreground">Custom</h4>
+                                <div className="space-y-2 ml-2">
+                                  {tempOutcomes.toReceive.filter((o: any) => o.custom).map((outcome: any) => (
+                                    <div key={outcome.id} className="flex items-center space-x-2">
+                                      <Checkbox checked={true} disabled />
+                                      <Input
+                                        value={outcome.label}
+                                        onChange={(e) => handleCustomOutcomeEdit('toReceive', outcome.id, e.target.value)}
+                                        className="flex-1 h-8 text-sm"
+                                        placeholder="Custom outcome"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleCustomOutcomeRemove('toReceive', outcome.id)}
+                                        className="h-8 w-8 p-0 text-destructive"
+                                      >
+                                        ×
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Add custom outcome */}
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm text-muted-foreground">Add Custom</h4>
+                              <div className="flex items-center space-x-2 ml-2">
+                                <Input
+                                  value={customInput.toReceive}
+                                  onChange={(e) => setCustomInput(prev => ({ ...prev, toReceive: e.target.value }))}
+                                  placeholder="Add custom outcome"
+                                  className="flex-1 h-8 text-sm"
+                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomOutcomeAdd('toReceive')}
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCustomOutcomeAdd('toReceive')}
+                                  disabled={!customInput.toReceive.trim()}
+                                  className="h-8"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    </div>
+
+                    {/* Save/Cancel footer */}
+                    <div className="flex items-center justify-end gap-2 p-4 border-t bg-muted/50">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setTempOutcomes({
+                            toGive: [...(formData.outcomes.toGive || [])],
+                            toReceive: [...(formData.outcomes.toReceive || [])]
+                          });
+                          setCustomInput({ toGive: '', toReceive: '' });
+                        }}
+                      >
+                        Reset
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const validation = validateOutcomes();
+                          if (validation.valid) {
+                            setFormData(prev => ({
+                              ...prev,
+                              outcomes: {
+                                toGive: [...tempOutcomes.toGive],
+                                toReceive: [...tempOutcomes.toReceive]
+                              }
+                            }));
+                          } else {
+                            alert(validation.error);
+                          }
+                        }}
+                      >
+                        Save & Continue
+                      </Button>
+                    </div>
+                  </Tabs>
+                </div>
+
+                {/* Summary of saved outcomes */}
                 {(formData.outcomes.toGive.length > 0 || formData.outcomes.toReceive.length > 0) && (
-                  <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                    <h4 className="font-medium">Configured Outcomes</h4>
-                    
-                    {formData.outcomes.toGive.length > 0 && (
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">To Give:</span>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {formData.outcomes.toGive.map((outcome: any) => (
-                            <Badge key={outcome.id} variant="secondary" className="text-xs">
-                              {outcome.label}
-                              {outcome.value && ` (${outcome.value}${outcome.type === 'percentage' ? '%' : ''})`}
-                            </Badge>
-                          ))}
+                  <div className="mt-4 p-3 rounded-lg border bg-muted/30">
+                    <h4 className="font-medium text-sm mb-2">Current Configuration:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {formData.outcomes.toGive.length > 0 && (
+                        <div>
+                          <h5 className="text-xs font-medium text-green-700 mb-1">To Give:</h5>
+                          <div className="space-y-1">
+                            {formData.outcomes.toGive.map((outcome: any, index: number) => (
+                              <div key={index} className="text-xs flex items-center justify-between">
+                                <span>{outcome.label}</span>
+                                {outcome.value && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {outcome.type === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    {formData.outcomes.toReceive.length > 0 && (
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">To Receive:</span>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {formData.outcomes.toReceive.map((outcome: any) => (
-                            <Badge key={outcome.id} variant="outline" className="text-xs">
-                              {outcome.label}
-                              {outcome.value && ` (${outcome.value}${outcome.type === 'percentage' ? '%' : ''})`}
-                            </Badge>
-                          ))}
+                      )}
+                      
+                      {formData.outcomes.toReceive.length > 0 && (
+                        <div>
+                          <h5 className="text-xs font-medium text-blue-700 mb-1">To Receive:</h5>
+                          <div className="space-y-1">
+                            {formData.outcomes.toReceive.map((outcome: any, index: number) => (
+                              <div key={index} className="text-xs flex items-center justify-between">
+                                <span>{outcome.label}</span>
+                                {outcome.value && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {outcome.type === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -998,199 +1224,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
         )}
       </div>
 
-      {/* Outcomes Configuration Modal/Drawer */}
-      {isMobile ? (
-        <Drawer open={showOutcomesModal} onOpenChange={(open) => !open && cancelOutcomes()}>
-          <DrawerContent className="max-h-[90vh]">
-            <DrawerHeader>
-              <DrawerTitle>Configure Expected Outcomes</DrawerTitle>
-            </DrawerHeader>
-            <div className="flex-1 overflow-hidden">
-              <OutcomesModalContent />
-            </div>
-            <DrawerFooter>
-              <Button
-                onClick={saveOutcomes}
-                className="w-full touch-manipulation"
-                disabled={!hasUnsavedChanges}
-              >
-                Save & Continue
-              </Button>
-              <Button
-                variant="outline"
-                onClick={cancelOutcomes}
-                className="w-full touch-manipulation"
-              >
-                Cancel
-              </Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={showOutcomesModal} onOpenChange={(open) => !open && cancelOutcomes()}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Configure Expected Outcomes</DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-hidden">
-              <OutcomesModalContent />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={cancelOutcomes}
-                className="touch-manipulation"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={saveOutcomes}
-                className="touch-manipulation"
-                disabled={!hasUnsavedChanges}
-              >
-                Save & Continue
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
-
-  // Outcomes Modal Content Component
-  function OutcomesModalContent() {
-    return (
-      <div className="h-full flex flex-col">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'toGive' | 'toReceive')} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="toGive">To Give</TabsTrigger>
-            <TabsTrigger value="toReceive">To Receive</TabsTrigger>
-          </TabsList>
-          
-          <div className="flex-1 overflow-auto">
-            <TabsContent value="toGive" className="space-y-4 p-4">
-              <OutcomeTabContent type="toGive" />
-            </TabsContent>
-            
-            <TabsContent value="toReceive" className="space-y-4 p-4">
-              <OutcomeTabContent type="toReceive" />
-            </TabsContent>
-          </div>
-        </Tabs>
-      </div>
-    );
-  }
-
-  // Outcome Tab Content Component
-  function OutcomeTabContent({ type }: { type: 'toGive' | 'toReceive' }) {
-    return (
-      <div className="space-y-6">
-        <h4 className="font-medium">
-          {type === 'toGive' ? 'What will you contribute?' : 'What do you expect to receive?'}
-        </h4>
-        
-        {/* Categorized Options */}
-        {outcomeCategories.map((category) => (
-          <div key={category.category} className="space-y-3">
-            <h5 className="text-sm font-medium text-muted-foreground">
-              {category.category}
-            </h5>
-            <div className="space-y-3 pl-4">
-              {category.options.map((outcome) => {
-                const isSelected = isOutcomeSelected(type, outcome.id);
-                const selectedOutcome = tempOutcomes[type].find((o: any) => o.id === outcome.id);
-                
-                return (
-                  <div key={outcome.id} className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${type}-${outcome.id}`}
-                        checked={isSelected}
-                        onCheckedChange={() => handleOutcomeToggle(type, outcome.id)}
-                      />
-                      <Label htmlFor={`${type}-${outcome.id}`} className="text-sm flex-1">
-                        {outcome.label}
-                      </Label>
-                    </div>
-                    
-                    {/* Value input for outcomes that require it */}
-                    {isSelected && outcome.requiresValue && (
-                      <div className="ml-6">
-                        <Input
-                          placeholder={
-                            (outcome as any).valueType === 'percentage' 
-                              ? 'Enter percentage (0-100)' 
-                              : 'Enter amount'
-                          }
-                          value={selectedOutcome?.value || ''}
-                          onChange={(e) => handleOutcomeValueChange(type, outcome.id, e.target.value)}
-                          className="w-48"
-                          type="number"
-                          min="0"
-                          max={(outcome as any).valueType === 'percentage' ? "100" : undefined}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-        
-        {/* Custom Options */}
-        <div className="space-y-3">
-          <h5 className="text-sm font-medium text-muted-foreground">Custom Option</h5>
-          <div className="pl-4 space-y-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Add custom outcome..."
-                value={customInput[type]}
-                onChange={(e) => setCustomInput(prev => ({ ...prev, [type]: e.target.value }))}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCustomOutcomeAdd(type);
-                  }
-                }}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleCustomOutcomeAdd(type)}
-                disabled={!customInput[type].trim()}
-              >
-                Add
-              </Button>
-            </div>
-            
-            {/* Display custom outcomes */}
-            <div className="space-y-2">
-              {tempOutcomes[type]
-                .filter((outcome: any) => outcome.custom)
-                .map((outcome: any) => (
-                  <div key={outcome.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                    <Input
-                      value={outcome.label}
-                      onChange={(e) => handleCustomOutcomeEdit(type, outcome.id, e.target.value)}
-                      className="bg-transparent border-none text-sm flex-1 p-0 h-auto focus-visible:ring-0"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCustomOutcomeRemove(type, outcome.id)}
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                    >
-                      ×
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 };
