@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ArrowLeft, 
@@ -60,11 +62,21 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     lockInPeriod: '',
     useParentConfig: true,
     overrideConfig: {},
-    // Expected outcomes configuration
-    toGiveOutcomes: [],
-    toReceiveOutcomes: [],
-    customToGive: [],
-    customToReceive: []
+    // Expected outcomes configuration - New structured format
+    outcomes: {
+      toGive: [],
+      toReceive: []
+    }
+  });
+
+  // State for Step 2 Expected Outcomes modal/drawer
+  const [showOutcomesModal, setShowOutcomesModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'toGive' | 'toReceive'>('toGive');
+  const [customInput, setCustomInput] = useState({ toGive: '', toReceive: '' });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [tempOutcomes, setTempOutcomes] = useState({
+    toGive: [],
+    toReceive: []
   });
 
   const contributionTypes = [
@@ -138,8 +150,8 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
 
   const steps = [
     { id: 1, title: 'Review Timeline', description: 'Understand target timeline' },
-    { id: 2, title: 'Choose Type', description: 'Select contribution type' },
-    { id: 3, title: 'Expected Outcomes', description: 'Configure what you give/receive' },
+    { id: 2, title: 'Expected Outcomes', description: 'Configure what you give/receive' },
+    { id: 3, title: 'Choose Type', description: 'Select contribution type' },
     { id: 4, title: 'Configure', description: 'Set amount and details' },
     { id: 5, title: 'Valuation', description: 'Agree on value terms' },
     { id: 6, title: 'Legal Terms', description: 'Accept agreements' },
@@ -172,8 +184,8 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   const canProceed = () => {
     switch (currentStep) {
       case 1: return true;
-      case 2: return formData.contributionType && formData.subtype;
-      case 3: return true; // Expected outcomes step is optional
+      case 2: return true; // Expected outcomes step is optional  
+      case 3: return formData.contributionType && formData.subtype;
       case 4: return formData.amount || formData.description;
       case 5: return formData.valuationPreference;
       case 6: return formData.acceptTerms;
@@ -182,97 +194,218 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   };
 
-  // Categorized outcome options
+  // Categorized outcome options for the new Step 2
   const outcomeCategories = [
     {
-      category: "Financial/Business Outcomes",
+      category: "Financial / Business",
       options: [
-        { id: 'equity-share', label: 'Equity share (ownership % on timeline)' },
-        { id: 'profit-share', label: 'Profit share (net earnings % on timeline revenues)' },
-        { id: 'revenue-share', label: 'Revenue share (gross income split % on timeline revenues)' },
-        { id: 'milestones-wedge', label: 'Milestones wedge (amount)' }
+        { id: 'equity-share', label: 'Equity share (ownership %)', requiresValue: true, valueType: 'percentage' },
+        { id: 'profit-share', label: 'Profit share (net earnings %)', requiresValue: true, valueType: 'percentage' },
+        { id: 'revenue-share', label: 'Revenue share (gross income split %)', requiresValue: true, valueType: 'percentage' },
+        { id: 'milestones-wedge', label: 'Milestones wedge (amount)', requiresValue: true, valueType: 'amount' }
       ]
     },
     {
-      category: "Marketing / Network Outcomes",
+      category: "Marketing / Network",
       options: [
-        { id: 'traffic', label: 'Traffic' },
-        { id: 'downloads', label: 'Downloads' },
-        { id: 'impressions', label: 'Impressions (likes, comments, reach)' },
-        { id: 'leads', label: 'Leads, referrals, mentions' }
+        { id: 'traffic', label: 'Traffic', requiresValue: false },
+        { id: 'downloads', label: 'Downloads', requiresValue: false },
+        { id: 'impressions', label: 'Impressions (likes, comments, reach)', requiresValue: false },
+        { id: 'leads', label: 'Leads, referrals, mentions', requiresValue: false }
       ]
     },
     {
       category: "Usage & Assets",
       options: [
-        { id: 'usage-rights', label: 'Usage / access rights' },
-        { id: 'asset-appreciation', label: 'Asset appreciation' }
+        { id: 'usage-rights', label: 'Usage / access rights', requiresValue: false },
+        { id: 'asset-appreciation', label: 'Asset appreciation', requiresValue: false }
       ]
     },
     {
-      category: "Intellectual Contributions",
+      category: "Intellectual",
       options: [
-        { id: 'courses-tutoring', label: 'Courses and Tutoring' },
-        { id: 'research', label: 'Research' },
-        { id: 'ideas-strategies', label: 'Ideas, Perspective & Strategies' },
-        { id: 'code-algorithms', label: 'Code and Algorithm Snippets' },
-        { id: 'mentorship', label: 'Mentorship Program' },
-        { id: 'project-management', label: 'Project Planning & Management' },
-        { id: 'consultation', label: 'Consultation' },
-        { id: 'prime-reviews', label: 'Prime Reviews' },
-        { id: 'guide-counselling', label: 'Guide and Counselling' },
-        { id: 'customer-support', label: 'Customer Support' },
-        { id: 'capacity-building', label: 'Capacity Building' }
+        { id: 'courses-tutoring', label: 'Courses and Tutoring', requiresValue: false },
+        { id: 'research', label: 'Research', requiresValue: false },
+        { id: 'ideas-strategies', label: 'Ideas, Perspective & Strategies', requiresValue: false },
+        { id: 'code-algorithms', label: 'Code and Algorithm Snippets', requiresValue: false },
+        { id: 'mentorship', label: 'Mentorship Program', requiresValue: false },
+        { id: 'project-management', label: 'Project Planning & Management', requiresValue: false },
+        { id: 'consultation', label: 'Consultation', requiresValue: false },
+        { id: 'prime-reviews', label: 'Prime Reviews', requiresValue: false },
+        { id: 'guide-counselling', label: 'Guide and Counselling', requiresValue: false },
+        { id: 'customer-support', label: 'Customer Support', requiresValue: false },
+        { id: 'capacity-building', label: 'Capacity Building', requiresValue: false }
       ]
     }
   ];
 
-  // Helper function to find outcome label by id
-  const findOutcomeLabel = (id: string): string => {
+  // New robust outcome management functions for Step 2
+  const initializeTempOutcomes = () => {
+    setTempOutcomes({
+      toGive: [...(formData.outcomes.toGive || [])],
+      toReceive: [...(formData.outcomes.toReceive || [])]
+    });
+  };
+
+  const findOutcomeById = (id: string) => {
     for (const category of outcomeCategories) {
       const outcome = category.options.find(opt => opt.id === id);
-      if (outcome) return outcome.label;
+      if (outcome) return outcome;
     }
-    return id; // fallback
+    return null;
+  };
+
+  const isOutcomeSelected = (type: 'toGive' | 'toReceive', outcomeId: string) => {
+    return tempOutcomes[type].some((outcome: any) => outcome.id === outcomeId);
   };
 
   const handleOutcomeToggle = (type: 'toGive' | 'toReceive', outcomeId: string) => {
-    const fieldName = type === 'toGive' ? 'toGiveOutcomes' : 'toReceiveOutcomes';
-    const currentOutcomes = formData[fieldName] || [];
+    const outcomeData = findOutcomeById(outcomeId);
+    if (!outcomeData) return;
+
+    setHasUnsavedChanges(true);
     
-    if (currentOutcomes.includes(outcomeId)) {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: currentOutcomes.filter((id: string) => id !== outcomeId)
-      }));
+    setTempOutcomes(prev => {
+      const currentOutcomes = prev[type];
+      const existingIndex = currentOutcomes.findIndex((outcome: any) => outcome.id === outcomeId);
+      
+      if (existingIndex >= 0) {
+        // Remove outcome
+        return {
+          ...prev,
+          [type]: currentOutcomes.filter((_: any, index: number) => index !== existingIndex)
+        };
+      } else {
+        // Add outcome
+        const newOutcome = {
+          id: outcomeId,
+          label: outcomeData.label,
+          type: outcomeData.requiresValue ? (outcomeData as any).valueType : 'none',
+          value: null,
+          custom: false
+        };
+        return {
+          ...prev,
+          [type]: [...currentOutcomes, newOutcome]
+        };
+      }
+    });
+  };
+
+  const handleOutcomeValueChange = (type: 'toGive' | 'toReceive', outcomeId: string, value: string) => {
+    setHasUnsavedChanges(true);
+    setTempOutcomes(prev => ({
+      ...prev,
+      [type]: prev[type].map((outcome: any) => 
+        outcome.id === outcomeId ? { ...outcome, value: value } : outcome
+      )
+    }));
+  };
+
+  const handleCustomOutcomeAdd = (type: 'toGive' | 'toReceive') => {
+    const customText = customInput[type].trim();
+    if (!customText) return;
+    
+    setHasUnsavedChanges(true);
+    const customOutcome = {
+      id: `custom-${Date.now()}`,
+      label: customText,
+      type: 'none',
+      value: null,
+      custom: true
+    };
+    
+    setTempOutcomes(prev => ({
+      ...prev,
+      [type]: [...prev[type], customOutcome]
+    }));
+    
+    setCustomInput(prev => ({ ...prev, [type]: '' }));
+  };
+
+  const handleCustomOutcomeRemove = (type: 'toGive' | 'toReceive', outcomeId: string) => {
+    setHasUnsavedChanges(true);
+    setTempOutcomes(prev => ({
+      ...prev,
+      [type]: prev[type].filter((outcome: any) => outcome.id !== outcomeId)
+    }));
+  };
+
+  const handleCustomOutcomeEdit = (type: 'toGive' | 'toReceive', outcomeId: string, newLabel: string) => {
+    setHasUnsavedChanges(true);
+    setTempOutcomes(prev => ({
+      ...prev,
+      [type]: prev[type].map((outcome: any) => 
+        outcome.id === outcomeId ? { ...outcome, label: newLabel.trim() } : outcome
+      )
+    }));
+  };
+
+  const validateOutcomes = () => {
+    // Validate numeric inputs for outcomes that require values
+    for (const type of ['toGive', 'toReceive'] as const) {
+      for (const outcome of tempOutcomes[type]) {
+        if (outcome.type === 'percentage' && outcome.value) {
+          const numValue = parseFloat(outcome.value);
+          if (isNaN(numValue) || numValue < 0 || numValue > 100) {
+            return { valid: false, error: `${outcome.label} percentage must be between 0-100` };
+          }
+        }
+        if (outcome.type === 'amount' && outcome.value) {
+          const numValue = parseFloat(outcome.value);
+          if (isNaN(numValue) || numValue <= 0) {
+            return { valid: false, error: `${outcome.label} amount must be greater than 0` };
+          }
+        }
+      }
+    }
+    return { valid: true, error: null };
+  };
+
+  const saveOutcomes = () => {
+    const validation = validateOutcomes();
+    if (!validation.valid) {
+      alert(validation.error);
+      return false;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      outcomes: {
+        toGive: [...tempOutcomes.toGive],
+        toReceive: [...tempOutcomes.toReceive]
+      }
+    }));
+    
+    setHasUnsavedChanges(false);
+    setShowOutcomesModal(false);
+    return true;
+  };
+
+  const cancelOutcomes = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+        initializeTempOutcomes();
+        setHasUnsavedChanges(false);
+        setShowOutcomesModal(false);
+        setCustomInput({ toGive: '', toReceive: '' });
+      }
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: [...currentOutcomes, outcomeId]
-      }));
+      setShowOutcomesModal(false);
     }
   };
 
-  const handleCustomOutcomeAdd = (type: 'toGive' | 'toReceive', customText: string) => {
-    if (!customText.trim()) return;
-    
-    const fieldName = type === 'toGive' ? 'customToGive' : 'customToReceive';
-    const currentCustom = formData[fieldName] || [];
-    
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: [...currentCustom, customText.trim()]
-    }));
+  const openOutcomesModal = () => {
+    initializeTempOutcomes();
+    setShowOutcomesModal(true);
+    setHasUnsavedChanges(false);
+    setCustomInput({ toGive: '', toReceive: '' });
   };
 
-  const handleCustomOutcomeRemove = (type: 'toGive' | 'toReceive', index: number) => {
-    const fieldName = type === 'toGive' ? 'customToGive' : 'customToReceive';
-    const currentCustom = formData[fieldName] || [];
-    
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: currentCustom.filter((_: any, i: number) => i !== index)
-    }));
+  // Legacy helper function for backward compatibility 
+  const findOutcomeLabel = (id: string): string => {
+    const outcome = findOutcomeById(id);
+    return outcome ? outcome.label : id;
   };
 
   return (
@@ -371,8 +504,64 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
             </Card>
           )}
 
-          {/* Step 2: Choose Type */}
+          {/* Step 2: Expected Outcomes */}
           {currentStep === 2 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Configure Expected Outcomes</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Define what you will give and what you expect to receive from this contribution.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={openOutcomesModal}
+                  variant="outline"
+                  className="w-full touch-manipulation"
+                >
+                  Configure Outcomes
+                </Button>
+
+                {/* Summary of configured outcomes */}
+                {(formData.outcomes.toGive.length > 0 || formData.outcomes.toReceive.length > 0) && (
+                  <div className="bg-muted/50 p-4 rounded-lg space-y-3">
+                    <h4 className="font-medium">Configured Outcomes</h4>
+                    
+                    {formData.outcomes.toGive.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-muted-foreground">To Give:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {formData.outcomes.toGive.map((outcome: any) => (
+                            <Badge key={outcome.id} variant="secondary" className="text-xs">
+                              {outcome.label}
+                              {outcome.value && ` (${outcome.value}${outcome.type === 'percentage' ? '%' : ''})`}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {formData.outcomes.toReceive.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-muted-foreground">To Receive:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {formData.outcomes.toReceive.map((outcome: any) => (
+                            <Badge key={outcome.id} variant="outline" className="text-xs">
+                              {outcome.label}
+                              {outcome.value && ` (${outcome.value}${outcome.type === 'percentage' ? '%' : ''})`}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Choose Type */}
+          {currentStep === 3 && (
             <div className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
@@ -448,226 +637,6 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                 </Card>
               )}
             </div>
-          )}
-
-          {/* Step 3: Expected Outcomes */}
-          {currentStep === 3 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Configure Expected Outcomes</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Define what you will give and what you expect to receive from this contribution.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="to-give" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="to-give">To Give</TabsTrigger>
-                    <TabsTrigger value="to-receive">To Receive</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="to-give" className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-3">What will you contribute?</h4>
-                      <div className="space-y-6">
-                        {outcomeCategories.map((category) => (
-                          <div key={category.category} className="space-y-3">
-                            <h5 className="text-sm font-medium text-muted-foreground">
-                              {category.category}
-                            </h5>
-                            <div className="space-y-2 pl-4">
-                              {category.options.map((outcome) => (
-                                <div key={outcome.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`give-${outcome.id}`}
-                                    checked={formData.toGiveOutcomes?.includes(outcome.id) || false}
-                                    onCheckedChange={() => handleOutcomeToggle('toGive', outcome.id)}
-                                  />
-                                  <Label htmlFor={`give-${outcome.id}`} className="text-sm">
-                                    {outcome.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {/* Custom Option */}
-                        <div className="space-y-3">
-                          <h5 className="text-sm font-medium text-muted-foreground">
-                            Custom Option
-                          </h5>
-                          <div className="pl-4">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="give-custom"
-                                checked={formData.toGiveOutcomes?.includes('custom') || false}
-                                onCheckedChange={() => handleOutcomeToggle('toGive', 'custom')}
-                              />
-                              <Label htmlFor="give-custom" className="text-sm">
-                                Custom Option
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Custom outcomes for To Give */}
-                      {formData.toGiveOutcomes?.includes('custom') && (
-                        <div className="mt-4 space-y-3">
-                          <Label className="text-sm font-medium">Custom contributions:</Label>
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Describe your custom contribution..."
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const target = e.target as HTMLInputElement;
-                                    handleCustomOutcomeAdd('toGive', target.value);
-                                    target.value = '';
-                                  }
-                                }}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
-                                  if (input) {
-                                    handleCustomOutcomeAdd('toGive', input.value);
-                                    input.value = '';
-                                  }
-                                }}
-                              >
-                                Add
-                              </Button>
-                            </div>
-                            
-                            {/* Display added custom outcomes */}
-                            {formData.customToGive?.map((custom: string, index: number) => (
-                              <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                                <span className="text-sm">{custom}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleCustomOutcomeRemove('toGive', index)}
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                                >
-                                  ×
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="to-receive" className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-3">What do you expect to receive?</h4>
-                      <div className="space-y-6">
-                        {outcomeCategories.map((category) => (
-                          <div key={category.category} className="space-y-3">
-                            <h5 className="text-sm font-medium text-muted-foreground">
-                              {category.category}
-                            </h5>
-                            <div className="space-y-2 pl-4">
-                              {category.options.map((outcome) => (
-                                <div key={outcome.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`receive-${outcome.id}`}
-                                    checked={formData.toReceiveOutcomes?.includes(outcome.id) || false}
-                                    onCheckedChange={() => handleOutcomeToggle('toReceive', outcome.id)}
-                                  />
-                                  <Label htmlFor={`receive-${outcome.id}`} className="text-sm">
-                                    {outcome.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {/* Custom Option */}
-                        <div className="space-y-3">
-                          <h5 className="text-sm font-medium text-muted-foreground">
-                            Custom Option
-                          </h5>
-                          <div className="pl-4">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id="receive-custom"
-                                checked={formData.toReceiveOutcomes?.includes('custom') || false}
-                                onCheckedChange={() => handleOutcomeToggle('toReceive', 'custom')}
-                              />
-                              <Label htmlFor="receive-custom" className="text-sm">
-                                Custom Option
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Custom outcomes for To Receive */}
-                      {formData.toReceiveOutcomes?.includes('custom') && (
-                        <div className="mt-4 space-y-3">
-                          <Label className="text-sm font-medium">Custom expectations:</Label>
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Describe what you want to gain..."
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const target = e.target as HTMLInputElement;
-                                    handleCustomOutcomeAdd('toReceive', target.value);
-                                    target.value = '';
-                                  }
-                                }}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
-                                  if (input) {
-                                    handleCustomOutcomeAdd('toReceive', input.value);
-                                    input.value = '';
-                                  }
-                                }}
-                              >
-                                Add
-                              </Button>
-                            </div>
-                            
-                            {/* Display added custom outcomes */}
-                            {formData.customToReceive?.map((custom: string, index: number) => (
-                              <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                                <span className="text-sm">{custom}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleCustomOutcomeRemove('toReceive', index)}
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                                >
-                                  ×
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
           )}
 
           {/* Step 4: Configure */}
@@ -1028,6 +997,200 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
           </Button>
         )}
       </div>
+
+      {/* Outcomes Configuration Modal/Drawer */}
+      {isMobile ? (
+        <Drawer open={showOutcomesModal} onOpenChange={(open) => !open && cancelOutcomes()}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>Configure Expected Outcomes</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-hidden">
+              <OutcomesModalContent />
+            </div>
+            <DrawerFooter>
+              <Button
+                onClick={saveOutcomes}
+                className="w-full touch-manipulation"
+                disabled={!hasUnsavedChanges}
+              >
+                Save & Continue
+              </Button>
+              <Button
+                variant="outline"
+                onClick={cancelOutcomes}
+                className="w-full touch-manipulation"
+              >
+                Cancel
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={showOutcomesModal} onOpenChange={(open) => !open && cancelOutcomes()}>
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Configure Expected Outcomes</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden">
+              <OutcomesModalContent />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={cancelOutcomes}
+                className="touch-manipulation"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveOutcomes}
+                className="touch-manipulation"
+                disabled={!hasUnsavedChanges}
+              >
+                Save & Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
+
+  // Outcomes Modal Content Component
+  function OutcomesModalContent() {
+    return (
+      <div className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'toGive' | 'toReceive')} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="toGive">To Give</TabsTrigger>
+            <TabsTrigger value="toReceive">To Receive</TabsTrigger>
+          </TabsList>
+          
+          <div className="flex-1 overflow-auto">
+            <TabsContent value="toGive" className="space-y-4 p-4">
+              <OutcomeTabContent type="toGive" />
+            </TabsContent>
+            
+            <TabsContent value="toReceive" className="space-y-4 p-4">
+              <OutcomeTabContent type="toReceive" />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Outcome Tab Content Component
+  function OutcomeTabContent({ type }: { type: 'toGive' | 'toReceive' }) {
+    return (
+      <div className="space-y-6">
+        <h4 className="font-medium">
+          {type === 'toGive' ? 'What will you contribute?' : 'What do you expect to receive?'}
+        </h4>
+        
+        {/* Categorized Options */}
+        {outcomeCategories.map((category) => (
+          <div key={category.category} className="space-y-3">
+            <h5 className="text-sm font-medium text-muted-foreground">
+              {category.category}
+            </h5>
+            <div className="space-y-3 pl-4">
+              {category.options.map((outcome) => {
+                const isSelected = isOutcomeSelected(type, outcome.id);
+                const selectedOutcome = tempOutcomes[type].find((o: any) => o.id === outcome.id);
+                
+                return (
+                  <div key={outcome.id} className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${type}-${outcome.id}`}
+                        checked={isSelected}
+                        onCheckedChange={() => handleOutcomeToggle(type, outcome.id)}
+                      />
+                      <Label htmlFor={`${type}-${outcome.id}`} className="text-sm flex-1">
+                        {outcome.label}
+                      </Label>
+                    </div>
+                    
+                    {/* Value input for outcomes that require it */}
+                    {isSelected && outcome.requiresValue && (
+                      <div className="ml-6">
+                        <Input
+                          placeholder={
+                            (outcome as any).valueType === 'percentage' 
+                              ? 'Enter percentage (0-100)' 
+                              : 'Enter amount'
+                          }
+                          value={selectedOutcome?.value || ''}
+                          onChange={(e) => handleOutcomeValueChange(type, outcome.id, e.target.value)}
+                          className="w-48"
+                          type="number"
+                          min="0"
+                          max={(outcome as any).valueType === 'percentage' ? "100" : undefined}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        
+        {/* Custom Options */}
+        <div className="space-y-3">
+          <h5 className="text-sm font-medium text-muted-foreground">Custom Option</h5>
+          <div className="pl-4 space-y-3">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add custom outcome..."
+                value={customInput[type]}
+                onChange={(e) => setCustomInput(prev => ({ ...prev, [type]: e.target.value }))}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCustomOutcomeAdd(type);
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleCustomOutcomeAdd(type)}
+                disabled={!customInput[type].trim()}
+              >
+                Add
+              </Button>
+            </div>
+            
+            {/* Display custom outcomes */}
+            <div className="space-y-2">
+              {tempOutcomes[type]
+                .filter((outcome: any) => outcome.custom)
+                .map((outcome: any) => (
+                  <div key={outcome.id} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
+                    <Input
+                      value={outcome.label}
+                      onChange={(e) => handleCustomOutcomeEdit(type, outcome.id, e.target.value)}
+                      className="bg-transparent border-none text-sm flex-1 p-0 h-auto focus-visible:ring-0"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCustomOutcomeRemove(type, outcome.id)}
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 };
