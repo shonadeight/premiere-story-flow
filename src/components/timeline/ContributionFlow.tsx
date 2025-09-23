@@ -416,6 +416,18 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   };
 
   const validateTimelineAllocations = (): { valid: boolean; error: string | null } => {
+    // Validate each allocation is within bounds
+    for (const timelineId of selectedTimelines) {
+      const allocation = parseFloat(timelineAllocations[timelineId] || '0') || 0;
+      if (allocation < 0 || allocation > 100) {
+        const timeline = mockAvailableTimelines.find(t => t.id === timelineId);
+        return { 
+          valid: false, 
+          error: `${timeline?.title || 'Timeline'} allocation must be between 0-100%` 
+        };
+      }
+    }
+
     const total = getTotalAllocation();
     if (total > 100) {
       return { valid: false, error: 'Total allocation cannot exceed 100%' };
@@ -432,7 +444,9 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
 
     const linkedTimelineData = selectedTimelines.map(id => ({
       id,
-      allocation: parseFloat(timelineAllocations[id] || '0') || 0
+      allocation: parseFloat(timelineAllocations[id] || '0') || 0,
+      title: mockAvailableTimelines.find(t => t.id === id)?.title || 'Unknown Timeline',
+      value: mockAvailableTimelines.find(t => t.id === id)?.value || 0
     }));
 
     setFormData(prev => ({
@@ -440,6 +454,8 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
       linkedTimelines: linkedTimelineData
     }));
 
+    // Clear search and close modal
+    setTimelineSearch('');
     setShowLinkTimelinesModal(false);
   };
 
@@ -450,6 +466,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     setTimelineAllocations(
       savedTimelines.reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.allocation.toString() }), {})
     );
+    setTimelineSearch('');
     setShowLinkTimelinesModal(false);
   };
 
@@ -1438,48 +1455,63 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
               {/* Timeline List */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
-                  {filteredTimelines.map((timeline) => {
-                    const isSelected = selectedTimelines.includes(timeline.id);
-                    const allocation = timelineAllocations[timeline.id] || '';
-                    
-                    return (
-                      <div key={timeline.id} className="border rounded-lg p-3">
-                        <div className="flex items-start space-x-3">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => handleTimelineToggle(timeline.id)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1 space-y-2">
-                            <div>
-                              <h4 className="font-medium text-sm">{timeline.title}</h4>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">
-                                  {timeline.type}
-                                </Badge>
-                                <span>${timeline.value.toLocaleString()}</span>
+                  {filteredTimelines.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Link className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm mb-1">
+                        {timelineSearch ? 'No timelines found' : 'No timelines available'}
+                      </p>
+                      <p className="text-xs">
+                        {timelineSearch ? `Try searching for something else` : 'Create some timelines first to link them here'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredTimelines.map((timeline) => {
+                      const isSelected = selectedTimelines.includes(timeline.id);
+                      const allocation = timelineAllocations[timeline.id] || '';
+                      
+                      return (
+                        <div key={timeline.id} className="border rounded-lg p-3">
+                          <div className="flex items-start space-x-3">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => handleTimelineToggle(timeline.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 space-y-2">
+                              <div>
+                                <h4 className="font-medium text-sm">{timeline.title}</h4>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs">
+                                    {timeline.type}
+                                  </Badge>
+                                  <span>${timeline.value.toLocaleString()}</span>
+                                </div>
                               </div>
+                              
+                              {isSelected && (
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs">Allocation %:</Label>
+                                  <Input
+                                    type="number"
+                                    value={allocation}
+                                    onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
+                                    placeholder="0"
+                                    className="w-20 h-7 text-xs"
+                                    min="0"
+                                    max="100"
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    (Optional)
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            
-                            {isSelected && (
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs">Allocation %:</Label>
-                                <Input
-                                  type="number"
-                                  value={allocation}
-                                  onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
-                                  placeholder="0"
-                                  className="w-20 h-7 text-xs"
-                                  min="0"
-                                  max="100"
-                                />
-                              </div>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </ScrollArea>
 
@@ -1506,8 +1538,17 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                 <Button variant="outline" onClick={handleCancelLinkTimelines} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleSaveLinkedTimelines} className="flex-1">
+                <Button 
+                  onClick={handleSaveLinkedTimelines} 
+                  className="flex-1"
+                  disabled={getTotalAllocation() > 100}
+                >
                   Save & Continue
+                  {selectedTimelines.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {selectedTimelines.length}
+                    </Badge>
+                  )}
                 </Button>
               </div>
             </DrawerFooter>
@@ -1537,51 +1578,63 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
               {/* Timeline List */}
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-3">
-                  {filteredTimelines.map((timeline) => {
-                    const isSelected = selectedTimelines.includes(timeline.id);
-                    const allocation = timelineAllocations[timeline.id] || '';
-                    
-                    return (
-                      <div key={timeline.id} className="border rounded-lg p-4">
-                        <div className="flex items-start space-x-3">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => handleTimelineToggle(timeline.id)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1 space-y-3">
-                            <div>
-                              <h4 className="font-medium">{timeline.title}</h4>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {timeline.type}
-                                </Badge>
-                                <span>${timeline.value.toLocaleString()}</span>
+                  {filteredTimelines.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Link className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-base mb-2">
+                        {timelineSearch ? 'No timelines found' : 'No timelines available'}
+                      </p>
+                      <p className="text-sm">
+                        {timelineSearch ? `Try searching for something else` : 'Create some timelines first to link them here'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredTimelines.map((timeline) => {
+                      const isSelected = selectedTimelines.includes(timeline.id);
+                      const allocation = timelineAllocations[timeline.id] || '';
+                      
+                      return (
+                        <div key={timeline.id} className="border rounded-lg p-4">
+                          <div className="flex items-start space-x-3">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => handleTimelineToggle(timeline.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 space-y-3">
+                              <div>
+                                <h4 className="font-medium">{timeline.title}</h4>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {timeline.type}
+                                  </Badge>
+                                  <span>${timeline.value.toLocaleString()}</span>
+                                </div>
                               </div>
+                              
+                              {isSelected && (
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-sm">Allocation %:</Label>
+                                  <Input
+                                    type="number"
+                                    value={allocation}
+                                    onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
+                                    placeholder="0"
+                                    className="w-24 h-8"
+                                    min="0"
+                                    max="100"
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    (Optional)
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            
-                            {isSelected && (
-                              <div className="flex items-center gap-2">
-                                <Label className="text-sm">Allocation %:</Label>
-                                <Input
-                                  type="number"
-                                  value={allocation}
-                                  onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
-                                  placeholder="0"
-                                  className="w-24 h-8"
-                                  min="0"
-                                  max="100"
-                                />
-                                <span className="text-xs text-muted-foreground">
-                                  (Optional)
-                                </span>
-                              </div>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               </ScrollArea>
 
@@ -1607,8 +1660,16 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
               <Button variant="outline" onClick={handleCancelLinkTimelines}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveLinkedTimelines}>
+              <Button 
+                onClick={handleSaveLinkedTimelines}
+                disabled={getTotalAllocation() > 100}
+              >
                 Save & Continue
+                {selectedTimelines.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {selectedTimelines.length}
+                  </Badge>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
