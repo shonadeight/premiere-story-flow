@@ -272,7 +272,7 @@ const App = () => {
               
               {/* Full screen pushed pages without navbar/bottomnav */}
               <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter ios-full-screen"><TimelineDetail /></div>} />
-              <Route path="/contribute/:timelineId" element={<div className="page-transition ios-push-enter ios-full-screen"><ShonaCoinContribution /></div>} />
+              <Route path="/contribute" element={<div className="page-transition ios-push-enter ios-full-screen"><ShonaCoinContribution /></div>} />
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={

@@ -36,7 +36,11 @@ export function ShonaCoinContribution() {
   };
 
   const handleCancel = () => {
-    navigate('/portfolio');
+    if (timelineId) {
+      navigate(`/timeline/${timelineId}`);
+    } else {
+      navigate('/portfolio');
+    }
   };
 
   if (!targetTimeline) {
