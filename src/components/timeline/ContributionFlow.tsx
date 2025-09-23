@@ -12,8 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ArrowLeft, 
@@ -247,13 +245,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   ];
 
-  // New robust outcome management functions for Step 2
-  const initializeTempOutcomes = () => {
-    setTempOutcomes({
-      toGive: [...(formData.outcomes.toGive || [])],
-      toReceive: [...(formData.outcomes.toReceive || [])]
-    });
-  };
+  // Helper functions for outcome management
 
   const findOutcomeById = (id: string) => {
     for (const category of outcomeCategories) {
