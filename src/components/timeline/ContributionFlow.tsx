@@ -29,7 +29,8 @@ import {
   Info,
   Settings,
   Search,
-  Link
+  Link,
+  X
 } from 'lucide-react';
 import { Timeline, ContributionType } from '@/types/timeline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -956,55 +957,98 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
             </div>
           )}
 
-          {/* Step 4: Link/Merge Timelines */}
+          {/* Step 4: Link / Merge / Knot with Other Timelines */}
           {currentStep === 4 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Link className="h-5 w-5 text-primary" />
-                  Link/Merge Timelines
+                  Link / Merge / Knot with Other Timelines
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Connect related timelines to this contribution and set allocation percentages.
+                  Connect and merge your existing timelines with this contribution. Set percentage allocations to dynamically update valuations.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Button
                   onClick={() => setShowLinkTimelinesModal(true)}
                   variant="outline"
-                  className="w-full"
+                  className="w-full justify-center"
+                  size="lg"
                 >
                   <Link className="h-4 w-4 mr-2" />
-                  Select Timelines to Link
+                  Select timelines to link
                 </Button>
 
                 {/* Summary of linked timelines */}
                 {formData.linkedTimelines && formData.linkedTimelines.length > 0 && (
-                  <div className="p-3 rounded-lg border bg-muted/30">
-                    <h4 className="font-medium text-sm mb-2">Linked Timelines:</h4>
-                    <div className="space-y-2">
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                      <Link className="h-4 w-4" />
+                      Linked Timelines ({formData.linkedTimelines.length})
+                    </h4>
+                    <div className="space-y-3">
                       {formData.linkedTimelines.map((timeline: any) => {
                         const timelineData = mockAvailableTimelines.find(t => t.id === timeline.id);
                         return (
-                          <div key={timeline.id} className="flex items-center justify-between text-sm">
-                            <span>{timelineData?.title || timeline.id}</span>
+                          <div key={timeline.id} className="flex items-center justify-between p-2 rounded border bg-background">
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{timelineData?.title || timeline.id}</div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline" className="text-xs">
+                                  {timelineData?.type || 'Timeline'}
+                                </Badge>
+                                <span>${(timelineData?.value || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
                             <div className="flex items-center gap-2">
                               {timeline.allocation > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs font-medium">
                                   {timeline.allocation}%
                                 </Badge>
                               )}
-                              <span className="text-muted-foreground">
-                                ${(timelineData?.value || 0).toLocaleString()}
-                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updatedTimelines = formData.linkedTimelines.filter((t: any) => t.id !== timeline.id);
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    linkedTimelines: updatedTimelines
+                                  }));
+                                }}
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                         );
                       })}
-                      <div className="pt-2 border-t text-xs text-muted-foreground">
-                        Total Allocation: {formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0)}%
-                      </div>
+                      
+                      {/* Total allocation summary */}
+                      {formData.linkedTimelines.some((t: any) => t.allocation > 0) && (
+                        <div className="pt-2 mt-2 border-t flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Total Allocation:</span>
+                          <span className={`font-medium ${
+                            formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0) > 100 
+                              ? 'text-destructive' 
+                              : 'text-primary'
+                          }`}>
+                            {formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {(!formData.linkedTimelines || formData.linkedTimelines.length === 0) && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Link className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No timelines linked yet</p>
+                    <p className="text-xs">Click above to connect your existing timelines</p>
                   </div>
                 )}
               </CardContent>
