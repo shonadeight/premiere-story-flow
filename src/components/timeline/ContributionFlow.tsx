@@ -182,34 +182,58 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   };
 
-  // Predefined outcome options
-  const predefinedOutcomes = {
-    toGive: [
-      { id: 'equity-share', label: 'Equity Share' },
-      { id: 'profit-share', label: 'Profit Share' },
-      { id: 'revenue-share', label: 'Revenue Share' },
-      { id: 'milestones', label: 'Milestones' },
-      { id: 'traffic', label: 'Traffic' },
-      { id: 'downloads', label: 'Downloads' },
-      { id: 'impressions', label: 'Impressions' },
-      { id: 'leads', label: 'Leads' },
-      { id: 'usage-rights', label: 'Usage Rights' },
-      { id: 'asset-appreciation', label: 'Asset Appreciation' },
-      { id: 'custom', label: 'Custom Option' }
-    ],
-    toReceive: [
-      { id: 'equity-share', label: 'Equity Share' },
-      { id: 'profit-share', label: 'Profit Share' },
-      { id: 'revenue-share', label: 'Revenue Share' },
-      { id: 'milestones', label: 'Milestones' },
-      { id: 'traffic', label: 'Traffic' },
-      { id: 'downloads', label: 'Downloads' },
-      { id: 'impressions', label: 'Impressions' },
-      { id: 'leads', label: 'Leads' },
-      { id: 'usage-rights', label: 'Usage Rights' },
-      { id: 'asset-appreciation', label: 'Asset Appreciation' },
-      { id: 'custom', label: 'Custom Option' }
-    ]
+  // Categorized outcome options
+  const outcomeCategories = [
+    {
+      category: "Financial/Business Outcomes",
+      options: [
+        { id: 'equity-share', label: 'Equity share (ownership % on timeline)' },
+        { id: 'profit-share', label: 'Profit share (net earnings % on timeline revenues)' },
+        { id: 'revenue-share', label: 'Revenue share (gross income split % on timeline revenues)' },
+        { id: 'milestones-wedge', label: 'Milestones wedge (amount)' }
+      ]
+    },
+    {
+      category: "Marketing / Network Outcomes",
+      options: [
+        { id: 'traffic', label: 'Traffic' },
+        { id: 'downloads', label: 'Downloads' },
+        { id: 'impressions', label: 'Impressions (likes, comments, reach)' },
+        { id: 'leads', label: 'Leads, referrals, mentions' }
+      ]
+    },
+    {
+      category: "Usage & Assets",
+      options: [
+        { id: 'usage-rights', label: 'Usage / access rights' },
+        { id: 'asset-appreciation', label: 'Asset appreciation' }
+      ]
+    },
+    {
+      category: "Intellectual Contributions",
+      options: [
+        { id: 'courses-tutoring', label: 'Courses and Tutoring' },
+        { id: 'research', label: 'Research' },
+        { id: 'ideas-strategies', label: 'Ideas, Perspective & Strategies' },
+        { id: 'code-algorithms', label: 'Code and Algorithm Snippets' },
+        { id: 'mentorship', label: 'Mentorship Program' },
+        { id: 'project-management', label: 'Project Planning & Management' },
+        { id: 'consultation', label: 'Consultation' },
+        { id: 'prime-reviews', label: 'Prime Reviews' },
+        { id: 'guide-counselling', label: 'Guide and Counselling' },
+        { id: 'customer-support', label: 'Customer Support' },
+        { id: 'capacity-building', label: 'Capacity Building' }
+      ]
+    }
+  ];
+
+  // Helper function to find outcome label by id
+  const findOutcomeLabel = (id: string): string => {
+    for (const category of outcomeCategories) {
+      const outcome = category.options.find(opt => opt.id === id);
+      if (outcome) return outcome.label;
+    }
+    return id; // fallback
   };
 
   const handleOutcomeToggle = (type: 'toGive' | 'toReceive', outcomeId: string) => {
@@ -445,19 +469,47 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                   <TabsContent value="to-give" className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-3">What will you contribute?</h4>
-                      <div className="grid grid-cols-1 gap-2">
-                        {predefinedOutcomes.toGive.map(outcome => (
-                          <div key={outcome.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`give-${outcome.id}`}
-                              checked={formData.toGiveOutcomes?.includes(outcome.id) || false}
-                              onCheckedChange={() => handleOutcomeToggle('toGive', outcome.id)}
-                            />
-                            <Label htmlFor={`give-${outcome.id}`} className="text-sm">
-                              {outcome.label}
-                            </Label>
+                      <div className="space-y-6">
+                        {outcomeCategories.map((category) => (
+                          <div key={category.category} className="space-y-3">
+                            <h5 className="text-sm font-medium text-muted-foreground">
+                              {category.category}
+                            </h5>
+                            <div className="space-y-2 pl-4">
+                              {category.options.map((outcome) => (
+                                <div key={outcome.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`give-${outcome.id}`}
+                                    checked={formData.toGiveOutcomes?.includes(outcome.id) || false}
+                                    onCheckedChange={() => handleOutcomeToggle('toGive', outcome.id)}
+                                  />
+                                  <Label htmlFor={`give-${outcome.id}`} className="text-sm">
+                                    {outcome.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
+                        
+                        {/* Custom Option */}
+                        <div className="space-y-3">
+                          <h5 className="text-sm font-medium text-muted-foreground">
+                            Custom Option
+                          </h5>
+                          <div className="pl-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="give-custom"
+                                checked={formData.toGiveOutcomes?.includes('custom') || false}
+                                onCheckedChange={() => handleOutcomeToggle('toGive', 'custom')}
+                              />
+                              <Label htmlFor="give-custom" className="text-sm">
+                                Custom Option
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       
                       {/* Custom outcomes for To Give */}
@@ -517,19 +569,47 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                   <TabsContent value="to-receive" className="space-y-4">
                     <div>
                       <h4 className="font-medium mb-3">What do you expect to receive?</h4>
-                      <div className="grid grid-cols-1 gap-2">
-                        {predefinedOutcomes.toReceive.map(outcome => (
-                          <div key={outcome.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`receive-${outcome.id}`}
-                              checked={formData.toReceiveOutcomes?.includes(outcome.id) || false}
-                              onCheckedChange={() => handleOutcomeToggle('toReceive', outcome.id)}
-                            />
-                            <Label htmlFor={`receive-${outcome.id}`} className="text-sm">
-                              {outcome.label}
-                            </Label>
+                      <div className="space-y-6">
+                        {outcomeCategories.map((category) => (
+                          <div key={category.category} className="space-y-3">
+                            <h5 className="text-sm font-medium text-muted-foreground">
+                              {category.category}
+                            </h5>
+                            <div className="space-y-2 pl-4">
+                              {category.options.map((outcome) => (
+                                <div key={outcome.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`receive-${outcome.id}`}
+                                    checked={formData.toReceiveOutcomes?.includes(outcome.id) || false}
+                                    onCheckedChange={() => handleOutcomeToggle('toReceive', outcome.id)}
+                                  />
+                                  <Label htmlFor={`receive-${outcome.id}`} className="text-sm">
+                                    {outcome.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
+                        
+                        {/* Custom Option */}
+                        <div className="space-y-3">
+                          <h5 className="text-sm font-medium text-muted-foreground">
+                            Custom Option
+                          </h5>
+                          <div className="pl-4">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="receive-custom"
+                                checked={formData.toReceiveOutcomes?.includes('custom') || false}
+                                onCheckedChange={() => handleOutcomeToggle('toReceive', 'custom')}
+                              />
+                              <Label htmlFor="receive-custom" className="text-sm">
+                                Custom Option
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       
                       {/* Custom outcomes for To Receive */}
@@ -833,7 +913,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                         <div className="mt-1">
                           {formData.toGiveOutcomes?.filter((id: string) => id !== 'custom').map((id: string) => (
                             <Badge key={id} variant="secondary" className="mr-1 mb-1 text-xs">
-                              {predefinedOutcomes.toGive.find(o => o.id === id)?.label}
+                              {findOutcomeLabel(id)}
                             </Badge>
                           ))}
                           {formData.customToGive?.map((custom: string, index: number) => (
@@ -851,7 +931,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
                         <div className="mt-1">
                           {formData.toReceiveOutcomes?.filter((id: string) => id !== 'custom').map((id: string) => (
                             <Badge key={id} variant="secondary" className="mr-1 mb-1 text-xs">
-                              {predefinedOutcomes.toReceive.find(o => o.id === id)?.label}
+                              {findOutcomeLabel(id)}
                             </Badge>
                           ))}
                           {formData.customToReceive?.map((custom: string, index: number) => (
