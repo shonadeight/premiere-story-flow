@@ -27,9 +27,13 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
-  Settings
+  Settings,
+  Search,
+  Link
 } from 'lucide-react';
 import { Timeline, ContributionType } from '@/types/timeline';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 
 interface ContributionFlowProps {
   targetTimeline: Timeline;
@@ -64,7 +68,9 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     outcomes: {
       toGive: [],
       toReceive: []
-    }
+    },
+    // Linked timelines for Step 4
+    linkedTimelines: []
   });
 
   // State for Step 2 Expected Outcomes - now directly embedded in step
@@ -74,6 +80,12 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     toGive: [],
     toReceive: []
   });
+
+  // State for Step 4 Link/Merge Timelines
+  const [showLinkTimelinesModal, setShowLinkTimelinesModal] = useState(false);
+  const [timelineSearch, setTimelineSearch] = useState('');
+  const [selectedTimelines, setSelectedTimelines] = useState<string[]>([]);
+  const [timelineAllocations, setTimelineAllocations] = useState<{[key: string]: string}>({});
 
   // Initialize temp outcomes with saved data on mount and when switching to step 2
   useEffect(() => {
@@ -158,10 +170,11 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     { id: 1, title: 'Review Timeline', description: 'Understand target timeline' },
     { id: 2, title: 'Expected Outcomes', description: 'Configure what you give/receive' },
     { id: 3, title: 'Choose Type', description: 'Select contribution type' },
-    { id: 4, title: 'Configure', description: 'Set amount and details' },
-    { id: 5, title: 'Valuation', description: 'Agree on value terms' },
-    { id: 6, title: 'Legal Terms', description: 'Accept agreements' },
-    { id: 7, title: 'Submit', description: 'Complete contribution' }
+    { id: 4, title: 'Link Timelines', description: 'Connect related timelines' },
+    { id: 5, title: 'Configure Details', description: 'Set amount and specifics' },
+    { id: 6, title: 'Valuation', description: 'Agree on value terms' },
+    { id: 7, title: 'Legal Terms', description: 'Accept agreements' },
+    { id: 8, title: 'Submit', description: 'Complete contribution' }
   ];
 
   const selectedType = contributionTypes.find(t => t.id === formData.contributionType);
@@ -192,10 +205,11 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
       case 1: return true;
       case 2: return true; // Expected outcomes step is optional  
       case 3: return formData.contributionType && formData.subtype;
-      case 4: return formData.amount || formData.description;
-      case 5: return formData.valuationPreference;
-      case 6: return formData.acceptTerms;
-      case 7: return true;
+      case 4: return true; // Link timelines step is optional
+      case 5: return formData.amount || formData.description;
+      case 6: return formData.valuationPreference;
+      case 7: return formData.acceptTerms;
+      case 8: return true;
       default: return false;
     }
   };
@@ -363,6 +377,91 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     const outcome = findOutcomeById(id);
     return outcome ? outcome.label : id;
   };
+
+  // Mock timelines data for Step 4 - in real app, fetch from API
+  const mockAvailableTimelines = [
+    { id: 'timeline-1', title: 'Solar Installation Project', value: 50000, type: 'project' },
+    { id: 'timeline-2', title: 'Marketing Campaign Q3', value: 25000, type: 'marketing' },
+    { id: 'timeline-3', title: 'Code Development Timeline', value: 35000, type: 'intellectual' },
+    { id: 'timeline-4', title: 'Equipment Purchase Fund', value: 40000, type: 'assets' },
+    { id: 'timeline-5', title: 'Client Follow-up Services', value: 15000, type: 'followup' }
+  ];
+
+  // Step 4 Link Timelines Functions
+  const filteredTimelines = mockAvailableTimelines.filter(timeline =>
+    timeline.title.toLowerCase().includes(timelineSearch.toLowerCase())
+  );
+
+  const handleTimelineToggle = (timelineId: string) => {
+    setSelectedTimelines(prev => 
+      prev.includes(timelineId) 
+        ? prev.filter(id => id !== timelineId)
+        : [...prev, timelineId]
+    );
+  };
+
+  const handleAllocationChange = (timelineId: string, allocation: string) => {
+    setTimelineAllocations(prev => ({
+      ...prev,
+      [timelineId]: allocation
+    }));
+  };
+
+  const getTotalAllocation = (): number => {
+    return Object.values(timelineAllocations).reduce((total, allocation) => {
+      const value = parseFloat(allocation) || 0;
+      return total + value;
+    }, 0);
+  };
+
+  const validateTimelineAllocations = (): { valid: boolean; error: string | null } => {
+    const total = getTotalAllocation();
+    if (total > 100) {
+      return { valid: false, error: 'Total allocation cannot exceed 100%' };
+    }
+    return { valid: true, error: null };
+  };
+
+  const handleSaveLinkedTimelines = () => {
+    const validation = validateTimelineAllocations();
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
+
+    const linkedTimelineData = selectedTimelines.map(id => ({
+      id,
+      allocation: parseFloat(timelineAllocations[id] || '0') || 0
+    }));
+
+    setFormData(prev => ({
+      ...prev,
+      linkedTimelines: linkedTimelineData
+    }));
+
+    setShowLinkTimelinesModal(false);
+  };
+
+  const handleCancelLinkTimelines = () => {
+    // Reset to saved state
+    const savedTimelines = formData.linkedTimelines || [];
+    setSelectedTimelines(savedTimelines.map((t: any) => t.id));
+    setTimelineAllocations(
+      savedTimelines.reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.allocation.toString() }), {})
+    );
+    setShowLinkTimelinesModal(false);
+  };
+
+  // Initialize temp state when opening Step 4 modal
+  useEffect(() => {
+    if (showLinkTimelinesModal) {
+      const savedTimelines = formData.linkedTimelines || [];
+      setSelectedTimelines(savedTimelines.map((t: any) => t.id));
+      setTimelineAllocations(
+        savedTimelines.reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.allocation.toString() }), {})
+      );
+    }
+  }, [showLinkTimelinesModal, formData.linkedTimelines]);
 
   return (
     <div className="h-full flex flex-col">
@@ -857,8 +956,63 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
             </div>
           )}
 
-          {/* Step 4: Configure */}
-          {currentStep === 4 && selectedSubtype && (
+          {/* Step 4: Link/Merge Timelines */}
+          {currentStep === 4 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Link className="h-5 w-5 text-primary" />
+                  Link/Merge Timelines
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Connect related timelines to this contribution and set allocation percentages.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={() => setShowLinkTimelinesModal(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Link className="h-4 w-4 mr-2" />
+                  Select Timelines to Link
+                </Button>
+
+                {/* Summary of linked timelines */}
+                {formData.linkedTimelines && formData.linkedTimelines.length > 0 && (
+                  <div className="p-3 rounded-lg border bg-muted/30">
+                    <h4 className="font-medium text-sm mb-2">Linked Timelines:</h4>
+                    <div className="space-y-2">
+                      {formData.linkedTimelines.map((timeline: any) => {
+                        const timelineData = mockAvailableTimelines.find(t => t.id === timeline.id);
+                        return (
+                          <div key={timeline.id} className="flex items-center justify-between text-sm">
+                            <span>{timelineData?.title || timeline.id}</span>
+                            <div className="flex items-center gap-2">
+                              {timeline.allocation > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {timeline.allocation}%
+                                </Badge>
+                              )}
+                              <span className="text-muted-foreground">
+                                ${(timelineData?.value || 0).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="pt-2 border-t text-xs text-muted-foreground">
+                        Total Allocation: {formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0)}%
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 5: Configure Details */}
+          {currentStep === 5 && selectedSubtype && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Configure Contribution</CardTitle>
@@ -935,8 +1089,8 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
             </Card>
           )}
 
-          {/* Step 5: Valuation */}
-          {currentStep === 5 && (
+          {/* Step 6: Valuation */}
+          {currentStep === 6 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Valuation & Returns</CardTitle>
@@ -1215,6 +1369,207 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
           </Button>
         )}
       </div>
+
+      {/* Link Timelines Modal/Drawer */}
+      {isMobile ? (
+        <Drawer open={showLinkTimelinesModal} onOpenChange={setShowLinkTimelinesModal}>
+          <DrawerContent className="h-[80vh]">
+            <DrawerHeader>
+              <DrawerTitle>Link Timelines</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 flex flex-col">
+              {/* Search */}
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search timelines..."
+                    value={timelineSearch}
+                    onChange={(e) => setTimelineSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Timeline List */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3">
+                  {filteredTimelines.map((timeline) => {
+                    const isSelected = selectedTimelines.includes(timeline.id);
+                    const allocation = timelineAllocations[timeline.id] || '';
+                    
+                    return (
+                      <div key={timeline.id} className="border rounded-lg p-3">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => handleTimelineToggle(timeline.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 space-y-2">
+                            <div>
+                              <h4 className="font-medium text-sm">{timeline.title}</h4>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline" className="text-xs">
+                                  {timeline.type}
+                                </Badge>
+                                <span>${timeline.value.toLocaleString()}</span>
+                              </div>
+                            </div>
+                            
+                            {isSelected && (
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs">Allocation %:</Label>
+                                <Input
+                                  type="number"
+                                  value={allocation}
+                                  onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
+                                  placeholder="0"
+                                  className="w-20 h-7 text-xs"
+                                  min="0"
+                                  max="100"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              {/* Validation Info */}
+              {selectedTimelines.length > 0 && (
+                <div className="p-4 border-t bg-muted/50">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Total Allocation:</span>
+                    <span className={getTotalAllocation() > 100 ? 'text-destructive font-medium' : ''}>
+                      {getTotalAllocation()}%
+                    </span>
+                  </div>
+                  {getTotalAllocation() > 100 && (
+                    <p className="text-xs text-destructive mt-1">
+                      Total allocation cannot exceed 100%
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <DrawerFooter>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleCancelLinkTimelines} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveLinkedTimelines} className="flex-1">
+                  Save & Continue
+                </Button>
+              </div>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={showLinkTimelinesModal} onOpenChange={setShowLinkTimelinesModal}>
+          <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Link Timelines</DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Search */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search timelines..."
+                    value={timelineSearch}
+                    onChange={(e) => setTimelineSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Timeline List */}
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-3">
+                  {filteredTimelines.map((timeline) => {
+                    const isSelected = selectedTimelines.includes(timeline.id);
+                    const allocation = timelineAllocations[timeline.id] || '';
+                    
+                    return (
+                      <div key={timeline.id} className="border rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => handleTimelineToggle(timeline.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 space-y-3">
+                            <div>
+                              <h4 className="font-medium">{timeline.title}</h4>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {timeline.type}
+                                </Badge>
+                                <span>${timeline.value.toLocaleString()}</span>
+                              </div>
+                            </div>
+                            
+                            {isSelected && (
+                              <div className="flex items-center gap-2">
+                                <Label className="text-sm">Allocation %:</Label>
+                                <Input
+                                  type="number"
+                                  value={allocation}
+                                  onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
+                                  placeholder="0"
+                                  className="w-24 h-8"
+                                  min="0"
+                                  max="100"
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  (Optional)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              {/* Validation Info */}
+              {selectedTimelines.length > 0 && (
+                <div className="mt-4 p-3 border rounded-lg bg-muted/50">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Total Allocation:</span>
+                    <span className={getTotalAllocation() > 100 ? 'text-destructive font-medium' : ''}>
+                      {getTotalAllocation()}%
+                    </span>
+                  </div>
+                  {getTotalAllocation() > 100 && (
+                    <p className="text-xs text-destructive mt-1">
+                      Total allocation cannot exceed 100%
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={handleCancelLinkTimelines}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveLinkedTimelines}>
+                Save & Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );
