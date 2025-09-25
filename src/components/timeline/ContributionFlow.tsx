@@ -128,6 +128,12 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   
   // Main form state
   const [formData, setFormData] = useState<any>({
+    // Step 2: Outcomes
+    outcomes: {
+      toGive: [],
+      toReceive: []
+    },
+    
     // Step 3: Contribution Types
     selectedTypes: [],
     contributionConfigs: {},
@@ -159,10 +165,59 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   // UI state
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showOutcomesModal, setShowOutcomesModal] = useState(false);
   const [selectedTypeForConfig, setSelectedTypeForConfig] = useState<string | null>(null);
   const [selectedSubtypeForConfig, setSelectedSubtypeForConfig] = useState<string | null>(null);
   const [customSubtypeName, setCustomSubtypeName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Step 2 outcomes state
+  const [activeOutcomeTab, setActiveOutcomeTab] = useState<'toGive' | 'toReceive'>('toGive');
+  const [tempOutcomes, setTempOutcomes] = useState({
+    toGive: [],
+    toReceive: []
+  });
+  const [customOutcomeInputs, setCustomOutcomeInputs] = useState({
+    toGive: { financial: '', intellectual: '', network: '', assets: '' },
+    toReceive: { financial: '', intellectual: '', network: '', assets: '' }
+  });
+
+  // Outcome categories for Step 2
+  const outcomeCategories = [
+    {
+      id: 'financial',
+      name: 'Financial Contributions',
+      outcomes: [
+        { id: 'equity-share', name: 'Equity share', description: 'Ownership % on timeline', requiresValue: true, valueType: 'percentage' },
+        { id: 'profit-share', name: 'Profit share', description: 'Net earnings % on timeline revenues', requiresValue: true, valueType: 'percentage' },
+        { id: 'revenue-share', name: 'Revenue share', description: 'Gross income split % on timeline revenues', requiresValue: true, valueType: 'percentage' },
+        { id: 'milestones-wedge', name: 'Milestones wedge', description: 'Fixed amount per milestone', requiresValue: true, valueType: 'amount' }
+      ]
+    },
+    {
+      id: 'intellectual',
+      name: 'Intellectual Contributions',
+      outcomes: [
+        { id: 'usage-rights', name: 'Usage / Access rights', description: 'Right to use intellectual property', requiresValue: false },
+        { id: 'asset-appreciation', name: 'Asset appreciation', description: 'Value increase over time', requiresValue: false }
+      ]
+    },
+    {
+      id: 'network',
+      name: 'Network / Marketing Contributions',
+      outcomes: [
+        { id: 'traffic', name: 'Traffic', description: 'Website or platform visits', requiresValue: false },
+        { id: 'downloads', name: 'Downloads', description: 'File or content downloads', requiresValue: false },
+        { id: 'impressions', name: 'Impressions', description: 'Likes, comments, reach', requiresValue: false },
+        { id: 'leads', name: 'Leads, referrals, mentions', description: 'Customer leads and referrals', requiresValue: false }
+      ]
+    },
+    {
+      id: 'assets',
+      name: 'Asset Contributions',
+      outcomes: []
+    }
+  ];
 
   const steps = [
     { id: 1, title: 'Review Timeline', description: 'Review target timeline details' },
@@ -761,6 +816,275 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     );
   };
 
+  // Outcomes Configuration Modal
+  const OutcomesModal = () => {
+    useEffect(() => {
+      if (showOutcomesModal) {
+        setTempOutcomes({
+          toGive: [...(formData.outcomes.toGive || [])],
+          toReceive: [...(formData.outcomes.toReceive || [])]
+        });
+      }
+    }, [showOutcomesModal, formData.outcomes]);
+
+    const isOutcomeSelected = (type: 'toGive' | 'toReceive', outcomeId: string) => {
+      return tempOutcomes[type].some((outcome: any) => outcome.id === outcomeId);
+    };
+
+    const handleOutcomeToggle = (type: 'toGive' | 'toReceive', categoryId: string, outcomeId: string, outcomeName: string, requiresValue: boolean, valueType?: string) => {
+      setTempOutcomes(prev => {
+        const currentOutcomes = prev[type];
+        const existingIndex = currentOutcomes.findIndex((outcome: any) => outcome.id === outcomeId);
+        
+        if (existingIndex >= 0) {
+          // Remove outcome
+          return {
+            ...prev,
+            [type]: currentOutcomes.filter((_: any, index: number) => index !== existingIndex)
+          };
+        } else {
+          // Add outcome
+          const newOutcome = {
+            id: outcomeId,
+            name: outcomeName,
+            categoryId,
+            requiresValue,
+            valueType: valueType || 'none',
+            value: '',
+            custom: false
+          };
+          return {
+            ...prev,
+            [type]: [...currentOutcomes, newOutcome]
+          };
+        }
+      });
+    };
+
+    const handleOutcomeValueChange = (type: 'toGive' | 'toReceive', outcomeId: string, value: string) => {
+      setTempOutcomes(prev => ({
+        ...prev,
+        [type]: prev[type].map((outcome: any) => 
+          outcome.id === outcomeId ? { ...outcome, value } : outcome
+        )
+      }));
+    };
+
+    const handleCustomOutcomeAdd = (type: 'toGive' | 'toReceive', categoryId: string) => {
+      const customText = customOutcomeInputs[type][categoryId as keyof typeof customOutcomeInputs.toGive]?.trim();
+      if (!customText) return;
+      
+      const customOutcome = {
+        id: `custom-${categoryId}-${Date.now()}`,
+        name: customText,
+        categoryId,
+        requiresValue: false,
+        valueType: 'none',
+        value: '',
+        custom: true
+      };
+      
+      setTempOutcomes(prev => ({
+        ...prev,
+        [type]: [...prev[type], customOutcome]
+      }));
+      
+      setCustomOutcomeInputs(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          [categoryId]: ''
+        }
+      }));
+    };
+
+    const handleCustomOutcomeRemove = (type: 'toGive' | 'toReceive', outcomeId: string) => {
+      setTempOutcomes(prev => ({
+        ...prev,
+        [type]: prev[type].filter((outcome: any) => outcome.id !== outcomeId)
+      }));
+    };
+
+    const handleSaveOutcomes = () => {
+      setFormData(prev => ({
+        ...prev,
+        outcomes: {
+          toGive: tempOutcomes.toGive,
+          toReceive: tempOutcomes.toReceive
+        }
+      }));
+      setShowOutcomesModal(false);
+      toast.success('Outcomes saved successfully');
+    };
+
+    const handleCancelOutcomes = () => {
+      setShowOutcomesModal(false);
+      setTempOutcomes({
+        toGive: [...(formData.outcomes.toGive || [])],
+        toReceive: [...(formData.outcomes.toReceive || [])]
+      });
+    };
+
+    const OutcomesContent = () => (
+      <div className="space-y-4">
+        <Tabs value={activeOutcomeTab} onValueChange={(value) => setActiveOutcomeTab(value as 'toGive' | 'toReceive')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="toGive" className="flex items-center gap-2">
+              <ArrowRight className="h-4 w-4" />
+              To Give ({tempOutcomes.toGive.length})
+            </TabsTrigger>
+            <TabsTrigger value="toReceive" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              To Receive ({tempOutcomes.toReceive.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {['toGive', 'toReceive'].map(tabType => (
+            <TabsContent key={tabType} value={tabType} className="space-y-4">
+              <ScrollArea className="h-64 pr-4">
+                <div className="space-y-4">
+                  {outcomeCategories.map(category => (
+                    <Card key={category.id} className="p-4">
+                      <h4 className="font-medium mb-3">{category.name}</h4>
+                      <div className="space-y-2">
+                        {/* Predefined outcomes */}
+                        {category.outcomes.map(outcome => {
+                          const isSelected = isOutcomeSelected(tabType as 'toGive' | 'toReceive', outcome.id);
+                          const selectedOutcome = tempOutcomes[tabType as 'toGive' | 'toReceive'].find((o: any) => o.id === outcome.id);
+                          
+                          return (
+                            <div key={outcome.id} className="space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => handleOutcomeToggle(
+                                    tabType as 'toGive' | 'toReceive',
+                                    category.id,
+                                    outcome.id,
+                                    outcome.name,
+                                    outcome.requiresValue,
+                                    outcome.valueType
+                                  )}
+                                />
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">{outcome.name}</p>
+                                  <p className="text-xs text-muted-foreground">{outcome.description}</p>
+                                </div>
+                              </div>
+                              
+                              {isSelected && outcome.requiresValue && (
+                                <div className="ml-6 flex items-center space-x-2">
+                                  <Input
+                                    type="number"
+                                    placeholder={outcome.valueType === 'percentage' ? '0' : '0.00'}
+                                    value={selectedOutcome?.value || ''}
+                                    onChange={(e) => handleOutcomeValueChange(
+                                      tabType as 'toGive' | 'toReceive',
+                                      outcome.id,
+                                      e.target.value
+                                    )}
+                                    className="w-24 h-8"
+                                    min="0"
+                                    max={outcome.valueType === 'percentage' ? "100" : undefined}
+                                    step={outcome.valueType === 'percentage' ? "0.1" : "0.01"}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {outcome.valueType === 'percentage' ? '%' : '$'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Custom outcomes for this category */}
+                        {tempOutcomes[tabType as 'toGive' | 'toReceive']
+                          .filter((outcome: any) => outcome.custom && outcome.categoryId === category.id)
+                          .map((outcome: any) => (
+                            <div key={outcome.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                              <span className="text-sm font-medium">{outcome.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCustomOutcomeRemove(tabType as 'toGive' | 'toReceive', outcome.id)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+
+                        {/* Custom option input */}
+                        <div className="flex items-center space-x-2 mt-3">
+                          <Input
+                            placeholder={`Custom ${category.name.toLowerCase()} outcome...`}
+                            value={customOutcomeInputs[tabType as 'toGive' | 'toReceive'][category.id as keyof typeof customOutcomeInputs.toGive] || ''}
+                            onChange={(e) => setCustomOutcomeInputs(prev => ({
+                              ...prev,
+                              [tabType]: {
+                                ...prev[tabType as 'toGive' | 'toReceive'],
+                                [category.id]: e.target.value
+                              }
+                            }))}
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCustomOutcomeAdd(tabType as 'toGive' | 'toReceive', category.id)}
+                            disabled={!customOutcomeInputs[tabType as 'toGive' | 'toReceive'][category.id as keyof typeof customOutcomeInputs.toGive]?.trim()}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          ))}
+        </Tabs>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-4 border-t">
+          <Button onClick={handleSaveOutcomes} className="flex-1">
+            <Save className="h-4 w-4 mr-2" />
+            Save Outcomes
+          </Button>
+          <Button variant="outline" onClick={handleCancelOutcomes} className="flex-1">
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+
+    if (isMobile) {
+      return (
+        <Drawer open={showOutcomesModal} onOpenChange={setShowOutcomesModal}>
+          <DrawerContent className="p-6 max-h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>Configure Outcomes</DrawerTitle>
+            </DrawerHeader>
+            <OutcomesContent />
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    return (
+      <Dialog open={showOutcomesModal} onOpenChange={setShowOutcomesModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Configure Outcomes</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <OutcomesContent />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="h-screen bg-background flex flex-col">
       {/* Header */}
@@ -809,26 +1133,85 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
           </div>
         )}
 
-        {/* Step 2: Timeline Information */}
+        {/* Step 2: Configure Outcomes to Give or Receive */}
         {currentStep === 2 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Timeline Information</CardTitle>
+                <CardTitle>Configure Outcomes to Give or Receive</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Define what you're offering (To Give) and what you expect in return (To Receive).
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-muted-foreground">
-                  On signup, your profile becomes the default root timeline. This contribution will be linked to your profile timeline.
-                </p>
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Profile Timeline Active</span>
+                <Button onClick={() => setShowOutcomesModal(true)} className="w-full" size="lg">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configure Outcomes
+                </Button>
+
+                {/* Outcomes Summary */}
+                {(formData.outcomes.toGive.length > 0 || formData.outcomes.toReceive.length > 0) && (
+                  <div className="space-y-4">
+                    {/* To Give Summary */}
+                    {formData.outcomes.toGive.length > 0 && (
+                      <Card className="border-green-200 bg-green-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ArrowRight className="h-4 w-4 text-green-600" />
+                            <h4 className="font-medium text-green-900">What You're Giving</h4>
+                            <Badge variant="secondary">{formData.outcomes.toGive.length}</Badge>
+                          </div>
+                          <div className="space-y-1">
+                            {formData.outcomes.toGive.map((outcome: any) => (
+                              <div key={outcome.id} className="flex justify-between items-center text-sm">
+                                <span className="text-green-800">{outcome.name}</span>
+                                {outcome.value && (
+                                  <span className="font-medium text-green-900">
+                                    {outcome.valueType === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* To Receive Summary */}
+                    {formData.outcomes.toReceive.length > 0 && (
+                      <Card className="border-blue-200 bg-blue-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ArrowLeft className="h-4 w-4 text-blue-600" />
+                            <h4 className="font-medium text-blue-900">What You're Receiving</h4>
+                            <Badge variant="secondary">{formData.outcomes.toReceive.length}</Badge>
+                          </div>
+                          <div className="space-y-1">
+                            {formData.outcomes.toReceive.map((outcome: any) => (
+                              <div key={outcome.id} className="flex justify-between items-center text-sm">
+                                <span className="text-blue-800">{outcome.name}</span>
+                                {outcome.value && (
+                                  <span className="font-medium text-blue-900">
+                                    {outcome.valueType === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your contribution will be tracked and valued within your portfolio timeline.
-                  </p>
-                </div>
+                )}
+
+                {/* Empty State */}
+                {formData.outcomes.toGive.length === 0 && formData.outcomes.toReceive.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No outcomes configured yet</p>
+                    <p className="text-xs">Configure what you're giving and receiving</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1312,6 +1695,7 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
       </div>
 
       {/* Modals */}
+      <OutcomesModal />
       <TypeConfigModal />
       <LinkTimelinesModal />
     </div>
