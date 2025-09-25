@@ -481,6 +481,18 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   }, [showLinkTimelinesModal, formData.linkedTimelines]);
 
+  // Update linked timeline valuations in Step 3 dynamically
+  const calculateLinkedTimelineValue = () => {
+    if (!formData.linkedTimelines || formData.linkedTimelines.length === 0) return 0;
+    
+    return formData.linkedTimelines.reduce((total: number, timeline: any) => {
+      const timelineData = mockAvailableTimelines.find(t => t.id === timeline.id);
+      const value = timelineData?.value || 0;
+      const allocation = timeline.allocation || 0;
+      return total + (value * allocation / 100);
+    }, 0);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -898,6 +910,35 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
           {/* Step 3: Choose Type */}
           {currentStep === 3 && (
             <div className="space-y-4">
+              {/* Dynamic Valuation Summary - Show when linked timelines exist */}
+              {formData.linkedTimelines && formData.linkedTimelines.length > 0 && (
+                <Card className="border-blue-200 bg-blue-50/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-medium text-blue-900">Dynamic Valuation Active</h4>
+                    </div>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Your contribution valuation will update automatically based on linked timeline values.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700">Current Linked Value:</span>
+                        <span className="font-medium text-blue-900">
+                          ${calculateLinkedTimelineValue().toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700">Total Allocation:</span>
+                        <span className="font-medium text-blue-900">
+                          {formData.linkedTimelines.reduce((sum: number, t: any) => sum + (t.allocation || 0), 0)}%
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Select Contribution Type</CardTitle>
