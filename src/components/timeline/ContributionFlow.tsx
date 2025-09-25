@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,17 +30,93 @@ import {
   Settings,
   Search,
   Link,
-  X
+  X,
+  Plus,
+  Eye,
+  Edit,
+  Save,
+  Calendar,
+  TrendingUp,
+  Percent
 } from 'lucide-react';
-import { Timeline, ContributionType } from '@/types/timeline';
+import { Timeline } from '@/types/timeline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
+import { toast } from 'sonner';
 
 interface ContributionFlowProps {
   targetTimeline: Timeline;
   onComplete: (contributionData: any) => void;
   onCancel: () => void;
 }
+
+const contributionTypes = [
+  {
+    id: 'financial',
+    name: 'Financial Contribution',
+    icon: DollarSign,
+    subtypes: [
+      { id: 'cash', name: 'Cash', description: 'Direct cash investment' },
+      { id: 'debt', name: 'Debt', description: 'Loan with repayment terms' },
+      { id: 'pledge', name: 'Pledge', description: 'Future payment commitment' }
+    ]
+  },
+  {
+    id: 'intellectual',
+    name: 'Intellectual Contribution',
+    icon: Brain,
+    subtypes: [
+      { id: 'ideas', name: 'Ideas', description: 'Innovative concepts and strategies' },
+      { id: 'research', name: 'Research', description: 'Research findings and analysis' },
+      { id: 'code', name: 'Code/Algorithms', description: 'Software development' },
+      { id: 'consultations', name: 'Consultations', description: 'Expert advisory services' },
+      { id: 'custom', name: 'Custom Option', description: 'Define your own intellectual contribution' }
+    ]
+  },
+  {
+    id: 'network',
+    name: 'Network/Marketing Contribution',
+    icon: Network,
+    subtypes: [
+      { id: 'introductions', name: 'Introductions', description: 'Professional networking' },
+      { id: 'referrals', name: 'Referrals', description: 'Customer referrals' },
+      { id: 'leads', name: 'Leads', description: 'Sales leads generation' },
+      { id: 'traffic', name: 'Traffic', description: 'Website/platform traffic' },
+      { id: 'likes', name: 'Likes', description: 'Social media engagement' },
+      { id: 'comments', name: 'Comments', description: 'Community engagement' },
+      { id: 'views', name: 'Views', description: 'Content visibility' },
+      { id: 'downloads', name: 'Downloads', description: 'Content downloads' },
+      { id: 'custom', name: 'Custom Option', description: 'Define your own marketing contribution' }
+    ]
+  },
+  {
+    id: 'assets',
+    name: 'Asset Contribution',
+    icon: Building,
+    subtypes: [
+      { id: 'equipment', name: 'Equipment', description: 'Machinery and tools' },
+      { id: 'property', name: 'Property', description: 'Real estate assets' },
+      { id: 'software', name: 'Software Usage', description: 'Software licenses and tools' },
+      { id: 'digital', name: 'Digital Assets', description: 'Digital properties and NFTs' },
+      { id: 'office', name: 'Office Space', description: 'Workspace provision' },
+      { id: 'land', name: 'Land', description: 'Land and property' },
+      { id: 'tools', name: 'Tools', description: 'Specialized tools and equipment' },
+      { id: 'custom', name: 'Custom Option', description: 'Define your own asset contribution' }
+    ]
+  }
+];
+
+const valuationMethods = [
+  { id: 'fixed', name: 'Fixed Amount', description: 'Set a specific value' },
+  { id: 'formula', name: 'Custom Formula', description: 'Use a calculation formula' },
+  { id: 'rule', name: 'Custom Rule', description: 'Define conditional rules' }
+];
+
+const presentationTemplates = [
+  { id: 'table', name: 'Table', description: 'Structured data table format' },
+  { id: 'list', name: 'List Items', description: 'Simple list presentation' },
+  { id: 'cards', name: 'Cards', description: 'Card-based layout' }
+];
 
 export const ContributionFlow: React.FC<ContributionFlowProps> = ({
   targetTimeline,
@@ -49,137 +125,68 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const isMobile = useIsMobile();
+  
+  // Main form state
   const [formData, setFormData] = useState<any>({
-    contributionType: '',
-    subtype: '',
-    amount: '',
-    units: '',
+    // Step 3: Contribution Types
+    selectedTypes: [],
+    contributionConfigs: {},
+    
+    // Step 4: Linked Timelines
+    linkedTimelines: [],
+    
+    // Step 5: Custom Inputs
+    title: '',
     description: '',
+    context: '',
+    customFields: {},
+    
+    // Step 6: Files
     attachments: [],
-    valuationPreference: 'accept-default',
-    customValuation: '',
-    negotiationNotes: '',
-    acceptTerms: false,
-    kycCompleted: false,
-    expectedOutcome: '',
-    lockInPeriod: '',
-    useParentConfig: true,
-    overrideConfig: {},
-    // Expected outcomes configuration - New structured format
-    outcomes: {
-      toGive: [],
-      toReceive: []
-    },
-    // Linked timelines for Step 4
-    linkedTimelines: []
+    
+    // Step 7: Presentation
+    presentationTemplate: 'list',
+    
+    // Step 8: Sub-contributions
+    allowSubContributions: false,
+    subContributionConfig: {},
+    
+    // Step 9: Final settings
+    isDraft: false,
+    publishDate: null
   });
 
-  // State for Step 2 Expected Outcomes - now directly embedded in step
-  const [activeTab, setActiveTab] = useState<'toGive' | 'toReceive'>('toGive');
-  const [customInput, setCustomInput] = useState({ toGive: '', toReceive: '' });
-  const [tempOutcomes, setTempOutcomes] = useState({
-    toGive: [],
-    toReceive: []
-  });
-
-  // State for Step 4 Link/Merge Timelines
-  const [showLinkTimelinesModal, setShowLinkTimelinesModal] = useState(false);
-  const [timelineSearch, setTimelineSearch] = useState('');
-  const [selectedTimelines, setSelectedTimelines] = useState<string[]>([]);
-  const [timelineAllocations, setTimelineAllocations] = useState<{[key: string]: string}>({});
-
-  // Initialize temp outcomes with saved data on mount and when switching to step 2
-  useEffect(() => {
-    if (currentStep === 2) {
-      setTempOutcomes({
-        toGive: [...(formData.outcomes.toGive || [])],
-        toReceive: [...(formData.outcomes.toReceive || [])]
-      });
-    }
-  }, [currentStep, formData.outcomes]);
-
-  const contributionTypes = [
-    {
-      id: 'financial',
-      name: 'Financial Contribution',
-      icon: DollarSign,
-      subtypes: [
-        { id: 'cash', name: 'Cash Investment', description: 'One-time cash contribution' },
-        { id: 'crypto', name: 'Cryptocurrency', description: 'Digital currency investment' },
-        { id: 'debt', name: 'Debt/Loan', description: 'Loan with repayment terms' },
-        { id: 'pledge', name: 'Pledge', description: 'Commitment to future payment' },
-        { id: 'equity', name: 'Equity Purchase', description: 'Buy ownership stake' }
-      ]
-    },
-    {
-      id: 'intellectual',
-      name: 'Intellectual Contribution',
-      icon: Brain,
-      subtypes: [
-        { id: 'consulting', name: 'Consulting Hours', description: 'Professional advisory services' },
-        { id: 'deliverable', name: 'Deliverable', description: 'Specific work output' },
-        { id: 'ip', name: 'Intellectual Property', description: 'Patents, designs, licenses' },
-        { id: 'training', name: 'Training Material', description: 'Educational content' }
-      ]
-    },
-    {
-      id: 'network',
-      name: 'Network & Marketing',
-      icon: Network,
-      subtypes: [
-        { id: 'referrals', name: 'Referrals', description: 'Customer/partner introductions' },
-        { id: 'campaign', name: 'Marketing Campaign', description: 'Promotional activities' },
-        { id: 'event', name: 'Event Hosting', description: 'Organize networking events' },
-        { id: 'content', name: 'Content Creation', description: 'Social media, articles' }
-      ]
-    },
-    {
-      id: 'assets',
-      name: 'Assets Contribution',
-      icon: Building,
-      subtypes: [
-        { id: 'real-estate', name: 'Real Estate', description: 'Land, buildings, property' },
-        { id: 'equipment', name: 'Equipment', description: 'Machinery, tools, devices' },
-        { id: 'vehicles', name: 'Vehicles', description: 'Cars, trucks, aircraft' },
-        { id: 'digital', name: 'Digital Assets', description: 'Software, domains, NFTs' }
-      ]
-    },
-    {
-      id: 'followup',
-      name: 'Follow-up Services',
-      icon: MessageSquare,
-      subtypes: [
-        { id: 'onboarding', name: 'Onboarding Support', description: 'Help new users get started' },
-        { id: 'maintenance', name: 'Maintenance', description: 'Ongoing system upkeep' },
-        { id: 'support', name: 'Customer Support', description: 'Help desk services' },
-        { id: 'monitoring', name: 'Monitoring', description: 'Performance tracking' }
-      ]
-    },
-    {
-      id: 'timeline',
-      name: 'Timeline Investment',
-      icon: FileText,
-      subtypes: [
-        { id: 'full-timeline', name: 'Full Timeline', description: 'Invest entire timeline value' },
-        { id: 'partial-timeline', name: 'Partial Timeline', description: 'Invest portion of timeline' },
-        { id: 'timeline-merger', name: 'Timeline Merger', description: 'Merge two timelines' }
-      ]
-    }
-  ];
+  // UI state
+  const [showTypeModal, setShowTypeModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [selectedTypeForConfig, setSelectedTypeForConfig] = useState<string | null>(null);
+  const [selectedSubtypeForConfig, setSelectedSubtypeForConfig] = useState<string | null>(null);
+  const [customSubtypeName, setCustomSubtypeName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const steps = [
-    { id: 1, title: 'Review Timeline', description: 'Understand target timeline' },
-    { id: 2, title: 'Expected Outcomes', description: 'Configure what you give/receive' },
-    { id: 3, title: 'Choose Type', description: 'Select contribution type' },
-    { id: 4, title: 'Link Timelines', description: 'Connect related timelines' },
-    { id: 5, title: 'Configure Details', description: 'Set amount and specifics' },
-    { id: 6, title: 'Valuation', description: 'Agree on value terms' },
-    { id: 7, title: 'Legal Terms', description: 'Accept agreements' },
-    { id: 8, title: 'Submit', description: 'Complete contribution' }
+    { id: 1, title: 'Review Timeline', description: 'Review target timeline details' },
+    { id: 2, title: 'Timeline Information', description: 'Basic timeline setup' },
+    { id: 3, title: 'Configure Types', description: 'Select contribution types & subtypes' },
+    { id: 4, title: 'Link Timelines', description: 'Link/merge with other timelines' },
+    { id: 5, title: 'Custom Inputs', description: 'Configure custom input fields' },
+    { id: 6, title: 'Files & Attachments', description: 'Upload supporting files' },
+    { id: 7, title: 'Presentation', description: 'Choose display template' },
+    { id: 8, title: 'Sub-contributions', description: 'Configure sub-contribution rules' },
+    { id: 9, title: 'Review & Publish', description: 'Final review and publish' }
   ];
 
-  const selectedType = contributionTypes.find(t => t.id === formData.contributionType);
-  const selectedSubtype = selectedType?.subtypes.find(s => s.id === formData.subtype);
+  // Mock available timelines for linking
+  const mockAvailableTimelines = [
+    { id: 'tl-1', title: 'Solar Project Timeline', value: 50000, type: 'project' },
+    { id: 'tl-2', title: 'Marketing Campaign', value: 25000, type: 'marketing' },
+    { id: 'tl-3', title: 'Research Timeline', value: 35000, type: 'intellectual' },
+    { id: 'tl-4', title: 'Equipment Fund', value: 40000, type: 'assets' }
+  ];
+
+  const filteredTimelines = mockAvailableTimelines.filter(timeline =>
+    timeline.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -193,1530 +200,886 @@ export const ContributionFlow: React.FC<ContributionFlowProps> = ({
     }
   };
 
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1: return true;
+      case 2: return true;
+      case 3: return formData.selectedTypes.length > 0;
+      case 4: return true; // Optional step
+      case 5: return formData.title && formData.description;
+      case 6: return true; // Optional step
+      case 7: return formData.presentationTemplate;
+      case 8: return true; // Optional step
+      case 9: return true;
+      default: return false;
+    }
+  };
+
+  const handleTypeSelection = (typeId: string, selected: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTypes: selected 
+        ? [...prev.selectedTypes, typeId]
+        : prev.selectedTypes.filter((t: string) => t !== typeId)
+    }));
+  };
+
+  const openTypeConfig = (typeId: string, subtypeId: string) => {
+    setSelectedTypeForConfig(typeId);
+    setSelectedSubtypeForConfig(subtypeId);
+    setShowTypeModal(true);
+  };
+
+  const saveTypeConfig = (config: any) => {
+    setFormData(prev => ({
+      ...prev,
+      contributionConfigs: {
+        ...prev.contributionConfigs,
+        [`${selectedTypeForConfig}-${selectedSubtypeForConfig}`]: config
+      }
+    }));
+    setShowTypeModal(false);
+    setSelectedTypeForConfig(null);
+    setSelectedSubtypeForConfig(null);
+    setCustomSubtypeName('');
+  };
+
+  const handleTimelineLink = (timelineId: string, allocation: number) => {
+    setFormData(prev => ({
+      ...prev,
+      linkedTimelines: [
+        ...prev.linkedTimelines.filter((tl: any) => tl.id !== timelineId),
+        { id: timelineId, allocation, title: mockAvailableTimelines.find(t => t.id === timelineId)?.title }
+      ]
+    }));
+  };
+
   const handleSubmit = () => {
     onComplete({
       ...formData,
       targetTimelineId: targetTimeline.id,
       submittedAt: new Date().toISOString()
     });
+    toast.success('Contribution submitted successfully!');
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1: return true;
-      case 2: return true; // Expected outcomes step is optional  
-      case 3: return formData.contributionType && formData.subtype;
-      case 4: return true; // Link timelines step is optional
-      case 5: return formData.amount || formData.description;
-      case 6: return formData.valuationPreference;
-      case 7: return formData.acceptTerms;
-      case 8: return true;
-      default: return false;
-    }
+  const handleSaveDraft = () => {
+    setFormData(prev => ({ ...prev, isDraft: true }));
+    toast.success('Draft saved successfully!');
   };
 
-  // Categorized outcome options for the new Step 2
-  const outcomeCategories = [
-    {
-      category: "Financial / Business",
-      options: [
-        { id: 'equity-share', label: 'Equity share (ownership %)', requiresValue: true, valueType: 'percentage' },
-        { id: 'profit-share', label: 'Profit share (net earnings %)', requiresValue: true, valueType: 'percentage' },
-        { id: 'revenue-share', label: 'Revenue share (gross income split %)', requiresValue: true, valueType: 'percentage' },
-        { id: 'milestones-wedge', label: 'Milestones wedge (amount)', requiresValue: true, valueType: 'amount' }
-      ]
-    },
-    {
-      category: "Marketing / Network",
-      options: [
-        { id: 'traffic', label: 'Traffic', requiresValue: false },
-        { id: 'downloads', label: 'Downloads', requiresValue: false },
-        { id: 'impressions', label: 'Impressions (likes, comments, reach)', requiresValue: false },
-        { id: 'leads', label: 'Leads, referrals, mentions', requiresValue: false }
-      ]
-    },
-    {
-      category: "Usage & Assets",
-      options: [
-        { id: 'usage-rights', label: 'Usage / access rights', requiresValue: false },
-        { id: 'asset-appreciation', label: 'Asset appreciation', requiresValue: false }
-      ]
-    },
-    {
-      category: "Intellectual",
-      options: [
-        { id: 'courses-tutoring', label: 'Courses and Tutoring', requiresValue: false },
-        { id: 'research', label: 'Research', requiresValue: false },
-        { id: 'ideas-strategies', label: 'Ideas, Perspective & Strategies', requiresValue: false },
-        { id: 'code-algorithms', label: 'Code and Algorithm Snippets', requiresValue: false },
-        { id: 'mentorship', label: 'Mentorship Program', requiresValue: false },
-        { id: 'project-management', label: 'Project Planning & Management', requiresValue: false },
-        { id: 'consultation', label: 'Consultation', requiresValue: false },
-        { id: 'prime-reviews', label: 'Prime Reviews', requiresValue: false },
-        { id: 'guide-counselling', label: 'Guide and Counselling', requiresValue: false },
-        { id: 'customer-support', label: 'Customer Support', requiresValue: false },
-        { id: 'capacity-building', label: 'Capacity Building', requiresValue: false }
-      ]
-    }
-  ];
-
-  // Helper functions for outcome management
-
-  const findOutcomeById = (id: string) => {
-    for (const category of outcomeCategories) {
-      const outcome = category.options.find(opt => opt.id === id);
-      if (outcome) return outcome;
-    }
-    return null;
-  };
-
-  const isOutcomeSelected = (type: 'toGive' | 'toReceive', outcomeId: string) => {
-    return tempOutcomes[type].some((outcome: any) => outcome.id === outcomeId);
-  };
-
-  const handleOutcomeToggle = (type: 'toGive' | 'toReceive', outcomeId: string) => {
-    const outcomeData = findOutcomeById(outcomeId);
-    if (!outcomeData) return;
-    
-    setTempOutcomes(prev => {
-      const currentOutcomes = prev[type];
-      const existingIndex = currentOutcomes.findIndex((outcome: any) => outcome.id === outcomeId);
-      
-      if (existingIndex >= 0) {
-        // Remove outcome
-        return {
-          ...prev,
-          [type]: currentOutcomes.filter((_: any, index: number) => index !== existingIndex)
-        };
-      } else {
-        // Add outcome
-        const newOutcome = {
-          id: outcomeId,
-          label: outcomeData.label,
-          type: outcomeData.requiresValue ? (outcomeData as any).valueType : 'none',
-          value: null,
-          custom: false
-        };
-        return {
-          ...prev,
-          [type]: [...currentOutcomes, newOutcome]
-        };
-      }
+  const TypeConfigModal = () => {
+    const [config, setConfig] = useState({
+      subtype: selectedSubtypeForConfig,
+      customName: '',
+      valuation: { method: 'fixed', value: '', formula: '', rule: '' },
+      amount: '',
+      expectedGain: '',
+      negotiable: false,
+      repaymentDate: '',
+      interestRate: ''
     });
-  };
 
-  const handleOutcomeValueChange = (type: 'toGive' | 'toReceive', outcomeId: string, value: string) => {
-    setTempOutcomes(prev => ({
-      ...prev,
-      [type]: prev[type].map((outcome: any) => 
-        outcome.id === outcomeId ? { ...outcome, value: value } : outcome
-      )
-    }));
-  };
+    const currentType = contributionTypes.find(t => t.id === selectedTypeForConfig);
+    const currentSubtype = currentType?.subtypes.find(s => s.id === selectedSubtypeForConfig);
+    const isCustom = selectedSubtypeForConfig === 'custom';
 
-  const handleCustomOutcomeAdd = (type: 'toGive' | 'toReceive') => {
-    const customText = customInput[type].trim();
-    if (!customText) return;
-    
-    const customOutcome = {
-      id: `custom-${Date.now()}`,
-      label: customText,
-      type: 'none',
-      value: null,
-      custom: true
-    };
-    
-    setTempOutcomes(prev => ({
-      ...prev,
-      [type]: [...prev[type], customOutcome]
-    }));
-    
-    setCustomInput(prev => ({ ...prev, [type]: '' }));
-  };
+    const ConfigContent = () => (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">
+            {currentType?.name} - {isCustom ? 'Custom Option' : currentSubtype?.name}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isCustom ? 'Define your custom contribution' : currentSubtype?.description}
+          </p>
+        </div>
 
-  const handleCustomOutcomeRemove = (type: 'toGive' | 'toReceive', outcomeId: string) => {
-    setTempOutcomes(prev => ({
-      ...prev,
-      [type]: prev[type].filter((outcome: any) => outcome.id !== outcomeId)
-    }));
-  };
+        {isCustom && (
+          <div>
+            <Label htmlFor="customName">Custom Contribution Name</Label>
+            <Input
+              id="customName"
+              value={config.customName}
+              onChange={(e) => setConfig(prev => ({ ...prev, customName: e.target.value }))}
+              placeholder="e.g., UX Framework, AI Model Training"
+            />
+          </div>
+        )}
 
-  const handleCustomOutcomeEdit = (type: 'toGive' | 'toReceive', outcomeId: string, newLabel: string) => {
-    setTempOutcomes(prev => ({
-      ...prev,
-      [type]: prev[type].map((outcome: any) => 
-        outcome.id === outcomeId ? { ...outcome, label: newLabel.trim() } : outcome
-      )
-    }));
-  };
+        {/* Financial-specific fields */}
+        {selectedTypeForConfig === 'financial' && (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={config.amount}
+                onChange={(e) => setConfig(prev => ({ ...prev, amount: e.target.value }))}
+                placeholder="Enter amount"
+              />
+            </div>
 
-  const validateOutcomes = () => {
-    // Validate numeric inputs for outcomes that require values
-    for (const type of ['toGive', 'toReceive'] as const) {
-      for (const outcome of tempOutcomes[type]) {
-        if (outcome.type === 'percentage' && outcome.value) {
-          const numValue = parseFloat(outcome.value);
-          if (isNaN(numValue) || numValue < 0 || numValue > 100) {
-            return { valid: false, error: `${outcome.label} percentage must be between 0-100` };
-          }
-        }
-        if (outcome.type === 'amount' && outcome.value) {
-          const numValue = parseFloat(outcome.value);
-          if (isNaN(numValue) || numValue <= 0) {
-            return { valid: false, error: `${outcome.label} amount must be greater than 0` };
-          }
-        }
-      }
-    }
-    return { valid: true, error: null };
-  };
+            {selectedSubtypeForConfig === 'debt' && (
+              <>
+                <div>
+                  <Label htmlFor="repaymentDate">Expected Repayment Date</Label>
+                  <Input
+                    id="repaymentDate"
+                    type="date"
+                    value={config.repaymentDate}
+                    onChange={(e) => setConfig(prev => ({ ...prev, repaymentDate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                  <Input
+                    id="interestRate"
+                    type="number"
+                    value={config.interestRate}
+                    onChange={(e) => setConfig(prev => ({ ...prev, interestRate: e.target.value }))}
+                    placeholder="e.g., 5.5"
+                  />
+                </div>
+              </>
+            )}
 
-  // Removed old modal functions since tabs are now embedded directly in Step 2
+            {selectedSubtypeForConfig === 'pledge' && (
+              <div>
+                <Label htmlFor="expectedDate">Expected Date</Label>
+                <Input
+                  id="expectedDate"
+                  type="date"
+                  value={config.repaymentDate}
+                  onChange={(e) => setConfig(prev => ({ ...prev, repaymentDate: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
-  // Legacy helper function for backward compatibility 
-  const findOutcomeLabel = (id: string): string => {
-    const outcome = findOutcomeById(id);
-    return outcome ? outcome.label : id;
-  };
+        {/* Valuation method selection */}
+        <div>
+          <Label>Valuation Method</Label>
+          <RadioGroup
+            value={config.valuation.method}
+            onValueChange={(value) => setConfig(prev => ({ 
+              ...prev, 
+              valuation: { ...prev.valuation, method: value } 
+            }))}
+            className="mt-2"
+          >
+            {valuationMethods.map(method => (
+              <div key={method.id} className="flex items-center space-x-2">
+                <RadioGroupItem value={method.id} id={method.id} />
+                <Label htmlFor={method.id} className="flex-1">
+                  <div>
+                    <p className="font-medium">{method.name}</p>
+                    <p className="text-sm text-muted-foreground">{method.description}</p>
+                  </div>
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </div>
 
-  // Mock timelines data for Step 4 - in real app, fetch from API
-  const mockAvailableTimelines = [
-    { id: 'timeline-1', title: 'Solar Installation Project', value: 50000, type: 'project' },
-    { id: 'timeline-2', title: 'Marketing Campaign Q3', value: 25000, type: 'marketing' },
-    { id: 'timeline-3', title: 'Code Development Timeline', value: 35000, type: 'intellectual' },
-    { id: 'timeline-4', title: 'Equipment Purchase Fund', value: 40000, type: 'assets' },
-    { id: 'timeline-5', title: 'Client Follow-up Services', value: 15000, type: 'followup' }
-  ];
+        {/* Valuation input based on method */}
+        {config.valuation.method === 'fixed' && (
+          <div>
+            <Label htmlFor="valuationValue">Fixed Amount</Label>
+            <Input
+              id="valuationValue"
+              type="number"
+              value={config.valuation.value}
+              onChange={(e) => setConfig(prev => ({ 
+                ...prev, 
+                valuation: { ...prev.valuation, value: e.target.value } 
+              }))}
+              placeholder="Enter fixed amount"
+            />
+          </div>
+        )}
 
-  // Step 4 Link Timelines Functions
-  const filteredTimelines = mockAvailableTimelines.filter(timeline =>
-    timeline.title.toLowerCase().includes(timelineSearch.toLowerCase())
-  );
+        {config.valuation.method === 'formula' && (
+          <div>
+            <Label htmlFor="valuationFormula">Custom Formula</Label>
+            <Textarea
+              id="valuationFormula"
+              value={config.valuation.formula}
+              onChange={(e) => setConfig(prev => ({ 
+                ...prev, 
+                valuation: { ...prev.valuation, formula: e.target.value } 
+              }))}
+              placeholder="e.g., hours * rate + bonus"
+            />
+          </div>
+        )}
 
-  const handleTimelineToggle = (timelineId: string) => {
-    setSelectedTimelines(prev => 
-      prev.includes(timelineId) 
-        ? prev.filter(id => id !== timelineId)
-        : [...prev, timelineId]
+        {config.valuation.method === 'rule' && (
+          <div>
+            <Label htmlFor="valuationRule">Custom Rule</Label>
+            <Textarea
+              id="valuationRule"
+              value={config.valuation.rule}
+              onChange={(e) => setConfig(prev => ({ 
+                ...prev, 
+                valuation: { ...prev.valuation, rule: e.target.value } 
+              }))}
+              placeholder="e.g., If milestone reached, pay 10% of project value"
+            />
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="expectedGain">Expected % Gain</Label>
+          <Input
+            id="expectedGain"
+            type="number"
+            value={config.expectedGain}
+            onChange={(e) => setConfig(prev => ({ ...prev, expectedGain: e.target.value }))}
+            placeholder="e.g., 15"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="negotiable"
+            checked={config.negotiable}
+            onCheckedChange={(checked) => setConfig(prev => ({ ...prev, negotiable: !!checked }))}
+          />
+          <Label htmlFor="negotiable">Allow negotiation with parent owner</Label>
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={() => saveTypeConfig(config)} className="flex-1">
+            Save Configuration
+          </Button>
+          <Button variant="outline" onClick={() => setShowTypeModal(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
     );
-  };
 
-  const handleAllocationChange = (timelineId: string, allocation: string) => {
-    setTimelineAllocations(prev => ({
-      ...prev,
-      [timelineId]: allocation
-    }));
-  };
-
-  const getTotalAllocation = (): number => {
-    return Object.values(timelineAllocations).reduce((total, allocation) => {
-      const value = parseFloat(allocation) || 0;
-      return total + value;
-    }, 0);
-  };
-
-  const validateTimelineAllocations = (): { valid: boolean; error: string | null } => {
-    // Validate each allocation is within bounds
-    for (const timelineId of selectedTimelines) {
-      const allocation = parseFloat(timelineAllocations[timelineId] || '0') || 0;
-      if (allocation < 0 || allocation > 100) {
-        const timeline = mockAvailableTimelines.find(t => t.id === timelineId);
-        return { 
-          valid: false, 
-          error: `${timeline?.title || 'Timeline'} allocation must be between 0-100%` 
-        };
-      }
-    }
-
-    const total = getTotalAllocation();
-    if (total > 100) {
-      return { valid: false, error: 'Total allocation cannot exceed 100%' };
-    }
-    return { valid: true, error: null };
-  };
-
-  const handleSaveLinkedTimelines = () => {
-    const validation = validateTimelineAllocations();
-    if (!validation.valid) {
-      alert(validation.error);
-      return;
-    }
-
-    const linkedTimelineData = selectedTimelines.map(id => ({
-      id,
-      allocation: parseFloat(timelineAllocations[id] || '0') || 0,
-      title: mockAvailableTimelines.find(t => t.id === id)?.title || 'Unknown Timeline',
-      value: mockAvailableTimelines.find(t => t.id === id)?.value || 0
-    }));
-
-    setFormData(prev => ({
-      ...prev,
-      linkedTimelines: linkedTimelineData
-    }));
-
-    // Clear search and close modal
-    setTimelineSearch('');
-    setShowLinkTimelinesModal(false);
-  };
-
-  const handleCancelLinkTimelines = () => {
-    // Reset to saved state
-    const savedTimelines = formData.linkedTimelines || [];
-    setSelectedTimelines(savedTimelines.map((t: any) => t.id));
-    setTimelineAllocations(
-      savedTimelines.reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.allocation.toString() }), {})
-    );
-    setTimelineSearch('');
-    setShowLinkTimelinesModal(false);
-  };
-
-  // Initialize temp state when opening Step 4 modal
-  useEffect(() => {
-    if (showLinkTimelinesModal) {
-      const savedTimelines = formData.linkedTimelines || [];
-      setSelectedTimelines(savedTimelines.map((t: any) => t.id));
-      setTimelineAllocations(
-        savedTimelines.reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.allocation.toString() }), {})
+    if (isMobile) {
+      return (
+        <Drawer open={showTypeModal} onOpenChange={setShowTypeModal}>
+          <DrawerContent className="p-6">
+            <DrawerHeader>
+              <DrawerTitle>Configure Contribution</DrawerTitle>
+            </DrawerHeader>
+            <div className="max-h-[70vh] overflow-y-auto">
+              <ConfigContent />
+            </div>
+          </DrawerContent>
+        </Drawer>
       );
     }
-  }, [showLinkTimelinesModal, formData.linkedTimelines]);
 
-  // Update linked timeline valuations in Step 3 dynamically
-  const calculateLinkedTimelineValue = () => {
-    if (!formData.linkedTimelines || formData.linkedTimelines.length === 0) return 0;
-    
-    return formData.linkedTimelines.reduce((total: number, timeline: any) => {
-      const timelineData = mockAvailableTimelines.find(t => t.id === timeline.id);
-      const value = timelineData?.value || 0;
-      const allocation = timeline.allocation || 0;
-      return total + (value * allocation / 100);
-    }, 0);
+    return (
+      <Dialog open={showTypeModal} onOpenChange={setShowTypeModal}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configure Contribution</DialogTitle>
+          </DialogHeader>
+          <ConfigContent />
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const LinkTimelinesModal = () => {
+    const [selectedTimelines, setSelectedTimelines] = useState<string[]>([]);
+    const [allocations, setAllocations] = useState<{[key: string]: string}>({});
+
+    useEffect(() => {
+      // Initialize with saved data
+      const saved = formData.linkedTimelines || [];
+      setSelectedTimelines(saved.map((tl: any) => tl.id));
+      setAllocations(saved.reduce((acc: any, tl: any) => ({ ...acc, [tl.id]: tl.allocation.toString() }), {}));
+    }, [formData.linkedTimelines]);
+
+    const handleSave = () => {
+      const totalAllocation = Object.values(allocations).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+      
+      if (totalAllocation > 100) {
+        toast.error('Total allocation cannot exceed 100%');
+        return;
+      }
+
+      const linkedData = selectedTimelines.map(id => ({
+        id,
+        allocation: parseFloat(allocations[id] || '0'),
+        title: mockAvailableTimelines.find(t => t.id === id)?.title || 'Unknown'
+      }));
+
+      setFormData(prev => ({ ...prev, linkedTimelines: linkedData }));
+      setShowLinkModal(false);
+      toast.success('Linked timelines saved');
+    };
+
+    const LinkContent = () => (
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search timelines..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <ScrollArea className="h-64">
+          <div className="space-y-2">
+            {filteredTimelines.map(timeline => (
+              <Card key={timeline.id} className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      checked={selectedTimelines.includes(timeline.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedTimelines(prev => [...prev, timeline.id]);
+                        } else {
+                          setSelectedTimelines(prev => prev.filter(id => id !== timeline.id));
+                          setAllocations(prev => {
+                            const newAllocations = { ...prev };
+                            delete newAllocations[timeline.id];
+                            return newAllocations;
+                          });
+                        }
+                      }}
+                    />
+                    <div>
+                      <p className="font-medium">{timeline.title}</p>
+                      <p className="text-sm text-muted-foreground">${timeline.value.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {selectedTimelines.includes(timeline.id) && (
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={allocations[timeline.id] || ''}
+                        onChange={(e) => setAllocations(prev => ({ ...prev, [timeline.id]: e.target.value }))}
+                        className="w-16"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
+
+        {selectedTimelines.length > 0 && (
+          <div className="p-3 bg-muted rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Total Allocation:</span>
+              <span className={`text-sm font-bold ${
+                Object.values(allocations).reduce((sum, val) => sum + (parseFloat(val) || 0), 0) > 100 
+                  ? 'text-destructive' : 'text-foreground'
+              }`}>
+                {Object.values(allocations).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button onClick={handleSave} className="flex-1">
+            Save Linked Timelines
+          </Button>
+          <Button variant="outline" onClick={() => setShowLinkModal(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+
+    if (isMobile) {
+      return (
+        <Drawer open={showLinkModal} onOpenChange={setShowLinkModal}>
+          <DrawerContent className="p-6">
+            <DrawerHeader>
+              <DrawerTitle>Link / Merge Timelines</DrawerTitle>
+            </DrawerHeader>
+            <LinkContent />
+          </DrawerContent>
+        </Drawer>
+      );
+    }
+
+    return (
+      <Dialog open={showLinkModal} onOpenChange={setShowLinkModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Link / Merge Timelines</DialogTitle>
+          </DialogHeader>
+          <LinkContent />
+        </DialogContent>
+      </Dialog>
+    );
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b bg-card/50">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onCancel}
-            className="touch-manipulation p-2"
-          >
+      <div className="border-b bg-card p-4">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" onClick={onCancel} className="p-2">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h2 className="text-lg font-semibold">Contribute</h2>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold">ShonaCoin Contribution</h1>
             <p className="text-sm text-muted-foreground">
-              Step {currentStep} of {steps.length}
+              Step {currentStep} of {steps.length}: {steps[currentStep - 1]?.title}
             </p>
           </div>
+          <div className="w-10" />
         </div>
-        <Badge variant="outline" className="text-xs">
-          {targetTimeline.title}
-        </Badge>
-      </div>
-
-      {/* Progress */}
-      <div className="p-3 border-b">
-        <Progress value={(currentStep / steps.length) * 100} className="h-2" />
-        <div className="flex justify-between mt-2">
-          <span className="text-xs text-muted-foreground">
-            {steps[currentStep - 1]?.title}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {Math.round((currentStep / steps.length) * 100)}%
-          </span>
+        <div className="mt-4">
+          <Progress value={(currentStep / steps.length) * 100} className="h-2" />
         </div>
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1 p-3">
-        <div className="space-y-4">
-          {/* Step 1: Review Timeline */}
-          {currentStep === 1 && (
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Step 1: Review Timeline */}
+        {currentStep === 1 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Info className="h-5 w-5 text-primary" />
-                  Timeline Configuration
-                </CardTitle>
+              <CardHeader>
+                <CardTitle>Target Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <h3 className="font-semibold text-lg">{targetTimeline.title}</h3>
+                <p className="text-muted-foreground mt-2">{targetTimeline.description}</p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Value</Label>
+                    <p className="font-semibold">${targetTimeline.value?.toLocaleString() || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Type</Label>
+                    <p className="font-semibold capitalize">{targetTimeline.type}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 2: Timeline Information */}
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Timeline Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">{targetTimeline.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {targetTimeline.description}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <div className="text-lg font-bold text-primary">
-                        ${targetTimeline.value.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Current Value</div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <div className="text-lg font-bold text-green-600">
-                        +{targetTimeline.changePercent}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">Growth</div>
-                    </div>
+                <p className="text-muted-foreground">
+                  On signup, your profile becomes the default root timeline. This contribution will be linked to your profile timeline.
+                </p>
+                <div className="p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <span className="font-medium">Profile Timeline Active</span>
                   </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">Accepted Contribution Types</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {contributionTypes.map(type => (
-                      <Badge key={type.id} variant="secondary" className="text-xs">
-                        {type.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-2">Outcome Sharing</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Contributors receive pro-rata share of outcomes based on contribution value. 
-                    Payouts triggered by milestone completion and verified results.
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your contribution will be tracked and valued within your portfolio timeline.
                   </p>
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
+        )}
 
-          {/* Step 2: Configure Expected Outcomes */}
-          {currentStep === 2 && (
+        {/* Step 3: Configure Contribution Types & Subtypes */}
+        {currentStep === 3 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-primary" />
-                  Configure Expected Outcomes
-                </CardTitle>
+              <CardHeader>
+                <CardTitle>Select Contribution Types</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Define what you will give and what you expect to receive from this contribution.
+                  Choose the types of contributions you want to make. Each type must be configured to completion.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Direct tabs inside Step 2 - no modal/drawer needed */}
-                <div className="border rounded-lg bg-background">
-                  <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'toGive' | 'toReceive')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 rounded-t-lg">
-                      <TabsTrigger value="toGive" className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
-                        To Give
-                      </TabsTrigger>
-                      <TabsTrigger value="toReceive" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                        To Receive
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <div className="p-4">
-                      <TabsContent value="toGive" className="mt-0">
-                        <ScrollArea className="h-64">
-                          <div className="space-y-4">
-                            {outcomeCategories.map((category) => (
-                              <div key={category.category} className="space-y-2">
-                                <h4 className="font-medium text-sm text-muted-foreground">
-                                  {category.category}
-                                </h4>
-                                <div className="space-y-2 ml-2">
-                                  {category.options.map((option) => {
-                                    const isSelected = isOutcomeSelected('toGive', option.id);
-                                    const selectedOutcome = tempOutcomes.toGive.find((o: any) => o.id === option.id);
-                                    
-                                    return (
-                                      <div key={option.id} className="space-y-2">
-                                        <div className="flex items-center space-x-2">
-                                          <Checkbox
-                                            id={`toGive-${option.id}`}
-                                            checked={isSelected}
-                                            onCheckedChange={() => handleOutcomeToggle('toGive', option.id)}
-                                          />
-                                          <Label
-                                            htmlFor={`toGive-${option.id}`}
-                                            className="text-sm cursor-pointer flex-1"
-                                          >
-                                            {option.label}
-                                          </Label>
-                                        </div>
-                                        
-                                        {isSelected && option.requiresValue && (
-                                          <div className="ml-6">
-                                            <Input
-                                              type="number"
-                                              placeholder={option.valueType === 'percentage' ? 'Enter %' : 'Enter amount'}
-                                              value={selectedOutcome?.value || ''}
-                                              onChange={(e) => handleOutcomeValueChange('toGive', option.id, e.target.value)}
-                                              className="w-32 h-8 text-sm"
-                                              min="0"
-                                              max={option.valueType === 'percentage' ? "100" : undefined}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-
-                            {/* Custom outcomes for toGive */}
-                            {tempOutcomes.toGive.filter((o: any) => o.custom).length > 0 && (
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-sm text-muted-foreground">Custom</h4>
-                                <div className="space-y-2 ml-2">
-                                  {tempOutcomes.toGive.filter((o: any) => o.custom).map((outcome: any) => (
-                                    <div key={outcome.id} className="flex items-center space-x-2">
-                                      <Checkbox checked={true} disabled />
-                                      <Input
-                                        value={outcome.label}
-                                        onChange={(e) => handleCustomOutcomeEdit('toGive', outcome.id, e.target.value)}
-                                        className="flex-1 h-8 text-sm"
-                                        placeholder="Custom outcome"
-                                      />
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleCustomOutcomeRemove('toGive', outcome.id)}
-                                        className="h-8 w-8 p-0 text-destructive"
-                                      >
-                                        ×
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Add custom outcome */}
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-sm text-muted-foreground">Add Custom</h4>
-                              <div className="flex items-center space-x-2 ml-2">
-                                <Input
-                                  value={customInput.toGive}
-                                  onChange={(e) => setCustomInput(prev => ({ ...prev, toGive: e.target.value }))}
-                                  placeholder="Add custom outcome"
-                                  className="flex-1 h-8 text-sm"
-                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomOutcomeAdd('toGive')}
-                                />
+              <CardContent>
+                <div className="space-y-4">
+                  {contributionTypes.map(type => {
+                    const TypeIcon = type.icon;
+                    const isSelected = formData.selectedTypes.includes(type.id);
+                    
+                    return (
+                      <div key={type.id} className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleTypeSelection(type.id, !!checked)}
+                          />
+                          <TypeIcon className="h-5 w-5" />
+                          <span className="font-medium">{type.name}</span>
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="ml-8 space-y-2">
+                            <p className="text-sm text-muted-foreground">Select subtypes to configure:</p>
+                            <div className="grid gap-2">
+                              {type.subtypes.map(subtype => (
                                 <Button
+                                  key={subtype.id}
                                   variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCustomOutcomeAdd('toGive')}
-                                  disabled={!customInput.toGive.trim()}
-                                  className="h-8"
+                                  className="justify-start h-auto p-3"
+                                  onClick={() => openTypeConfig(type.id, subtype.id)}
                                 >
-                                  Add
+                                  <div className="text-left">
+                                    <p className="font-medium">{subtype.name}</p>
+                                    <p className="text-sm text-muted-foreground">{subtype.description}</p>
+                                  </div>
+                                  {formData.contributionConfigs[`${type.id}-${subtype.id}`] && (
+                                    <CheckCircle className="h-4 w-4 text-green-600 ml-auto" />
+                                  )}
                                 </Button>
-                              </div>
+                              ))}
                             </div>
                           </div>
-                        </ScrollArea>
-                      </TabsContent>
-
-                      <TabsContent value="toReceive" className="mt-0">
-                        <ScrollArea className="h-64">
-                          <div className="space-y-4">
-                            {outcomeCategories.map((category) => (
-                              <div key={category.category} className="space-y-2">
-                                <h4 className="font-medium text-sm text-muted-foreground">
-                                  {category.category}
-                                </h4>
-                                <div className="space-y-2 ml-2">
-                                  {category.options.map((option) => {
-                                    const isSelected = isOutcomeSelected('toReceive', option.id);
-                                    const selectedOutcome = tempOutcomes.toReceive.find((o: any) => o.id === option.id);
-                                    
-                                    return (
-                                      <div key={option.id} className="space-y-2">
-                                        <div className="flex items-center space-x-2">
-                                          <Checkbox
-                                            id={`toReceive-${option.id}`}
-                                            checked={isSelected}
-                                            onCheckedChange={() => handleOutcomeToggle('toReceive', option.id)}
-                                          />
-                                          <Label
-                                            htmlFor={`toReceive-${option.id}`}
-                                            className="text-sm cursor-pointer flex-1"
-                                          >
-                                            {option.label}
-                                          </Label>
-                                        </div>
-                                        
-                                        {isSelected && option.requiresValue && (
-                                          <div className="ml-6">
-                                            <Input
-                                              type="number"
-                                              placeholder={option.valueType === 'percentage' ? 'Enter %' : 'Enter amount'}
-                                              value={selectedOutcome?.value || ''}
-                                              onChange={(e) => handleOutcomeValueChange('toReceive', option.id, e.target.value)}
-                                              className="w-32 h-8 text-sm"
-                                              min="0"
-                                              max={option.valueType === 'percentage' ? "100" : undefined}
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-
-                            {/* Custom outcomes for toReceive */}
-                            {tempOutcomes.toReceive.filter((o: any) => o.custom).length > 0 && (
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-sm text-muted-foreground">Custom</h4>
-                                <div className="space-y-2 ml-2">
-                                  {tempOutcomes.toReceive.filter((o: any) => o.custom).map((outcome: any) => (
-                                    <div key={outcome.id} className="flex items-center space-x-2">
-                                      <Checkbox checked={true} disabled />
-                                      <Input
-                                        value={outcome.label}
-                                        onChange={(e) => handleCustomOutcomeEdit('toReceive', outcome.id, e.target.value)}
-                                        className="flex-1 h-8 text-sm"
-                                        placeholder="Custom outcome"
-                                      />
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleCustomOutcomeRemove('toReceive', outcome.id)}
-                                        className="h-8 w-8 p-0 text-destructive"
-                                      >
-                                        ×
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Add custom outcome */}
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-sm text-muted-foreground">Add Custom</h4>
-                              <div className="flex items-center space-x-2 ml-2">
-                                <Input
-                                  value={customInput.toReceive}
-                                  onChange={(e) => setCustomInput(prev => ({ ...prev, toReceive: e.target.value }))}
-                                  placeholder="Add custom outcome"
-                                  className="flex-1 h-8 text-sm"
-                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomOutcomeAdd('toReceive')}
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCustomOutcomeAdd('toReceive')}
-                                  disabled={!customInput.toReceive.trim()}
-                                  className="h-8"
-                                >
-                                  Add
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </ScrollArea>
-                      </TabsContent>
-                    </div>
-
-                    {/* Save/Cancel footer */}
-                    <div className="flex items-center justify-end gap-2 p-4 border-t bg-muted/50">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setTempOutcomes({
-                            toGive: [...(formData.outcomes.toGive || [])],
-                            toReceive: [...(formData.outcomes.toReceive || [])]
-                          });
-                          setCustomInput({ toGive: '', toReceive: '' });
-                        }}
-                      >
-                        Reset
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const validation = validateOutcomes();
-                          if (validation.valid) {
-                            setFormData(prev => ({
-                              ...prev,
-                              outcomes: {
-                                toGive: [...tempOutcomes.toGive],
-                                toReceive: [...tempOutcomes.toReceive]
-                              }
-                            }));
-                          } else {
-                            alert(validation.error);
-                          }
-                        }}
-                      >
-                        Save & Continue
-                      </Button>
-                    </div>
-                  </Tabs>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Summary of saved outcomes */}
-                {(formData.outcomes.toGive.length > 0 || formData.outcomes.toReceive.length > 0) && (
-                  <div className="mt-4 p-3 rounded-lg border bg-muted/30">
-                    <h4 className="font-medium text-sm mb-2">Current Configuration:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {formData.outcomes.toGive.length > 0 && (
-                        <div>
-                          <h5 className="text-xs font-medium text-green-700 mb-1">To Give:</h5>
-                          <div className="space-y-1">
-                            {formData.outcomes.toGive.map((outcome: any, index: number) => (
-                              <div key={index} className="text-xs flex items-center justify-between">
-                                <span>{outcome.label}</span>
-                                {outcome.value && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {outcome.type === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
-                                  </Badge>
-                                )}
-                              </div>
-                            ))}
+                {/* Summary of configured contributions */}
+                {Object.keys(formData.contributionConfigs).length > 0 && (
+                  <div className="mt-6 p-4 border rounded-lg">
+                    <h4 className="font-medium mb-3">Contribution Summary</h4>
+                    <div className="space-y-2">
+                      {Object.entries(formData.contributionConfigs).map(([key, config]: [string, any]) => {
+                        const [typeId, subtypeId] = key.split('-');
+                        const type = contributionTypes.find(t => t.id === typeId);
+                        const subtype = type?.subtypes.find(s => s.id === subtypeId);
+                        
+                        return (
+                          <div key={key} className="flex justify-between items-center p-2 bg-muted rounded">
+                            <div>
+                              <p className="font-medium">
+                                {config.customName || subtype?.name} ({type?.name})
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {config.valuation.method === 'fixed' && `$${config.valuation.value}`}
+                                {config.expectedGain && ` • ${config.expectedGain}% expected gain`}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openTypeConfig(typeId, subtypeId)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                      )}
-                      
-                      {formData.outcomes.toReceive.length > 0 && (
-                        <div>
-                          <h5 className="text-xs font-medium text-blue-700 mb-1">To Receive:</h5>
-                          <div className="space-y-1">
-                            {formData.outcomes.toReceive.map((outcome: any, index: number) => (
-                              <div key={index} className="text-xs flex items-center justify-between">
-                                <span>{outcome.label}</span>
-                                {outcome.value && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {outcome.type === 'percentage' ? `${outcome.value}%` : `$${outcome.value}`}
-                                  </Badge>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
+          </div>
+        )}
 
-          {/* Step 3: Choose Type */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              {/* Dynamic Valuation Summary - Show when linked timelines exist */}
-              {formData.linkedTimelines && formData.linkedTimelines.length > 0 && (
-                <Card className="border-blue-200 bg-blue-50/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Info className="h-4 w-4 text-blue-600" />
-                      <h4 className="font-medium text-blue-900">Dynamic Valuation Active</h4>
-                    </div>
-                    <p className="text-sm text-blue-800 mb-3">
-                      Your contribution valuation will update automatically based on linked timeline values.
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700">Current Linked Value:</span>
-                        <span className="font-medium text-blue-900">
-                          ${calculateLinkedTimelineValue().toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700">Total Allocation:</span>
-                        <span className="font-medium text-blue-900">
-                          {formData.linkedTimelines.reduce((sum: number, t: any) => sum + (t.allocation || 0), 0)}%
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Select Contribution Type</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-3">
-                    {contributionTypes.map(type => {
-                      const Icon = type.icon;
-                      return (
-                        <Card 
-                          key={type.id}
-                          className={`cursor-pointer transition-all touch-manipulation ${
-                            formData.contributionType === type.id 
-                              ? 'ring-2 ring-primary bg-primary/5' 
-                              : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setFormData(prev => ({ 
-                            ...prev, 
-                            contributionType: type.id,
-                            subtype: '' 
-                          }))}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <Icon className="h-5 w-5 text-primary" />
-                              <div>
-                                <h3 className="font-medium">{type.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {type.subtypes.length} options available
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Subtypes */}
-              {selectedType && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Choose Specific Type</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {selectedType.subtypes.map(subtype => (
-                        <Card 
-                          key={subtype.id}
-                          className={`cursor-pointer transition-all touch-manipulation ${
-                            formData.subtype === subtype.id 
-                              ? 'ring-2 ring-primary bg-primary/5' 
-                              : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setFormData(prev => ({ 
-                            ...prev, 
-                            subtype: subtype.id 
-                          }))}
-                        >
-                          <CardContent className="p-3">
-                            <h4 className="font-medium">{subtype.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {subtype.description}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-          {/* Step 4: Link / Merge / Knot with Other Timelines */}
-          {currentStep === 4 && (
+        {/* Step 4: Link / Merge Timelines */}
+        {currentStep === 4 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Link className="h-5 w-5 text-primary" />
-                  Link / Merge / Knot with Other Timelines
-                </CardTitle>
+              <CardHeader>
+                <CardTitle>Link / Merge Timelines</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Connect and merge your existing timelines with this contribution. Set percentage allocations to dynamically update valuations.
+                  Connect this contribution with other timelines from your portfolio.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  onClick={() => setShowLinkTimelinesModal(true)}
-                  variant="outline"
-                  className="w-full justify-center"
-                  size="lg"
-                >
+              <CardContent>
+                <Button onClick={() => setShowLinkModal(true)} className="w-full">
                   <Link className="h-4 w-4 mr-2" />
                   Select timelines to link
                 </Button>
 
-                {/* Summary of linked timelines */}
                 {formData.linkedTimelines && formData.linkedTimelines.length > 0 && (
-                  <div className="p-4 rounded-lg border bg-muted/30">
-                    <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                      <Link className="h-4 w-4" />
-                      Linked Timelines ({formData.linkedTimelines.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {formData.linkedTimelines.map((timeline: any) => {
-                        const timelineData = mockAvailableTimelines.find(t => t.id === timeline.id);
-                        return (
-                          <div key={timeline.id} className="flex items-center justify-between p-2 rounded border bg-background">
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">{timelineData?.title || timeline.id}</div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-xs">
-                                  {timelineData?.type || 'Timeline'}
-                                </Badge>
-                                <span>${(timelineData?.value || 0).toLocaleString()}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {timeline.allocation > 0 && (
-                                <Badge variant="secondary" className="text-xs font-medium">
-                                  {timeline.allocation}%
-                                </Badge>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const updatedTimelines = formData.linkedTimelines.filter((t: any) => t.id !== timeline.id);
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    linkedTimelines: updatedTimelines
-                                  }));
-                                }}
-                                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Total allocation summary */}
-                      {formData.linkedTimelines.some((t: any) => t.allocation > 0) && (
-                        <div className="pt-2 mt-2 border-t flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Total Allocation:</span>
-                          <span className={`font-medium ${
-                            formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0) > 100 
-                              ? 'text-destructive' 
-                              : 'text-primary'
-                          }`}>
-                            {formData.linkedTimelines.reduce((sum: number, t: any) => sum + t.allocation, 0)}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty state */}
-                {(!formData.linkedTimelines || formData.linkedTimelines.length === 0) && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Link className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No timelines linked yet</p>
-                    <p className="text-xs">Click above to connect your existing timelines</p>
+                  <div className="mt-4 space-y-2">
+                    <p className="font-medium">Linked Timelines:</p>
+                    {formData.linkedTimelines.map((timeline: any) => (
+                      <div key={timeline.id} className="flex justify-between items-center p-2 bg-muted rounded">
+                        <span>{timeline.title}</span>
+                        <Badge variant="secondary">{timeline.allocation}%</Badge>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
+          </div>
+        )}
 
-          {/* Step 5: Configure Details */}
-          {currentStep === 5 && selectedSubtype && (
+        {/* Step 5: Custom Inputs */}
+        {currentStep === 5 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Configure Contribution</CardTitle>
+              <CardHeader>
+                <CardTitle>Custom Inputs</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure the required fields for this contribution.
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="amount">Amount/Value</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
-                    id="amount"
-                    value={formData.amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                    placeholder="Enter amount or estimated value"
-                    className="touch-manipulation"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter contribution title"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description *</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe your contribution in detail..."
-                    className="touch-manipulation min-h-[100px]"
+                    placeholder="Describe your contribution"
+                    rows={3}
                   />
                 </div>
 
                 <div>
-                  <Label>Configuration Settings</Label>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">Use Parent Timeline Configuration</p>
-                      <p className="text-xs text-muted-foreground">
-                        Inherit valuation and tracking rules from parent timeline
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.useParentConfig}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, useParentConfig: checked }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                {!formData.useParentConfig && (
-                  <Card className="border-orange-200 bg-orange-50/50">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Settings className="h-4 w-4 text-orange-600" />
-                        <p className="text-sm font-medium text-orange-800">Custom Configuration</p>
-                      </div>
-                      <p className="text-xs text-orange-700">
-                        You can override parent settings for valuation method, tracking requirements, 
-                        and outcome sharing rules specific to this contribution.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <div>
-                  <Label>Attach Supporting Documents</Label>
-                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Upload receipts, contracts, photos, or other proof
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-2 touch-manipulation">
-                      Choose Files
-                    </Button>
-                  </div>
+                  <Label htmlFor="context">Context</Label>
+                  <Textarea
+                    id="context"
+                    value={formData.context}
+                    onChange={(e) => setFormData(prev => ({ ...prev, context: e.target.value }))}
+                    placeholder="Provide additional context"
+                    rows={2}
+                  />
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
+        )}
 
-          {/* Step 6: Valuation */}
-          {currentStep === 6 && (
+        {/* Step 6: Files & Attachments */}
+        {currentStep === 6 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Valuation & Returns</CardTitle>
+              <CardHeader>
+                <CardTitle>Files & Attachments</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Upload supporting documents, images, or other files.
+                </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Valuation Preference</Label>
-                  <div className="space-y-2 mt-2">
-                    {[
-                      {
-                        id: 'accept-default',
-                        title: 'Accept Default Valuation',
-                        description: 'Use timeline\'s standard valuation method'
-                      },
-                      {
-                        id: 'negotiate',
-                        title: 'Negotiate Terms',
-                        description: 'Propose custom valuation and terms'
-                      },
-                      {
-                        id: 'market-rate',
-                        title: 'Market Rate',
-                        description: 'Use current market valuation'
-                      }
-                    ].map(option => (
-                      <Card 
-                        key={option.id}
-                        className={`cursor-pointer transition-all touch-manipulation ${
-                          formData.valuationPreference === option.id 
-                            ? 'ring-2 ring-primary bg-primary/5' 
-                            : 'hover:bg-muted/50'
-                        }`}
-                        onClick={() => setFormData(prev => ({ 
-                          ...prev, 
-                          valuationPreference: option.id 
-                        }))}
-                      >
-                        <CardContent className="p-3">
-                          <h4 className="font-medium">{option.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {option.description}
-                          </p>
-                        </CardContent>
-                      </Card>
+              <CardContent>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Drop files here or click to browse
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Supports all file types • Max 20MB per file
+                  </p>
+                  <Button variant="outline" className="mt-4">
+                    Choose Files
+                  </Button>
+                </div>
+
+                {formData.attachments.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="font-medium">Uploaded Files:</p>
+                    {formData.attachments.map((file: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                        <span>{file.name}</span>
+                        <Button variant="ghost" size="sm">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 7: Presentation Template */}
+        {currentStep === 7 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Presentation Template</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Choose how your contribution will be displayed.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={formData.presentationTemplate}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, presentationTemplate: value }))}
+                  className="space-y-3"
+                >
+                  {presentationTemplates.map(template => (
+                    <div key={template.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                      <RadioGroupItem value={template.id} id={template.id} />
+                      <Label htmlFor={template.id} className="flex-1">
+                        <div>
+                          <p className="font-medium">{template.name}</p>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 8: Sub-contributions */}
+        {currentStep === 8 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configure Sub-Contributions</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Allow others to build on this contribution by enabling sub-contributions.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="allowSubContributions"
+                    checked={formData.allowSubContributions}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, allowSubContributions: !!checked }))}
+                  />
+                  <Label htmlFor="allowSubContributions">Enable sub-contributions</Label>
                 </div>
 
-                {formData.valuationPreference === 'negotiate' && (
-                  <div>
-                    <Label htmlFor="negotiationNotes">Negotiation Notes</Label>
-                    <Textarea
-                      id="negotiationNotes"
-                      value={formData.negotiationNotes}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        negotiationNotes: e.target.value 
-                      }))}
-                      placeholder="Explain your proposed terms..."
-                      className="touch-manipulation"
-                    />
+                {formData.allowSubContributions && (
+                  <div className="space-y-4 pl-6 border-l-2 border-muted">
+                    <p className="text-sm text-muted-foreground">
+                      Sub-contribution settings would be configured here, including:
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Allowed contribution types</li>
+                      <li>Outcome-sharing rules</li>
+                      <li>Access levels and roles</li>
+                      <li>Payment integration</li>
+                      <li>Custom ratings and reviews</li>
+                    </ul>
                   </div>
                 )}
-
-                <div>
-                  <Label htmlFor="expectedOutcome">Expected Outcome</Label>
-                  <Select
-                    value={formData.expectedOutcome}
-                    onValueChange={(value) => setFormData(prev => ({ 
-                      ...prev, 
-                      expectedOutcome: value 
-                    }))}
-                  >
-                    <SelectTrigger className="touch-manipulation">
-                      <SelectValue placeholder="What do you expect in return?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="profit-share">Profit Share</SelectItem>
-                      <SelectItem value="equity">Equity Stake</SelectItem>
-                      <SelectItem value="royalties">Royalties</SelectItem>
-                      <SelectItem value="credits">Platform Credits</SelectItem>
-                      <SelectItem value="access">Special Access</SelectItem>
-                      <SelectItem value="recognition">Recognition/Badges</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
-          )}
+          </div>
+        )}
 
-          {/* Step 6: Legal Terms */}
-          {currentStep === 6 && (
+        {/* Step 9: Review & Publish */}
+        {currentStep === 9 && (
+          <div className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Legal Terms & Compliance</CardTitle>
+              <CardHeader>
+                <CardTitle>Review & Publish</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Final review of your contribution before publishing.
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="terms"
-                      checked={formData.acceptTerms}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, acceptTerms: checked }))
-                      }
-                      className="mt-1"
-                    />
-                    <div className="space-y-1">
-                      <Label htmlFor="terms" className="text-sm font-medium">
-                        I accept the contribution terms and conditions
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        By checking this box, you agree to the timeline's contribution terms, 
-                        outcome sharing rules, and dispute resolution process.
-                      </p>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium">Contribution Summary</h4>
+                    <p className="text-sm text-muted-foreground">{formData.title}</p>
+                    <p className="text-sm text-muted-foreground">{formData.description}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium">Selected Types</h4>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.selectedTypes.map((typeId: string) => {
+                        const type = contributionTypes.find(t => t.id === typeId);
+                        return (
+                          <Badge key={typeId} variant="secondary">
+                            {type?.name}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="kyc"
-                      checked={formData.kycCompleted}
-                      onCheckedChange={(checked) => 
-                        setFormData(prev => ({ ...prev, kycCompleted: checked }))
-                      }
-                      className="mt-1"
-                    />
-                    <div className="space-y-1">
-                      <Label htmlFor="kyc" className="text-sm font-medium">
-                        KYC verification completed (if required)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        For contributions above $1,000, identity verification may be required.
-                      </p>
+                  {formData.linkedTimelines.length > 0 && (
+                    <div>
+                      <h4 className="font-medium">Linked Timelines</h4>
+                      <div className="space-y-1 mt-1">
+                        {formData.linkedTimelines.map((timeline: any) => (
+                          <div key={timeline.id} className="flex justify-between text-sm">
+                            <span>{timeline.title}</span>
+                            <span>{timeline.allocation}%</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                  )}
+
+                  <div>
+                    <h4 className="font-medium">Presentation</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {presentationTemplates.find(t => t.id === formData.presentationTemplate)?.name}
+                    </p>
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <h4 className="font-medium mb-2">Contribution Summary</h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Type:</span>
-                      <span>{selectedSubtype?.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Amount:</span>
-                      <span>{formData.amount || 'To be valued'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Expected Return:</span>
-                      <span>{formData.expectedOutcome || 'Default terms'}</span>
-                    </div>
-                    
-                    {/* Show selected outcomes */}
-                    {(formData.toGiveOutcomes?.length > 0 || formData.customToGive?.length > 0) && (
-                      <div className="pt-2 border-t">
-                        <span className="font-medium">To Give:</span>
-                        <div className="mt-1">
-                          {formData.toGiveOutcomes?.filter((id: string) => id !== 'custom').map((id: string) => (
-                            <Badge key={id} variant="secondary" className="mr-1 mb-1 text-xs">
-                              {findOutcomeLabel(id)}
-                            </Badge>
-                          ))}
-                          {formData.customToGive?.map((custom: string, index: number) => (
-                            <Badge key={index} variant="outline" className="mr-1 mb-1 text-xs">
-                              {custom}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {(formData.toReceiveOutcomes?.length > 0 || formData.customToReceive?.length > 0) && (
-                      <div className="pt-2 border-t">
-                        <span className="font-medium">To Receive:</span>
-                        <div className="mt-1">
-                          {formData.toReceiveOutcomes?.filter((id: string) => id !== 'custom').map((id: string) => (
-                            <Badge key={id} variant="secondary" className="mr-1 mb-1 text-xs">
-                              {findOutcomeLabel(id)}
-                            </Badge>
-                          ))}
-                          {formData.customToReceive?.map((custom: string, index: number) => (
-                            <Badge key={index} variant="outline" className="mr-1 mb-1 text-xs">
-                              {custom}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveDraft} variant="outline" className="flex-1">
+                    Save as Draft
+                  </Button>
+                  <Button onClick={handleSubmit} className="flex-1">
+                    Publish Contribution
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* Step 7: Submit */}
-          {currentStep === 7 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Ready to Submit
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <h4 className="font-medium text-green-800 mb-2">
-                    Your contribution is ready for submission
-                  </h4>
-                  <p className="text-sm text-green-700">
-                    Once submitted, your contribution will be recorded and the timeline 
-                    owner will be notified for verification. You'll receive confirmation 
-                    and tracking details.
-                  </p>
-                </div>
-
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Next Steps:</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Contribution logged in timeline ledger</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Verification process initiated</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Contribution Units (CUs) issued upon approval</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-primary rounded-full" />
-                      <span>Subtimeline created (if configured)</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between p-3 border-t bg-card/50">
-        <Button
-          variant="outline"
-          onClick={handlePrev}
-          disabled={currentStep === 1}
-          className="touch-manipulation"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-
-        {currentStep < steps.length ? (
-          <Button
-            onClick={handleNext}
-            disabled={!canProceed()}
-            className="touch-manipulation"
-          >
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={!canProceed()}
-            className="touch-manipulation"
-          >
-            Submit Contribution
-            <CheckCircle className="h-4 w-4 ml-2" />
-          </Button>
+          </div>
         )}
       </div>
 
-      {/* Link Timelines Modal/Drawer */}
-      {isMobile ? (
-        <Drawer open={showLinkTimelinesModal} onOpenChange={setShowLinkTimelinesModal}>
-          <DrawerContent className="h-[80vh]">
-            <DrawerHeader>
-              <DrawerTitle>Link Timelines</DrawerTitle>
-            </DrawerHeader>
-            <div className="flex-1 flex flex-col">
-              {/* Search */}
-              <div className="p-4 border-b">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search timelines..."
-                    value={timelineSearch}
-                    onChange={(e) => setTimelineSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+      {/* Footer Navigation */}
+      <div className="border-t bg-card p-4">
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrev}
+            disabled={currentStep === 1}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            disabled={currentStep === steps.length || !canProceed()}
+          >
+            {currentStep === steps.length ? 'Complete' : 'Next'}
+            {currentStep < steps.length && <ArrowRight className="h-4 w-4 ml-2" />}
+          </Button>
+        </div>
+      </div>
 
-              {/* Timeline List */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-3">
-                  {filteredTimelines.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Link className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm mb-1">
-                        {timelineSearch ? 'No timelines found' : 'No timelines available'}
-                      </p>
-                      <p className="text-xs">
-                        {timelineSearch ? `Try searching for something else` : 'Create some timelines first to link them here'}
-                      </p>
-                    </div>
-                  ) : (
-                    filteredTimelines.map((timeline) => {
-                      const isSelected = selectedTimelines.includes(timeline.id);
-                      const allocation = timelineAllocations[timeline.id] || '';
-                      
-                      return (
-                        <div key={timeline.id} className="border rounded-lg p-3">
-                          <div className="flex items-start space-x-3">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => handleTimelineToggle(timeline.id)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1 space-y-2">
-                              <div>
-                                <h4 className="font-medium text-sm">{timeline.title}</h4>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <Badge variant="outline" className="text-xs">
-                                    {timeline.type}
-                                  </Badge>
-                                  <span>${timeline.value.toLocaleString()}</span>
-                                </div>
-                              </div>
-                              
-                              {isSelected && (
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs">Allocation %:</Label>
-                                  <Input
-                                    type="number"
-                                    value={allocation}
-                                    onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
-                                    placeholder="0"
-                                    className="w-20 h-7 text-xs"
-                                    min="0"
-                                    max="100"
-                                  />
-                                  <span className="text-xs text-muted-foreground">
-                                    (Optional)
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-
-              {/* Validation Info */}
-              {selectedTimelines.length > 0 && (
-                <div className="p-4 border-t bg-muted/50">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Total Allocation:</span>
-                    <span className={getTotalAllocation() > 100 ? 'text-destructive font-medium' : ''}>
-                      {getTotalAllocation()}%
-                    </span>
-                  </div>
-                  {getTotalAllocation() > 100 && (
-                    <p className="text-xs text-destructive mt-1">
-                      Total allocation cannot exceed 100%
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <DrawerFooter>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleCancelLinkTimelines} className="flex-1">
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSaveLinkedTimelines} 
-                  className="flex-1"
-                  disabled={getTotalAllocation() > 100}
-                >
-                  Save & Continue
-                  {selectedTimelines.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {selectedTimelines.length}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Dialog open={showLinkTimelinesModal} onOpenChange={setShowLinkTimelinesModal}>
-          <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Link Timelines</DialogTitle>
-            </DialogHeader>
-            
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Search */}
-              <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search timelines..."
-                    value={timelineSearch}
-                    onChange={(e) => setTimelineSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {/* Timeline List */}
-              <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-3">
-                  {filteredTimelines.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Link className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-base mb-2">
-                        {timelineSearch ? 'No timelines found' : 'No timelines available'}
-                      </p>
-                      <p className="text-sm">
-                        {timelineSearch ? `Try searching for something else` : 'Create some timelines first to link them here'}
-                      </p>
-                    </div>
-                  ) : (
-                    filteredTimelines.map((timeline) => {
-                      const isSelected = selectedTimelines.includes(timeline.id);
-                      const allocation = timelineAllocations[timeline.id] || '';
-                      
-                      return (
-                        <div key={timeline.id} className="border rounded-lg p-4">
-                          <div className="flex items-start space-x-3">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => handleTimelineToggle(timeline.id)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1 space-y-3">
-                              <div>
-                                <h4 className="font-medium">{timeline.title}</h4>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                  <Badge variant="outline" className="text-xs">
-                                    {timeline.type}
-                                  </Badge>
-                                  <span>${timeline.value.toLocaleString()}</span>
-                                </div>
-                              </div>
-                              
-                              {isSelected && (
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-sm">Allocation %:</Label>
-                                  <Input
-                                    type="number"
-                                    value={allocation}
-                                    onChange={(e) => handleAllocationChange(timeline.id, e.target.value)}
-                                    placeholder="0"
-                                    className="w-24 h-8"
-                                    min="0"
-                                    max="100"
-                                  />
-                                  <span className="text-xs text-muted-foreground">
-                                    (Optional)
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-
-              {/* Validation Info */}
-              {selectedTimelines.length > 0 && (
-                <div className="mt-4 p-3 border rounded-lg bg-muted/50">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Total Allocation:</span>
-                    <span className={getTotalAllocation() > 100 ? 'text-destructive font-medium' : ''}>
-                      {getTotalAllocation()}%
-                    </span>
-                  </div>
-                  {getTotalAllocation() > 100 && (
-                    <p className="text-xs text-destructive mt-1">
-                      Total allocation cannot exceed 100%
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={handleCancelLinkTimelines}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSaveLinkedTimelines}
-                disabled={getTotalAllocation() > 100}
-              >
-                Save & Continue
-                {selectedTimelines.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {selectedTimelines.length}
-                  </Badge>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
+      {/* Modals */}
+      <TypeConfigModal />
+      <LinkTimelinesModal />
     </div>
   );
 };
