@@ -11,7 +11,6 @@ import { BottomNav } from "./components/layout/BottomNav";
 import { Onboarding } from "./pages/Onboarding";
 import { Dashboard } from "./pages/Dashboard";
 import { TimelineDetail } from "./pages/TimelineDetail";
-import { CreateTimeline } from "./pages/CreateTimeline";
 import { Assistant } from "./pages/Assistant";
 import { Portfolio } from "./pages/Portfolio";
 import { Profile } from "./pages/Profile";
@@ -21,7 +20,6 @@ import { Marketplace } from "./pages/Marketplace";
 import { Train } from "./pages/Train";
 import { Settings } from "./pages/Settings";
 import { StatsBreakdown } from "./pages/StatsBreakdown";
-import { ShonaCoinContribution } from "./pages/ShonaCoinContribution";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -170,24 +168,6 @@ const App = () => {
                   <BottomNav />
                 </div>
               } />
-              <Route path="/create" element={
-                <div className="min-h-screen bg-background flex flex-col">
-                  <Navbar />
-                  <main className="flex-1 overflow-hidden relative">
-                    <div className="page-transition ios-push-enter"><CreateTimeline /></div>
-                  </main>
-                  <BottomNav />
-                </div>
-              } />
-              <Route path="/create-modal" element={
-                <div className="min-h-screen bg-background flex flex-col">
-                  <Navbar />
-                  <main className="flex-1 overflow-hidden relative">
-                    <div className="page-transition ios-push-enter"><CreateTimeline /></div>
-                  </main>
-                  <BottomNav />
-                </div>
-              } />
               <Route path="/assistant" element={
                 <div className="min-h-screen bg-background flex flex-col">
                   <Navbar />
@@ -272,7 +252,7 @@ const App = () => {
               
               {/* Full screen pushed pages without navbar/bottomnav */}
               <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter ios-full-screen"><TimelineDetail /></div>} />
-              <Route path="/contribute" element={<div className="page-transition ios-push-enter ios-full-screen"><ShonaCoinContribution /></div>} />
+              
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={
