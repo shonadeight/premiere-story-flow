@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,11 @@ import {
   ArrowLeft,
   LinkIcon,
   X,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
 import { mockUser, mockTimelines } from '@/data/mockData';
+import { useAssistantSuggestions } from '@/hooks/useAssistantSuggestions';
 
 interface ChatMessage {
   id: string;
@@ -54,15 +56,21 @@ interface Conversation {
 export const Assistant = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { getRandomSuggestions } = useAssistantSuggestions();
   const [currentMessage, setCurrentMessage] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>('conv-1');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateChat, setShowCreateChat] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [defaultSuggestions, setDefaultSuggestions] = useState<string[]>([]);
   
   const isModal = location.pathname === '/assistant-modal';
   const isMobile = window.innerWidth < 768;
+
+  useEffect(() => {
+    setDefaultSuggestions(getRandomSuggestions(5));
+  }, []);
 
   const availableMembers = [
     { id: '1', name: 'Sarah Chen', role: 'Partner', avatar: 'SC' },
@@ -112,22 +120,10 @@ export const Assistant = () => {
   const messages: ChatMessage[] = [
     {
       id: 'msg-1',
-      content: 'Hello! How can I help you optimize your timeline investments today?',
+      content: 'Hello! I\'m your ShonaCoin AI Assistant. I can help you understand contribution types, set up timelines, configure expectations, and navigate the platform. What would you like to know?',
       sender: 'ai',
-      timestamp: '10:30 AM'
-    },
-    {
-      id: 'msg-2', 
-      content: 'I want to analyze the performance of my AI SaaS timeline',
-      sender: 'user',
-      timestamp: '10:32 AM'
-    },
-    {
-      id: 'msg-3',
-      content: 'Perfect! I\'ve analyzed your AI SaaS timeline. Here\'s what I found:\n\n📈 Current valuation: $45,000 (+23.5%)\n💰 Total invested: $30,000\n⭐ Performance score: 8.7/10\n\nWould you like me to show detailed analytics or suggest optimization strategies?',
-      sender: 'ai',
-      timestamp: '10:33 AM',
-      suggestions: ['Show detailed analytics', 'Suggest optimizations', 'Compare with similar timelines']
+      timestamp: '10:30 AM',
+      suggestions: defaultSuggestions
     }
   ];
 

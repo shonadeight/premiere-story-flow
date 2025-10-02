@@ -20,6 +20,7 @@ import { Marketplace } from "./pages/Marketplace";
 import { Train } from "./pages/Train";
 import { Settings } from "./pages/Settings";
 import { StatsBreakdown } from "./pages/StatsBreakdown";
+import { About } from "./pages/About";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -116,6 +117,8 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/about" element={<About />} />
+              <Route path="/assistant-modal" element={<Assistant />} />
               <Route path="*" element={<Onboarding />} />
             </Routes>
           </BrowserRouter>
@@ -133,6 +136,8 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/about" element={<About />} />
+              <Route path="/assistant-modal" element={<Assistant />} />
               <Route path="*" element={<Onboarding />} />
             </Routes>
           </BrowserRouter>
@@ -252,6 +257,7 @@ const App = () => {
               
               {/* Full screen pushed pages without navbar/bottomnav */}
               <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter ios-full-screen"><TimelineDetail /></div>} />
+              <Route path="/about" element={<div className="page-transition ios-push-enter ios-full-screen"><About /></div>} />
               
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

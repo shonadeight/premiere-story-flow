@@ -26,7 +26,9 @@ import {
   ChevronUp,
   Plus,
   Gift,
-  Lock
+  Lock,
+  Info,
+  MessageSquare
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -1247,8 +1249,41 @@ export const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center p-4">
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* Persistent Header with About and Assistant Buttons */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b">
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center">
+              <Gift className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-semibold text-foreground">ShonaCoin</span>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/about')}
+              className="gap-1"
+            >
+              <Info className="h-4 w-4" />
+              <span className="hidden sm:inline">About</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/assistant-modal')}
+              className="gap-1"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Assistant</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content with top padding for fixed header */}
+      <div className="flex-1 flex items-center justify-center mt-16">
         {renderStep()}
       </div>
 
