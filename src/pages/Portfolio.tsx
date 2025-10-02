@@ -44,6 +44,7 @@ import { RulesTermsTab } from '@/components/timeline/tabs/RulesTermsTab';
 import { AdminTab } from '@/components/timeline/tabs/AdminTab';
 import { TransactionsTab } from '@/components/timeline/tabs/TransactionsTab';
 import { ValuationTab } from '@/components/timeline/tabs/ValuationTab';
+import { ContributionWizard } from '@/components/contributions/ContributionWizard';
 
 export const Portfolio = () => {
   const navigate = useNavigate();
@@ -53,6 +54,7 @@ export const Portfolio = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<any>({});
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
   
   // Check if this is the root timeline (profile)
   const isRootTimeline = true; // In real app, this would be determined by route/context
@@ -134,7 +136,7 @@ export const Portfolio = () => {
   ];
 
   const handleInvest = () => {
-    navigate(`/contribute?timelineId=${profileTimeline.id}`);
+    setContributionWizardOpen(true);
   };
 
   const handleFollow = () => {
@@ -296,7 +298,11 @@ export const Portfolio = () => {
               <TabsContent value="subtimelines" className="m-0 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">{isRootTimeline ? 'My Timelines' : 'Subtimelines'} ({allTimelines.length})</h3>
-                  <Button size="sm" className="touch-manipulation">
+                  <Button 
+                    size="sm" 
+                    className="touch-manipulation"
+                    onClick={() => setContributionWizardOpen(true)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Timeline
                   </Button>
@@ -408,6 +414,12 @@ export const Portfolio = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      <ContributionWizard
+        open={contributionWizardOpen}
+        onOpenChange={setContributionWizardOpen}
+        timelineId={profileTimeline.id}
+      />
     </div>
   );
 };

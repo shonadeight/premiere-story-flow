@@ -21,6 +21,7 @@ import { Train } from "./pages/Train";
 import { Settings } from "./pages/Settings";
 import { StatsBreakdown } from "./pages/StatsBreakdown";
 import { About } from "./pages/About";
+import { Create } from "./pages/Create";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -256,6 +257,8 @@ const App = () => {
               } />
               
               {/* Full screen pushed pages without navbar/bottomnav */}
+              <Route path="/create" element={<div className="page-transition ios-push-enter ios-full-screen"><Create /></div>} />
+              <Route path="/create-modal" element={<div className="page-transition ios-push-enter ios-full-screen"><Create /></div>} />
               <Route path="/timeline/:id" element={<div className="page-transition ios-push-enter ios-full-screen"><TimelineDetail /></div>} />
               <Route path="/about" element={<div className="page-transition ios-push-enter ios-full-screen"><About /></div>} />
               

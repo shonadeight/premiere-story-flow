@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCards } from '@/components/dashboard/StatsCards';
 import { TimelineCard } from '@/components/timeline/TimelineCard';
+import { ContributionWizard } from '@/components/contributions/ContributionWizard';
 import { 
   Search, 
   Filter, 
@@ -53,6 +54,8 @@ export const Dashboard = () => {
     interests: []
   });
   const [loading, setLoading] = useState(true);
+  const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
+  const [defaultTimelineId, setDefaultTimelineId] = useState<string>('');
   const navigate = useNavigate();
 
   const filteredTimelines = mockTimelines.filter(timeline => {
@@ -81,6 +84,7 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchUserData();
+    loadDefaultTimeline();
   }, []);
 
   const fetchUserData = async () => {
@@ -117,6 +121,27 @@ export const Dashboard = () => {
     }
   };
 
+  const loadDefaultTimeline = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: timeline } = await supabase
+        .from('timelines')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('timeline_type', 'personal')
+        .limit(1)
+        .maybeSingle();
+
+      if (timeline) {
+        setDefaultTimelineId(timeline.id);
+      }
+    } catch (error) {
+      console.error('Error loading timeline:', error);
+    }
+  };
+
   const timelineTypes = [
     { value: 'all', label: 'All Types' },
     { value: 'project', label: 'Projects' },
@@ -136,7 +161,7 @@ export const Dashboard = () => {
           </p>
         </div>
         <Button 
-          onClick={() => navigate('/create')}
+          onClick={() => setContributionWizardOpen(true)}
           className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 border-0"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -445,6 +470,12 @@ export const Dashboard = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <ContributionWizard
+        open={contributionWizardOpen}
+        onOpenChange={setContributionWizardOpen}
+        timelineId={defaultTimelineId}
+      />
     </div>
   );
 };
