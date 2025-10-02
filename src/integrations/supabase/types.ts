@@ -14,6 +14,461 @@ export type Database = {
   }
   public: {
     Tables: {
+      contribution_contributors: {
+        Row: {
+          contribution_id: string
+          created_at: string
+          id: string
+          permissions: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          contribution_id: string
+          created_at?: string
+          id?: string
+          permissions?: Json | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          permissions?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_contributors_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_files: {
+        Row: {
+          contribution_id: string
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          subtype_name: string | null
+        }
+        Insert: {
+          contribution_id: string
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          subtype_name?: string | null
+        }
+        Update: {
+          contribution_id?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          subtype_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_files_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_followups: {
+        Row: {
+          completed: boolean | null
+          contribution_id: string
+          created_at: string
+          due_date: string | null
+          followup_status: string
+          id: string
+          notes: string | null
+          subtype_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          contribution_id: string
+          created_at?: string
+          due_date?: string | null
+          followup_status: string
+          id?: string
+          notes?: string | null
+          subtype_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          contribution_id?: string
+          created_at?: string
+          due_date?: string | null
+          followup_status?: string
+          id?: string
+          notes?: string | null
+          subtype_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_followups_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_insights: {
+        Row: {
+          configuration: Json | null
+          contribution_id: string
+          created_at: string
+          id: string
+          insight_type: string
+          subtype_name: string | null
+        }
+        Insert: {
+          configuration?: Json | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          insight_type: string
+          subtype_name?: string | null
+        }
+        Update: {
+          configuration?: Json | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          insight_type?: string
+          subtype_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_insights_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_knots: {
+        Row: {
+          configuration: Json | null
+          contribution_id: string
+          created_at: string
+          id: string
+          knot_type: string
+          linked_timeline_id: string | null
+        }
+        Insert: {
+          configuration?: Json | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          knot_type: string
+          linked_timeline_id?: string | null
+        }
+        Update: {
+          configuration?: Json | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          knot_type?: string
+          linked_timeline_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_knots_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contribution_knots_linked_timeline_id_fkey"
+            columns: ["linked_timeline_id"]
+            isOneToOne: false
+            referencedRelation: "timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_ratings: {
+        Row: {
+          comment: string | null
+          contribution_id: string
+          created_at: string
+          id: string
+          rater_user_id: string
+          rating_value: number | null
+        }
+        Insert: {
+          comment?: string | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          rater_user_id: string
+          rating_value?: number | null
+        }
+        Update: {
+          comment?: string | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          rater_user_id?: string
+          rating_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_ratings_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_setup_steps: {
+        Row: {
+          completed: boolean | null
+          configuration: Json | null
+          contribution_id: string
+          created_at: string
+          id: string
+          skipped: boolean | null
+          step_name: string
+          step_number: number
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          configuration?: Json | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          skipped?: boolean | null
+          step_name: string
+          step_number: number
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          configuration?: Json | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          skipped?: boolean | null
+          step_name?: string
+          step_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_setup_steps_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_smart_rules: {
+        Row: {
+          action: Json
+          condition: Json
+          contribution_id: string
+          created_at: string
+          enabled: boolean | null
+          id: string
+          rule_name: string
+          subtype_name: string | null
+        }
+        Insert: {
+          action: Json
+          condition: Json
+          contribution_id: string
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          rule_name: string
+          subtype_name?: string | null
+        }
+        Update: {
+          action?: Json
+          condition?: Json
+          contribution_id?: string
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          rule_name?: string
+          subtype_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_smart_rules_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_subtypes: {
+        Row: {
+          configuration: Json | null
+          contribution_id: string
+          created_at: string
+          direction: string
+          id: string
+          step_completed: boolean | null
+          subtype_name: string
+        }
+        Insert: {
+          configuration?: Json | null
+          contribution_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          step_completed?: boolean | null
+          subtype_name: string
+        }
+        Update: {
+          configuration?: Json | null
+          contribution_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          step_completed?: boolean | null
+          subtype_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_subtypes_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contribution_valuations: {
+        Row: {
+          amount: number | null
+          breakdown: Json | null
+          contribution_id: string
+          created_at: string
+          currency: string | null
+          direction: string
+          formula: string | null
+          id: string
+          subtype_name: string | null
+          updated_at: string
+          valuation_type: string
+        }
+        Insert: {
+          amount?: number | null
+          breakdown?: Json | null
+          contribution_id: string
+          created_at?: string
+          currency?: string | null
+          direction: string
+          formula?: string | null
+          id?: string
+          subtype_name?: string | null
+          updated_at?: string
+          valuation_type: string
+        }
+        Update: {
+          amount?: number | null
+          breakdown?: Json | null
+          contribution_id?: string
+          created_at?: string
+          currency?: string | null
+          direction?: string
+          formula?: string | null
+          id?: string
+          subtype_name?: string | null
+          updated_at?: string
+          valuation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_valuations_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contributions: {
+        Row: {
+          category: Database["public"]["Enums"]["contribution_category"]
+          complete_later: boolean | null
+          created_at: string
+          creator_user_id: string
+          description: string | null
+          id: string
+          is_timeline: boolean | null
+          status: Database["public"]["Enums"]["contribution_status"]
+          timeline_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["contribution_category"]
+          complete_later?: boolean | null
+          created_at?: string
+          creator_user_id: string
+          description?: string | null
+          id?: string
+          is_timeline?: boolean | null
+          status?: Database["public"]["Enums"]["contribution_status"]
+          timeline_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["contribution_category"]
+          complete_later?: boolean | null
+          created_at?: string
+          creator_user_id?: string
+          description?: string | null
+          id?: string
+          is_timeline?: boolean | null
+          status?: Database["public"]["Enums"]["contribution_status"]
+          timeline_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contributions_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "timelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_codes: {
         Row: {
           code: string
@@ -76,6 +531,50 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      timelines: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          parent_timeline_id: string | null
+          timeline_type: Database["public"]["Enums"]["timeline_type"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          parent_timeline_id?: string | null
+          timeline_type?: Database["public"]["Enums"]["timeline_type"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          parent_timeline_id?: string | null
+          timeline_type?: Database["public"]["Enums"]["timeline_type"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timelines_parent_timeline_id_fkey"
+            columns: ["parent_timeline_id"]
+            isOneToOne: false
+            referencedRelation: "timelines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_contribution_types: {
         Row: {
@@ -175,7 +674,65 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      asset_subtype:
+        | "farm_tools"
+        | "land"
+        | "livestock"
+        | "seeds"
+        | "construction_tools"
+        | "houses"
+        | "office_tools"
+        | "office_spaces"
+        | "digital_assets"
+        | "software"
+        | "data_assets"
+        | "vehicles"
+        | "custom"
+      contribution_category:
+        | "financial"
+        | "intellectual"
+        | "marketing"
+        | "assets"
+      contribution_status:
+        | "draft"
+        | "setup_incomplete"
+        | "ready_to_receive"
+        | "ready_to_give"
+        | "negotiating"
+        | "active"
+        | "completed"
+        | "cancelled"
+      financial_subtype:
+        | "cash"
+        | "debt"
+        | "equity"
+        | "revenue_share"
+        | "profit_share"
+        | "pledges"
+      intellectual_subtype:
+        | "coaching"
+        | "tutoring"
+        | "project_development"
+        | "project_planning"
+        | "mentorship"
+        | "consultation"
+        | "research"
+        | "perspectives"
+        | "customer_support"
+        | "capacity_building"
+      marketing_subtype:
+        | "leads_onboarding"
+        | "leads_followup"
+        | "leads_conversion"
+        | "leads_retention"
+      timeline_type:
+        | "personal"
+        | "profile"
+        | "project"
+        | "financial"
+        | "intellectual"
+        | "marketing"
+        | "assets"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -302,6 +859,73 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_subtype: [
+        "farm_tools",
+        "land",
+        "livestock",
+        "seeds",
+        "construction_tools",
+        "houses",
+        "office_tools",
+        "office_spaces",
+        "digital_assets",
+        "software",
+        "data_assets",
+        "vehicles",
+        "custom",
+      ],
+      contribution_category: [
+        "financial",
+        "intellectual",
+        "marketing",
+        "assets",
+      ],
+      contribution_status: [
+        "draft",
+        "setup_incomplete",
+        "ready_to_receive",
+        "ready_to_give",
+        "negotiating",
+        "active",
+        "completed",
+        "cancelled",
+      ],
+      financial_subtype: [
+        "cash",
+        "debt",
+        "equity",
+        "revenue_share",
+        "profit_share",
+        "pledges",
+      ],
+      intellectual_subtype: [
+        "coaching",
+        "tutoring",
+        "project_development",
+        "project_planning",
+        "mentorship",
+        "consultation",
+        "research",
+        "perspectives",
+        "customer_support",
+        "capacity_building",
+      ],
+      marketing_subtype: [
+        "leads_onboarding",
+        "leads_followup",
+        "leads_conversion",
+        "leads_retention",
+      ],
+      timeline_type: [
+        "personal",
+        "profile",
+        "project",
+        "financial",
+        "intellectual",
+        "marketing",
+        "assets",
+      ],
+    },
   },
 } as const
