@@ -9,6 +9,7 @@ import { SubtypeSelector } from './SubtypeSelector';
 import { TemplateSelector } from './TemplateSelector';
 import { useState } from 'react';
 import { ContributionTemplate } from '@/lib/templates/contributionTemplates';
+import { useToast } from '@/hooks/use-toast';
 
 interface Step3SubtypeSelectionProps {
   selectedSubtypes: SelectedSubtype[];
@@ -29,19 +30,100 @@ export const Step3SubtypeSelection = ({
   completeLater,
   setCompleteLater
 }: Step3SubtypeSelectionProps) => {
+  const { toast } = useToast();
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
-  const [templateCategory, setTemplateCategory] = useState<ContributionCategory>('financial');
+  const [templateCategory, setTemplateCategory] = useState<ContributionCategory | null>(null);
 
   const toGiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_give');
   const toReceiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_receive');
 
-  const handleTemplateSelect = (template: ContributionTemplate) => {
-    // Template will be used to pre-fill configurations in later steps
-    console.log('Template selected:', template);
+  const handleSubtypeSelect = (subtype: { name: string; displayName: string; category: ContributionCategory }) => {
+    // Check for duplicates
+    const isDuplicate = selectedSubtypes.some(
+      s => s.name === subtype.name && s.direction === currentTab
+    );
+    
+    if (isDuplicate) {
+      toast({
+        title: "Already Added",
+        description: `${subtype.displayName} is already in your ${currentTab === 'to_give' ? 'giving' : 'receiving'} list`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newSubtype: SelectedSubtype = {
+      ...subtype,
+      direction: currentTab,
+    };
+    addSubtype(newSubtype);
+    
+    toast({
+      title: "Added",
+      description: `${subtype.displayName} added successfully`,
+    });
+    
+    // Keep selector open for multiselect
   };
 
-  const openTemplateSelector = (category: ContributionCategory) => {
+  const handleTemplateSelect = (template: ContributionTemplate) => {
+    // Check if subtype is already added
+    const isDuplicate = selectedSubtypes.some(
+      s => s.name === template.subtype && s.direction === currentTab
+    );
+    
+    if (isDuplicate) {
+      toast({
+        title: "Already Added",
+        description: `${template.name} subtype is already in your list`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Find the subtype display name
+    const allSubtypes = [
+      // Financial
+      { name: 'cash', displayName: 'Cash', category: 'financial' as const },
+      { name: 'debt', displayName: 'Debt', category: 'financial' as const },
+      { name: 'equity', displayName: 'Equity Share', category: 'financial' as const },
+      { name: 'revenue_share', displayName: 'Revenue Share', category: 'financial' as const },
+      // Marketing
+      { name: 'leads_onboarding', displayName: 'Leads Onboarding', category: 'marketing' as const },
+      { name: 'leads_followup', displayName: 'Leads Follow-up', category: 'marketing' as const },
+      { name: 'leads_conversion', displayName: 'Leads Conversion', category: 'marketing' as const },
+      // Intellectual
+      { name: 'coaching', displayName: 'Coaching', category: 'intellectual' as const },
+      { name: 'tutoring', displayName: 'Tutoring', category: 'intellectual' as const },
+      { name: 'mentorship', displayName: 'Mentorship', category: 'intellectual' as const },
+      { name: 'consultation', displayName: 'Consultation', category: 'intellectual' as const },
+      // Assets
+      { name: 'farm_tools', displayName: 'Farm Tools', category: 'assets' as const },
+      { name: 'land', displayName: 'Land', category: 'assets' as const },
+      { name: 'vehicles', displayName: 'Vehicles & Trucks', category: 'assets' as const },
+      { name: 'software', displayName: 'Software & Apps', category: 'assets' as const }
+    ];
+    
+    const subtypeDetails = allSubtypes.find(s => s.name === template.subtype);
+    
+    if (subtypeDetails) {
+      addSubtype({
+        ...subtypeDetails,
+        direction: currentTab
+      });
+      
+      toast({
+        title: "Template Applied",
+        description: `${template.name} added with pre-configured settings`,
+      });
+    }
+    
+    setTemplateSelectorOpen(false);
+  };
+
+  const openTemplateSelector = () => {
+    const category = selectedSubtypes[0]?.category || 'financial';
     setTemplateCategory(category);
     setTemplateSelectorOpen(true);
   };
@@ -49,14 +131,19 @@ export const Step3SubtypeSelection = ({
   return (
     <div className="space-y-6">
       {/* Template Selector Button */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-3">
+        <Button onClick={() => setSelectorOpen(true)} className="w-full">
+          <Plus className="mr-2 h-4 w-4" />
+          Select Types
+        </Button>
+
         <Button 
           variant="outline" 
-          onClick={() => openTemplateSelector('financial')}
-          className="flex-1"
+          onClick={openTemplateSelector}
+          className="w-full"
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          Use Template
+          Templates
         </Button>
       </div>
 
@@ -81,7 +168,7 @@ export const Step3SubtypeSelection = ({
                 {toGiveSubtypes.map((subtype, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
-                      <Badge variant="outline" className="mr-2">{subtype.category}</Badge>
+                      <Badge variant="outline" className="mr-2 capitalize">{subtype.category}</Badge>
                       <span className="font-medium">{subtype.displayName}</span>
                     </div>
                     <Button
@@ -117,7 +204,7 @@ export const Step3SubtypeSelection = ({
                 {toReceiveSubtypes.map((subtype, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
-                      <Badge variant="outline" className="mr-2">{subtype.category}</Badge>
+                      <Badge variant="outline" className="mr-2 capitalize">{subtype.category}</Badge>
                       <span className="font-medium">{subtype.displayName}</span>
                     </div>
                     <Button
@@ -153,18 +240,19 @@ export const Step3SubtypeSelection = ({
       <SubtypeSelector
         open={selectorOpen}
         onOpenChange={setSelectorOpen}
-        onSelect={(subtype) => {
-          addSubtype({ ...subtype, direction: currentTab });
-          setSelectorOpen(false);
-        }}
+        onSelect={handleSubtypeSelect}
+        selectedSubtypes={selectedSubtypes}
+        currentDirection={currentTab}
       />
 
-      <TemplateSelector
-        open={templateSelectorOpen}
-        onOpenChange={setTemplateSelectorOpen}
-        category={templateCategory}
-        onSelectTemplate={handleTemplateSelect}
-      />
+      {templateCategory && (
+        <TemplateSelector
+          open={templateSelectorOpen}
+          onOpenChange={setTemplateSelectorOpen}
+          category={templateCategory}
+          onSelectTemplate={handleTemplateSelect}
+        />
+      )}
     </div>
   );
 };
