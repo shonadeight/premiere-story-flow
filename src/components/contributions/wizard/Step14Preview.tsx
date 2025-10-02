@@ -63,8 +63,11 @@ export const Step14Preview = ({ contributionId, selectedSubtypes, onPublish }: S
         newStatus = 'ready_to_receive';
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       // Update contribution status
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('contributions')
         .update({ 
           status: newStatus,
@@ -72,7 +75,23 @@ export const Step14Preview = ({ contributionId, selectedSubtypes, onPublish }: S
         })
         .eq('id', contributionId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // If contribution is marked as timeline, create a timeline entry
+      if (contributionData?.is_timeline) {
+        const { error: timelineError } = await supabase
+          .from('timelines')
+          .insert({
+            user_id: user.id,
+            title: contributionData.title || 'Untitled Contribution Timeline',
+            description: contributionData.description,
+            timeline_type: contributionData.category as any,
+            is_public: false,
+            parent_timeline_id: contributionData.timeline_id
+          });
+
+        if (timelineError) throw timelineError;
+      }
 
       toast({
         title: "Published Successfully!",
