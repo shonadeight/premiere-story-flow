@@ -44,7 +44,7 @@ export const useContributionWizard = () => {
         setCurrentStep(5);
       }
     } else {
-      setCurrentStep(prev => Math.min(prev + 1, 13));
+      setCurrentStep(prev => Math.min(prev + 1, 14));
     }
   };
 

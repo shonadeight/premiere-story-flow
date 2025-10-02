@@ -19,13 +19,13 @@ import {
   TrendingUp 
 } from 'lucide-react';
 
-interface Step13PreviewProps {
+interface Step14PreviewProps {
   contributionId: string;
   selectedSubtypes: SelectedSubtype[];
   onPublish: () => void;
 }
 
-export const Step13Preview = ({ contributionId, selectedSubtypes, onPublish }: Step13PreviewProps) => {
+export const Step14Preview = ({ contributionId, selectedSubtypes, onPublish }: Step14PreviewProps) => {
   const [loading, setLoading] = useState(false);
   const [contributionData, setContributionData] = useState<any>(null);
   const { toast } = useToast();

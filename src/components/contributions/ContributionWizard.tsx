@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Drawer, DrawerContent } from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useContributionWizard } from '@/hooks/useContributionWizard';
 import { WizardHeader } from './wizard/WizardHeader';
 import { WizardFooter } from './wizard/WizardFooter';
@@ -15,7 +17,8 @@ import { Step9Ratings } from './wizard/Step9Ratings';
 import { Step10Files } from './wizard/Step10Files';
 import { Step11Knots } from './wizard/Step11Knots';
 import { Step12Contributors } from './wizard/Step12Contributors';
-import { Step13Preview } from './wizard/Step13Preview';
+import { Step13AdminUsers } from './wizard/Step13AdminUsers';
+import { Step14Preview } from './wizard/Step14Preview';
 import { SchemaPreview } from './wizard/SchemaPreview';
 
 interface ContributionWizardProps {
@@ -25,6 +28,7 @@ interface ContributionWizardProps {
 }
 
 export const ContributionWizard = ({ open, onOpenChange, timelineId }: ContributionWizardProps) => {
+  const isMobile = useIsMobile();
   const wizard = useContributionWizard();
   const [savedContributionId, setSavedContributionId] = useState<string | undefined>();
 
@@ -113,7 +117,11 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         ) : null;
       case 13:
         return savedContributionId ? (
-          <Step13Preview
+          <Step13AdminUsers contributionId={savedContributionId} />
+        ) : null;
+      case 14:
+        return savedContributionId ? (
+          <Step14Preview
             contributionId={savedContributionId}
             selectedSubtypes={wizard.selectedSubtypes}
             onPublish={handleClose}
@@ -124,32 +132,48 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
     }
   };
 
+  const content = (
+    <>
+      <div className="flex items-center justify-between px-4 sm:px-6 pt-4">
+        <WizardHeader currentStep={wizard.currentStep} />
+        {wizard.currentStep >= 4 && savedContributionId && (
+          <SchemaPreview 
+            selectedSubtypes={wizard.selectedSubtypes}
+            contributionId={savedContributionId}
+          />
+        )}
+      </div>
+      
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+        {renderStep()}
+      </div>
+
+      <WizardFooter
+        currentStep={wizard.currentStep}
+        canProceed={wizard.canProceed(wizard.currentStep)}
+        hasSubtypes={wizard.hasSubtypes}
+        onNext={wizard.goToNextStep}
+        onPrev={wizard.goToPrevStep}
+        onSkip={wizard.skipStep}
+        onComplete={handleClose}
+      />
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={handleClose}>
+        <DrawerContent className="max-h-[95vh] flex flex-col p-0">
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <div className="flex items-center justify-between px-6 pt-4">
-          <WizardHeader currentStep={wizard.currentStep} />
-          {wizard.currentStep >= 4 && savedContributionId && (
-            <SchemaPreview 
-              selectedSubtypes={wizard.selectedSubtypes}
-              contributionId={savedContributionId}
-            />
-          )}
-        </div>
-        
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {renderStep()}
-        </div>
-
-        <WizardFooter
-          currentStep={wizard.currentStep}
-          canProceed={wizard.canProceed(wizard.currentStep)}
-          hasSubtypes={wizard.hasSubtypes}
-          onNext={wizard.goToNextStep}
-          onPrev={wizard.goToPrevStep}
-          onSkip={wizard.skipStep}
-          onComplete={handleClose}
-        />
+        {content}
       </DialogContent>
     </Dialog>
   );
