@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -11,19 +12,52 @@ import {
   Wallet
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ContributionWizard } from '@/components/contributions/ContributionWizard';
+import { supabase } from '@/integrations/supabase/client';
 
 export const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
+  const [defaultTimelineId, setDefaultTimelineId] = useState<string>('');
+
+  useEffect(() => {
+    loadDefaultTimeline();
+  }, []);
+
+  const loadDefaultTimeline = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: timelines } = await supabase
+        .from('timelines')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('timeline_type', 'personal')
+        .limit(1)
+        .maybeSingle();
+
+      if (timelines) {
+        setDefaultTimelineId(timelines.id);
+      }
+    } catch (error) {
+      console.error('Error loading timeline:', error);
+    }
+  };
 
   const handleNavClick = (item: any, e: React.MouseEvent) => {
+    if (item.path === '/create') {
+      e.preventDefault();
+      setContributionWizardOpen(true);
+      return;
+    }
+    
     if (item.modal) {
       e.preventDefault();
       // Open fullscreen modal on mobile
       if (window.innerWidth < 768) {
-        if (item.path === '/create') {
-          navigate('/create-modal');
-        } else if (item.path === '/assistant') {
+        if (item.path === '/assistant') {
           navigate('/assistant-modal');
         }
       } else {
@@ -72,6 +106,12 @@ export const BottomNav = () => {
           );
         })}
       </div>
+
+      <ContributionWizard
+        open={contributionWizardOpen}
+        onOpenChange={setContributionWizardOpen}
+        timelineId={defaultTimelineId}
+      />
     </nav>
   );
 };

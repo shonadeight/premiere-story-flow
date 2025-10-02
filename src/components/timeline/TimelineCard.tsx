@@ -33,6 +33,7 @@ import { ImpactRatingModal } from './ImpactRatingModal';
 import { SubscribeModal } from './SubscribeModal';
 import { VisitsModal } from './VisitsModal';
 import { ConversationModal } from './ConversationModal';
+import { ContributionWizard } from '@/components/contributions/ContributionWizard';
 
 interface TimelineCardProps {
   timeline: Timeline;
@@ -51,6 +52,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showVisitsModal, setShowVisitsModal] = useState(false);
   const [showConversationModal, setShowConversationModal] = useState(false);
+  const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
 
   const handleEditTimeline = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -336,7 +338,7 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
               className="gap-1 h-7 px-2 bg-primary/90 hover:bg-primary text-primary-foreground"
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/contribute?timelineId=${timeline.id}`);
+                setContributionWizardOpen(true);
               }}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -383,6 +385,12 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
         open={showConversationModal}
         onOpenChange={setShowConversationModal}
         timeline={timeline}
+      />
+
+      <ContributionWizard
+        open={contributionWizardOpen}
+        onOpenChange={setContributionWizardOpen}
+        timelineId={timeline.id}
       />
     </Card>
   );
