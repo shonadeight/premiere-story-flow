@@ -52,16 +52,31 @@ export const Step14Preview = ({ contributionId, selectedSubtypes, onPublish }: S
   const handlePublish = async () => {
     setLoading(true);
     try {
+      // Determine status based on selected subtypes
+      const hasToGive = selectedSubtypes.some(s => s.direction === 'to_give');
+      const hasToReceive = selectedSubtypes.some(s => s.direction === 'to_receive');
+      
+      let newStatus: 'ready_to_give' | 'ready_to_receive' | 'active' = 'active';
+      if (hasToGive && !hasToReceive) {
+        newStatus = 'ready_to_give';
+      } else if (hasToReceive && !hasToGive) {
+        newStatus = 'ready_to_receive';
+      }
+
+      // Update contribution status
       const { error } = await supabase
         .from('contributions')
-        .update({ status: 'active' })
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', contributionId);
 
       if (error) throw error;
 
       toast({
         title: "Published Successfully!",
-        description: "Your contribution is now live and visible to others.",
+        description: `Your contribution is now ${newStatus.replace('_', ' ')} and visible to others.`,
       });
       
       onPublish();
