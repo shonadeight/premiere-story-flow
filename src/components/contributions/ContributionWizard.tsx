@@ -7,6 +7,7 @@ import { Step1Subscription } from './wizard/Step1Subscription';
 import { Step2TimelineToggle } from './wizard/Step2TimelineToggle';
 import { Step3SubtypeSelection } from './wizard/Step3SubtypeSelection';
 import { Step4Confirmation } from './wizard/Step4Confirmation';
+import { Step5Insights } from './wizard/Step5Insights';
 import { StepsConfigurable } from './wizard/StepsConfigurable';
 
 interface ContributionWizardProps {
@@ -17,6 +18,7 @@ interface ContributionWizardProps {
 
 export const ContributionWizard = ({ open, onOpenChange, timelineId }: ContributionWizardProps) => {
   const wizard = useContributionWizard();
+  const [savedContributionId, setSavedContributionId] = useState<string | undefined>();
 
   const handleClose = () => {
     wizard.reset();
@@ -55,11 +57,23 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
           <Step4Confirmation
             selectedSubtypes={wizard.selectedSubtypes}
             timelineId={timelineId}
-            onComplete={handleClose}
+            onComplete={(contributionId) => {
+              setSavedContributionId(contributionId);
+              wizard.goToNextStep();
+            }}
+          />
+        );
+      case 5:
+        return (
+          <Step5Insights
+            selectedSubtypes={wizard.selectedSubtypes}
+            currentTab={wizard.currentTab}
+            setCurrentTab={wizard.setCurrentTab}
+            contributionId={savedContributionId}
           />
         );
       default:
-        // Steps 5-13: Configurable steps
+        // Steps 6-13: Configurable steps
         return (
           <StepsConfigurable
             currentStep={wizard.currentStep}

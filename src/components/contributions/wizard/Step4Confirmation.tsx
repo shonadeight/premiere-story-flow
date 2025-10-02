@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Step4ConfirmationProps {
   selectedSubtypes: SelectedSubtype[];
   timelineId: string;
-  onComplete: () => void;
+  onComplete: (contributionId: string) => void;
 }
 
 export const Step4Confirmation = ({
@@ -55,7 +55,7 @@ export const Step4Confirmation = ({
         description: 'Contribution saved successfully!'
       });
 
-      onComplete();
+      onComplete(contribution.id);
     } catch (error: any) {
       toast({
         title: 'Error',
