@@ -9,6 +9,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SelectedSubtype } from '@/types/contribution';
 import { DollarSign, Percent, Calculator } from 'lucide-react';
+import { valuationSchema } from '@/lib/validation/contributionSchemas';
+import { useToast } from '@/hooks/use-toast';
 
 interface ValuationAdderProps {
   open: boolean;
@@ -20,6 +22,7 @@ interface ValuationAdderProps {
 
 export const ValuationAdder = ({ open, onOpenChange, onSave, selectedSubtypes, direction }: ValuationAdderProps) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [valuationType, setValuationType] = useState<'fixed' | 'formula' | 'percentage'>('fixed');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -27,16 +30,28 @@ export const ValuationAdder = ({ open, onOpenChange, onSave, selectedSubtypes, d
   const [percentage, setPercentage] = useState('');
 
   const handleSave = () => {
-    const valuation = {
-      type: valuationType,
-      amount: valuationType === 'fixed' ? parseFloat(amount) : null,
-      currency: valuationType === 'fixed' ? currency : null,
-      formula: valuationType === 'formula' ? formula : null,
-      percentage: valuationType === 'percentage' ? parseFloat(percentage) : null,
-      direction
-    };
-    onSave(valuation);
-    onOpenChange(false);
+    try {
+      const valuation = {
+        type: valuationType,
+        amount: valuationType === 'fixed' ? parseFloat(amount) : undefined,
+        currency: valuationType === 'fixed' ? currency : undefined,
+        formula: valuationType === 'formula' ? formula : undefined,
+        percentage: valuationType === 'percentage' ? parseFloat(percentage) : undefined,
+        direction
+      };
+
+      // Validate with zod
+      const validated = valuationSchema.parse(valuation);
+      
+      onSave(validated);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Validation Error",
+        description: error.message || "Please check your inputs",
+        variant: "destructive"
+      });
+    }
   };
 
   const content = (
@@ -104,9 +119,11 @@ export const ValuationAdder = ({ open, onOpenChange, onSave, selectedSubtypes, d
           <Textarea
             placeholder="e.g., $10 per lead, $5 per click"
             value={formula}
-            onChange={(e) => setFormula(e.target.value)}
+            onChange={(e) => setFormula(e.target.value.slice(0, 500))}
             rows={3}
+            maxLength={500}
           />
+          <p className="text-xs text-muted-foreground">{formula.length}/500</p>
         </div>
       )}
 

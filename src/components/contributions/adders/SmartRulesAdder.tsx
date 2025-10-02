@@ -8,6 +8,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Switch } from '@/components/ui/switch';
 import { Zap } from 'lucide-react';
+import { smartRuleSchema } from '@/lib/validation/contributionSchemas';
+import { useToast } from '@/hooks/use-toast';
 
 interface SmartRulesAdderProps {
   open: boolean;
@@ -17,24 +19,35 @@ interface SmartRulesAdderProps {
 
 export const SmartRulesAdder = ({ open, onOpenChange, onSave }: SmartRulesAdderProps) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [ruleName, setRuleName] = useState('');
   const [condition, setCondition] = useState('');
   const [action, setAction] = useState('');
   const [enabled, setEnabled] = useState(true);
 
   const handleSave = () => {
-    const rule = {
-      rule_name: ruleName,
-      condition: { description: condition },
-      action: { description: action },
-      enabled
-    };
-    onSave(rule);
-    setRuleName('');
-    setCondition('');
-    setAction('');
-    setEnabled(true);
-    onOpenChange(false);
+    try {
+      const rule = {
+        rule_name: ruleName.trim(),
+        condition: { description: condition.trim() },
+        action: { description: action.trim() },
+        enabled
+      };
+      
+      const validated = smartRuleSchema.parse(rule);
+      onSave(validated);
+      setRuleName('');
+      setCondition('');
+      setAction('');
+      setEnabled(true);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Validation Error",
+        description: error.message || "Please check your inputs",
+        variant: "destructive"
+      });
+    }
   };
 
   const content = (

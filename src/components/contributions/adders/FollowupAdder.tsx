@@ -10,6 +10,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { followupSchema } from '@/lib/validation/contributionSchemas';
+import { useToast } from '@/hooks/use-toast';
 
 interface FollowupAdderProps {
   open: boolean;
@@ -20,22 +22,33 @@ interface FollowupAdderProps {
 
 export const FollowupAdder = ({ open, onOpenChange, onSave, direction }: FollowupAdderProps) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [status, setStatus] = useState('');
   const [notes, setNotes] = useState('');
   const [dueDate, setDueDate] = useState<Date>();
 
   const handleSave = () => {
-    const followup = {
-      followup_status: status,
-      notes,
-      due_date: dueDate?.toISOString(),
-      direction
-    };
-    onSave(followup);
-    setStatus('');
-    setNotes('');
-    setDueDate(undefined);
-    onOpenChange(false);
+    try {
+      const followup = {
+        followup_status: status.trim(),
+        notes: notes.trim(),
+        due_date: dueDate?.toISOString(),
+        direction
+      };
+      
+      const validated = followupSchema.parse(followup);
+      onSave(validated);
+      setStatus('');
+      setNotes('');
+      setDueDate(undefined);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Validation Error",
+        description: error.message || "Please check your inputs",
+        variant: "destructive"
+      });
+    }
   };
 
   const content = (
@@ -45,8 +58,10 @@ export const FollowupAdder = ({ open, onOpenChange, onSave, direction }: Followu
         <Input
           placeholder="e.g., Initial Contact, Follow-up Required"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => setStatus(e.target.value.slice(0, 200))}
+          maxLength={200}
         />
+        <p className="text-xs text-muted-foreground">{status.length}/200</p>
       </div>
 
       <div className="space-y-2">
@@ -69,9 +84,11 @@ export const FollowupAdder = ({ open, onOpenChange, onSave, direction }: Followu
         <Textarea
           placeholder="Add follow-up notes or instructions"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={(e) => setNotes(e.target.value.slice(0, 1000))}
           rows={3}
+          maxLength={1000}
         />
+        <p className="text-xs text-muted-foreground">{notes.length}/1000</p>
       </div>
 
       <Button onClick={handleSave} className="w-full">Add Follow-up</Button>

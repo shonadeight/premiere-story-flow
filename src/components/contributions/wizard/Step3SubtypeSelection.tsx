@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { SelectedSubtype, ContributionDirection } from '@/types/contribution';
-import { X, Plus } from 'lucide-react';
+import { SelectedSubtype, ContributionDirection, ContributionCategory } from '@/types/contribution';
+import { X, Plus, Sparkles } from 'lucide-react';
 import { SubtypeSelector } from './SubtypeSelector';
+import { TemplateSelector } from './TemplateSelector';
 import { useState } from 'react';
+import { ContributionTemplate } from '@/lib/templates/contributionTemplates';
 
 interface Step3SubtypeSelectionProps {
   selectedSubtypes: SelectedSubtype[];
@@ -28,12 +30,36 @@ export const Step3SubtypeSelection = ({
   setCompleteLater
 }: Step3SubtypeSelectionProps) => {
   const [selectorOpen, setSelectorOpen] = useState(false);
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<ContributionCategory>('financial');
 
   const toGiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_give');
   const toReceiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_receive');
 
+  const handleTemplateSelect = (template: ContributionTemplate) => {
+    // Template will be used to pre-fill configurations in later steps
+    console.log('Template selected:', template);
+  };
+
+  const openTemplateSelector = (category: ContributionCategory) => {
+    setTemplateCategory(category);
+    setTemplateSelectorOpen(true);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Template Selector Button */}
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          onClick={() => openTemplateSelector('financial')}
+          className="flex-1"
+        >
+          <Sparkles className="mr-2 h-4 w-4" />
+          Use Template
+        </Button>
+      </div>
+
       <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as ContributionDirection)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="to_give">To Give</TabsTrigger>
@@ -131,6 +157,13 @@ export const Step3SubtypeSelection = ({
           addSubtype({ ...subtype, direction: currentTab });
           setSelectorOpen(false);
         }}
+      />
+
+      <TemplateSelector
+        open={templateSelectorOpen}
+        onOpenChange={setTemplateSelectorOpen}
+        category={templateCategory}
+        onSelectTemplate={handleTemplateSelect}
       />
     </div>
   );
