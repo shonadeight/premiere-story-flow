@@ -69,6 +69,9 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
           <Step4Confirmation
             selectedSubtypes={wizard.selectedSubtypes}
             timelineId={timelineId}
+            isTimeline={wizard.isTimeline}
+            timelineTitle={wizard.timelineTitle}
+            timelineDescription={wizard.timelineDescription}
             onComplete={(contributionId) => {
               setSavedContributionId(contributionId);
               wizard.goToNextStep();

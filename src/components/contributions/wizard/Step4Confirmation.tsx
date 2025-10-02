@@ -8,12 +8,18 @@ import { useToast } from '@/hooks/use-toast';
 interface Step4ConfirmationProps {
   selectedSubtypes: SelectedSubtype[];
   timelineId: string;
+  isTimeline: boolean;
+  timelineTitle?: string;
+  timelineDescription?: string;
   onComplete: (contributionId: string) => void;
 }
 
 export const Step4Confirmation = ({
   selectedSubtypes,
   timelineId,
+  isTimeline,
+  timelineTitle,
+  timelineDescription,
   onComplete
 }: Step4ConfirmationProps) => {
   const { toast } = useToast();
@@ -30,7 +36,10 @@ export const Step4Confirmation = ({
           timeline_id: timelineId,
           creator_user_id: user.id,
           category: selectedSubtypes[0]?.category || 'financial',
-          status: 'setup_incomplete'
+          status: 'setup_incomplete',
+          is_timeline: isTimeline,
+          title: timelineTitle,
+          description: timelineDescription
         })
         .select()
         .single();
@@ -52,7 +61,7 @@ export const Step4Confirmation = ({
 
       toast({
         title: 'Success',
-        description: 'Contribution saved successfully!'
+        description: 'Contribution saved successfully! Continue with optional configurations or skip to publish.'
       });
 
       onComplete(contribution.id);
