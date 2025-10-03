@@ -1,3 +1,4 @@
+import { useImperativeHandle, forwardRef } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { SelectedSubtype } from '@/types/contribution';
@@ -14,14 +15,18 @@ interface Step4ConfirmationProps {
   onComplete: (contributionId: string) => void;
 }
 
-export const Step4Confirmation = ({
+export interface Step4ConfirmationHandle {
+  save: () => Promise<void>;
+}
+
+export const Step4Confirmation = forwardRef<Step4ConfirmationHandle, Step4ConfirmationProps>(({
   selectedSubtypes,
   timelineId,
   isTimeline,
   timelineTitle,
   timelineDescription,
   onComplete
-}: Step4ConfirmationProps) => {
+}, ref) => {
   const { toast } = useToast();
 
   const handleSave = async () => {
@@ -61,7 +66,7 @@ export const Step4Confirmation = ({
 
       toast({
         title: 'Success',
-        description: 'Contribution saved successfully! Continue with optional configurations or skip to publish.'
+        description: 'Contribution saved! Continue with configurations or skip to publish.'
       });
 
       onComplete(contribution.id);
@@ -71,8 +76,14 @@ export const Step4Confirmation = ({
         description: error.message,
         variant: 'destructive'
       });
+      throw error;
     }
   };
+
+  // Expose save method to parent via ref
+  useImperativeHandle(ref, () => ({
+    save: handleSave
+  }));
 
   return (
     <div className="space-y-6">
@@ -118,4 +129,6 @@ export const Step4Confirmation = ({
       </div>
     </div>
   );
-};
+});
+
+Step4Confirmation.displayName = 'Step4Confirmation';

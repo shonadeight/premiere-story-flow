@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -8,7 +8,7 @@ import { WizardFooter } from './wizard/WizardFooter';
 import { Step1Subscription } from './wizard/Step1Subscription';
 import { Step2TimelineToggle } from './wizard/Step2TimelineToggle';
 import { Step3SubtypeSelection } from './wizard/Step3SubtypeSelection';
-import { Step4Confirmation } from './wizard/Step4Confirmation';
+import { Step4Confirmation, Step4ConfirmationHandle } from './wizard/Step4Confirmation';
 import { Step5Insights } from './wizard/Step5Insights';
 import { Step6Valuation } from './wizard/Step6Valuation';
 import { Step7Followup } from './wizard/Step7Followup';
@@ -31,6 +31,7 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
   const isMobile = useIsMobile();
   const wizard = useContributionWizard();
   const [savedContributionId, setSavedContributionId] = useState<string | undefined>();
+  const step4Ref = useRef<Step4ConfirmationHandle>(null);
 
   const handleClose = () => {
     wizard.reset();
@@ -67,6 +68,7 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
       case 4:
         return (
           <Step4Confirmation
+            ref={step4Ref}
             selectedSubtypes={wizard.selectedSubtypes}
             timelineId={timelineId}
             isTimeline={wizard.isTimeline}
@@ -74,7 +76,6 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
             timelineDescription={wizard.timelineDescription}
             onComplete={(contributionId) => {
               setSavedContributionId(contributionId);
-              wizard.goToNextStep();
             }}
           />
         );
@@ -159,7 +160,19 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         currentStep={wizard.currentStep}
         canProceed={wizard.canProceed(wizard.currentStep)}
         hasSubtypes={wizard.hasSubtypes}
-        onNext={wizard.goToNextStep}
+        onNext={async () => {
+          // Step 4 needs to save before proceeding
+          if (wizard.currentStep === 4 && step4Ref.current) {
+            try {
+              await step4Ref.current.save();
+              wizard.goToNextStep();
+            } catch (error) {
+              // Error already handled in Step4Confirmation
+            }
+          } else {
+            wizard.goToNextStep();
+          }
+        }}
         onPrev={wizard.goToPrevStep}
         onSkip={wizard.skipStep}
         onComplete={handleClose}

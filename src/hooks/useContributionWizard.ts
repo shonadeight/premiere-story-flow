@@ -35,17 +35,7 @@ export const useContributionWizard = () => {
   };
 
   const goToNextStep = () => {
-    if (currentStep === 3 && !hasSubtypes) {
-      // Skip to step 4 if no subtypes selected
-      setCurrentStep(4);
-    } else if (currentStep === 4) {
-      // Move to step 5 only if subtypes are selected
-      if (hasSubtypes) {
-        setCurrentStep(5);
-      }
-    } else {
-      setCurrentStep(prev => Math.min(prev + 1, 14));
-    }
+    setCurrentStep(prev => Math.min(prev + 1, 14));
   };
 
   const goToPrevStep = () => {

@@ -21,7 +21,7 @@ export const WizardFooter = ({
   onComplete
 }: WizardFooterProps) => {
   const isFirstStep = currentStep === 1;
-  const isLastStep = currentStep === 13;
+  const isLastStep = currentStep === 14; // Step 14 is Preview & Publish
   const isConfigurableStep = currentStep >= 5 && currentStep <= 13;
 
   return (
