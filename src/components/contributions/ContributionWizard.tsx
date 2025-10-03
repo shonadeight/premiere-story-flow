@@ -79,13 +79,17 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
           />
         );
       case 5:
-        return (
+        return savedContributionId ? (
           <Step5Insights
             selectedSubtypes={wizard.selectedSubtypes}
             currentTab={wizard.currentTab}
             setCurrentTab={wizard.setCurrentTab}
             contributionId={savedContributionId}
           />
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading contribution data...</p>
+          </div>
         );
       case 6:
         return savedContributionId ? (
