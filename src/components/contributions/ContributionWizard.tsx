@@ -165,6 +165,8 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
           if (wizard.currentStep === 4 && step4Ref.current) {
             try {
               await step4Ref.current.save();
+              // Wait for savedContributionId to be set before proceeding
+              await new Promise(resolve => setTimeout(resolve, 100));
               wizard.goToNextStep();
             } catch (error) {
               // Error already handled in Step4Confirmation
