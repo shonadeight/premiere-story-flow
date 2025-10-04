@@ -22,9 +22,10 @@ import {
   Mail,
   Briefcase
 } from 'lucide-react';
-import { mockTimelines } from '@/data/mockData';
+import { Timeline } from '@/types/timeline';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
   name?: string;
@@ -42,6 +43,7 @@ interface UserData {
 }
 
 export const Dashboard = () => {
+  const { toast } = useToast();
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
@@ -53,15 +55,15 @@ export const Dashboard = () => {
     outcomeSharing: [],
     interests: []
   });
+  const [timelines, setTimelines] = useState<Timeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
   const [defaultTimelineId, setDefaultTimelineId] = useState<string>('');
   const navigate = useNavigate();
 
-  const filteredTimelines = mockTimelines.filter(timeline => {
+  const filteredTimelines = timelines.filter(timeline => {
     const matchesSearch = timeline.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         timeline.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         timeline.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (timeline.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesType = selectedType === 'all' || timeline.type === selectedType;
     
@@ -71,21 +73,82 @@ export const Dashboard = () => {
   const sortedTimelines = [...filteredTimelines].sort((a, b) => {
     switch (sortBy) {
       case 'value':
-        return b.value - a.value;
+        return (b.value || 0) - (a.value || 0);
       case 'change':
-        return b.changePercent - a.changePercent;
+        return (b.changePercent || 0) - (a.changePercent || 0);
       case 'rating':
-        return b.rating - a.rating;
+        return (b.rating || 0) - (a.rating || 0);
       case 'updated':
       default:
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
     }
   });
 
   useEffect(() => {
     fetchUserData();
     loadDefaultTimeline();
+    loadTimelines();
   }, []);
+
+  const loadTimelines = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: timelinesData, error } = await supabase
+        .from('timelines')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform to Timeline type
+      const transformed: Timeline[] = (timelinesData || []).map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        type: t.timeline_type as any,
+        ownerId: t.user_id,
+        visibility: t.is_public ? 'public' : 'private',
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+        tags: [],
+        purpose: '',
+        scope: '',
+        allowedContributionTypes: [],
+        valuationModel: 'market',
+        baseUnit: 'USD',
+        trackingInputs: [],
+        verificationMethod: 'owner',
+        rewardTypes: [],
+        distributionModel: 'pro-rata',
+        payoutTriggers: [],
+        allowSubtimelines: true,
+        subtimelineCreation: 'manual',
+        subtimelineInheritance: true,
+        governance: {
+          approvalRequired: false,
+          approvers: [],
+          kycRequired: false
+        },
+        value: 0,
+        currency: 'USD',
+        change: 0,
+        changePercent: 0,
+        invested: false,
+        subtimelines: [],
+        rating: 0,
+        views: 0,
+        investedMembers: 0,
+        matchedTimelines: 0
+      }));
+
+      setTimelines(transformed);
+    } catch (error) {
+      console.error('Error loading timelines:', error);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -406,7 +469,7 @@ export const Dashboard = () => {
         <TabsContent value="all" className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {sortedTimelines.length} of {mockTimelines.length} timelines
+              Showing {sortedTimelines.length} of {timelines.length} timelines
             </p>
           </div>
           

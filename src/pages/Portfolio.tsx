@@ -30,7 +30,6 @@ import {
   Settings,
   ThumbsUp
 } from 'lucide-react';
-import { mockUser, mockTimelines } from '@/data/mockData';
 import { Timeline } from '@/types/timeline';
 import { TimelineCard } from '@/components/timeline/TimelineCard';
 import { MatchedTimelines } from '@/components/dashboard/MatchedTimelines';
@@ -45,86 +44,162 @@ import { AdminTab } from '@/components/timeline/tabs/AdminTab';
 import { TransactionsTab } from '@/components/timeline/tabs/TransactionsTab';
 import { ValuationTab } from '@/components/timeline/tabs/ValuationTab';
 import { ContributionWizard } from '@/components/contributions/ContributionWizard';
+import { useToast } from '@/hooks/use-toast';
 
 export const Portfolio = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('subtimelines');
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<any>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
-  const [userTimelineId, setUserTimelineId] = useState<string>('');
+  const [rootTimeline, setRootTimeline] = useState<any>(null);
+  const [timelines, setTimelines] = useState<Timeline[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Check if this is the root timeline (profile)
-  const isRootTimeline = true; // In real app, this would be determined by route/context
-  
-  const allTimelines = mockTimelines;
-  
-  // Use user profile data if available, otherwise fallback to mock
-  const profileData = userProfile || {
-    name: "Professional Timeline",
-    type: 'profile',
-    description: "Your professional timeline and portfolio overview",
-    status: 'active'
-  };
-  
-  const profileTimeline = {
-    ...allTimelines[0],
-    id: userTimelineId || allTimelines[0].id, // Use real timeline ID if available
-    title: `${profileData.name} - Profile Timeline`,
-    type: 'profile',
-    description: profileData.description || `Professional ${profileData.professional_role || 'timeline'}`,
-    status: profileData.status || 'active'
-  };
-  
-  // Load user profile data
   useEffect(() => {
-    const loadUserProfile = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (user) {
-          // Load profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          if (profile) {
-            setUserProfile(profile);
-          }
-
-          // Load user's personal timeline
-          const { data: timeline } = await supabase
-            .from('timelines')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('timeline_type', 'personal')
-            .limit(1)
-            .maybeSingle();
-
-          if (timeline) {
-            setUserTimelineId(timeline.id);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      }
-    };
-
-    loadUserProfile();
+    loadPortfolioData();
   }, []);
 
-  // Calculate portfolio summary stats
-  const totalWorth = 208000; // Financial + Network + Intellectual capital
-  const totalGained = 45200;
-  const accomplishedCount = 24;
-  const activeCount = 12;
-  const membersCount = 156;
-  const roiThisYear = 18.9;
+  const loadPortfolioData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please log in to view your portfolio',
+          variant: 'destructive'
+        });
+        navigate('/auth');
+        return;
+      }
+
+      // Load profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (profile) {
+        setUserProfile(profile);
+      }
+
+      // Load root timeline (personal/profile timeline)
+      const { data: rootTimelineData, error: rootError } = await supabase
+        .from('timelines')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('timeline_type', 'personal')
+        .limit(1)
+        .maybeSingle();
+
+      if (rootError) throw rootError;
+
+      // If no root timeline exists, create one
+      if (!rootTimelineData) {
+        const { data: newTimeline, error: createError } = await supabase
+          .from('timelines')
+          .insert({
+            user_id: user.id,
+            timeline_type: 'personal',
+            title: `${profile?.name || 'My'} Profile Timeline`,
+            description: profile?.professional_role 
+              ? `Professional timeline for ${profile.professional_role}`
+              : 'My professional portfolio and contributions',
+            is_public: false
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setRootTimeline(newTimeline);
+      } else {
+        setRootTimeline(rootTimelineData);
+      }
+
+      // Load all timelines for the user
+      const { data: timelinesData, error: timelinesError } = await supabase
+        .from('timelines')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (timelinesError) throw timelinesError;
+      
+      // Transform to match Timeline type format
+      const transformedTimelines: Timeline[] = (timelinesData || []).map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        type: t.timeline_type as any,
+        ownerId: t.user_id,
+        visibility: t.is_public ? 'public' : 'private',
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+        tags: [],
+        purpose: '',
+        scope: '',
+        allowedContributionTypes: [],
+        valuationModel: 'market',
+        baseUnit: 'USD',
+        trackingInputs: [],
+        verificationMethod: 'owner',
+        rewardTypes: [],
+        distributionModel: 'pro-rata',
+        payoutTriggers: [],
+        allowSubtimelines: true,
+        subtimelineCreation: 'manual',
+        subtimelineInheritance: true,
+        governance: {
+          approvalRequired: false,
+          approvers: [],
+          kycRequired: false
+        },
+        value: 0,
+        currency: 'USD',
+        change: 0,
+        changePercent: 0,
+        invested: false,
+        subtimelines: [],
+        rating: 0,
+        views: 0,
+        investedMembers: 0,
+        matchedTimelines: 0
+      }));
+
+      setTimelines(transformedTimelines);
+    } catch (error: any) {
+      console.error('Error loading portfolio:', error);
+      toast({
+        title: 'Error loading portfolio',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+
+  const tabs = [
+    { id: 'subtimelines', label: 'My Timelines', icon: GitBranch, count: timelines.length },
+    { id: 'matched', label: 'Matched Opportunities', icon: Target, count: 0 },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, count: null },
+    { id: 'invested-users', label: 'Invested Users', icon: Users, count: 0 },
+    { id: 'followups', label: 'Followups', icon: MessageSquare, count: 0 },
+    { id: 'trading', label: 'Trading', icon: TrendingUp, count: null },
+    { id: 'files', label: 'Files', icon: FileText, count: 0 },
+    { id: 'ratings', label: 'Ratings', icon: Star, count: null },
+    { id: 'rules', label: 'Rules & Terms', icon: Shield, count: 0 },
+    { id: 'admin', label: 'Admin', icon: UserCheck, count: 0 },
+    { id: 'capital-flow', label: 'Capital Flow', icon: DollarSign, count: null },
+    { id: 'transactions', label: 'Transactions', icon: History, count: 0 },
+    { id: 'valuation', label: 'Valuation', icon: Calculator, count: null },
+  ];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -134,22 +209,6 @@ export const Portfolio = () => {
       maximumFractionDigits: 0,
     }).format(value);
   };
-
-  const tabs = [
-    { id: 'subtimelines', label: isRootTimeline ? 'My Timelines' : 'Subtimelines', icon: GitBranch, count: allTimelines.length },
-    { id: 'matched', label: 'Matched Opportunities', icon: Target, count: 8 },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, count: null },
-    { id: 'invested-users', label: 'Invested Users', icon: Users, count: 156 },
-    { id: 'followups', label: 'Followups', icon: MessageSquare, count: 12 },
-    { id: 'trading', label: 'Trading', icon: TrendingUp, count: null },
-    { id: 'files', label: 'Files', icon: FileText, count: 24 },
-    { id: 'ratings', label: 'Ratings', icon: Star, count: null },
-    { id: 'rules', label: 'Rules & Terms', icon: Shield, count: 3 },
-    { id: 'admin', label: 'Admin', icon: UserCheck, count: 8 },
-    { id: 'capital-flow', label: 'Capital Flow', icon: DollarSign, count: null },
-    { id: 'transactions', label: 'Transactions', icon: History, count: 45 },
-    { id: 'valuation', label: 'Valuation', icon: Calculator, count: null },
-  ];
 
   const handleInvest = () => {
     setContributionWizardOpen(true);
@@ -163,17 +222,16 @@ export const Portfolio = () => {
     console.log('Sharing timeline');
   };
 
-
   return (
     <div className="container mx-auto px-1 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6">
       {/* Header with Action Buttons */}
       <div className="flex items-center gap-3 sm:gap-4">
         <div className="flex-1 min-w-0">
           <h1 className="text-lg sm:text-2xl font-bold truncate">
-            {isRootTimeline ? profileTimeline.title : 'Timeline Portfolio'}
+            {rootTimeline.title}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {profileTimeline.description}
+            {rootTimeline.description}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -204,17 +262,17 @@ export const Portfolio = () => {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
-                <CardTitle className="text-xl sm:text-2xl font-bold">{profileTimeline.title}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl font-bold">{rootTimeline.title}</CardTitle>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="text-xs sm:text-sm">
-                    {profileTimeline.type} Timeline
+                    {rootTimeline.timeline_type} Timeline
                   </Badge>
-                  <Badge variant={profileTimeline.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                    {profileTimeline.status}
+                  <Badge variant="default" className="text-xs">
+                    Active
                   </Badge>
                 </div>
               </div>
-              <p className="text-muted-foreground text-sm sm:text-base line-clamp-3">{profileTimeline.description}</p>
+              <p className="text-muted-foreground text-sm sm:text-base line-clamp-3">{rootTimeline.description}</p>
             </div>
             <div className="flex flex-col gap-2 sm:min-w-[200px]">
               <Button 
@@ -227,7 +285,7 @@ export const Portfolio = () => {
               </Button>
               <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                 <span>{membersCount} investors</span>
-                <span>{profileTimeline.views} views</span>
+                <span>{rootTimeline.views || 0} views</span>
               </div>
             </div>
           </div>
@@ -236,22 +294,22 @@ export const Portfolio = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
               <div className="text-lg sm:text-2xl font-bold text-primary">
-                {formatCurrency(totalWorth)}
+                {formatCurrency(0)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">Total Worth</div>
             </div>
             <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
               <div className="text-lg sm:text-2xl font-bold text-green-600">
-                +{formatCurrency(totalGained)}
+                +{formatCurrency(0)}
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">Total Gained</div>
             </div>
             <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
-              <div className="text-lg sm:text-2xl font-bold text-blue-600">4.8/5</div>
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">0/5</div>
               <div className="text-xs sm:text-sm text-muted-foreground">Rating</div>
             </div>
             <div className="text-center p-3 sm:p-4 rounded-lg bg-background/50">
-              <div className="text-lg sm:text-2xl font-bold text-orange-600">{allTimelines.length}</div>
+              <div className="text-lg sm:text-2xl font-bold text-orange-600">{timelines.length}</div>
               <div className="text-xs sm:text-sm text-muted-foreground">Timelines</div>
             </div>
           </div>
@@ -313,7 +371,7 @@ export const Portfolio = () => {
             <div className="p-3 sm:p-6">
               <TabsContent value="subtimelines" className="m-0 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{isRootTimeline ? 'My Timelines' : 'Subtimelines'} ({allTimelines.length})</h3>
+                  <h3 className="text-lg font-semibold">My Timelines ({timelines.length})</h3>
                   <Button 
                     size="sm" 
                     className="touch-manipulation"
@@ -324,7 +382,7 @@ export const Portfolio = () => {
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mx-1 sm:mx-0">
-                  {allTimelines.map((timeline) => (
+                  {sortedTimelines.map((timeline) => (
                     <TimelineCard 
                       key={timeline.id} 
                       timeline={timeline}
@@ -431,11 +489,11 @@ export const Portfolio = () => {
         </CardContent>
       </Card>
 
-      {userTimelineId && (
+      {rootTimeline && (
         <ContributionWizard
           open={contributionWizardOpen}
           onOpenChange={setContributionWizardOpen}
-          timelineId={userTimelineId}
+          timelineId={rootTimeline.id}
         />
       )}
     </div>
