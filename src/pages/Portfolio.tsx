@@ -55,6 +55,7 @@ export const Portfolio = () => {
   const [filters, setFilters] = useState<any>({});
   const [userProfile, setUserProfile] = useState<any>(null);
   const [contributionWizardOpen, setContributionWizardOpen] = useState(false);
+  const [userTimelineId, setUserTimelineId] = useState<string>('');
   
   // Check if this is the root timeline (profile)
   const isRootTimeline = true; // In real app, this would be determined by route/context
@@ -71,6 +72,7 @@ export const Portfolio = () => {
   
   const profileTimeline = {
     ...allTimelines[0],
+    id: userTimelineId || allTimelines[0].id, // Use real timeline ID if available
     title: `${profileData.name} - Profile Timeline`,
     type: 'profile',
     description: profileData.description || `Professional ${profileData.professional_role || 'timeline'}`,
@@ -84,14 +86,28 @@ export const Portfolio = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
+          // Load profile
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
           
           if (profile) {
             setUserProfile(profile);
+          }
+
+          // Load user's personal timeline
+          const { data: timeline } = await supabase
+            .from('timelines')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('timeline_type', 'personal')
+            .limit(1)
+            .maybeSingle();
+
+          if (timeline) {
+            setUserTimelineId(timeline.id);
           }
         }
       } catch (error) {
@@ -415,11 +431,13 @@ export const Portfolio = () => {
         </CardContent>
       </Card>
 
-      <ContributionWizard
-        open={contributionWizardOpen}
-        onOpenChange={setContributionWizardOpen}
-        timelineId={profileTimeline.id}
-      />
+      {userTimelineId && (
+        <ContributionWizard
+          open={contributionWizardOpen}
+          onOpenChange={setContributionWizardOpen}
+          timelineId={userTimelineId}
+        />
+      )}
     </div>
   );
 };
