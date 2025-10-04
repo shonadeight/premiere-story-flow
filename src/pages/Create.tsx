@@ -48,11 +48,13 @@ export const Create = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <ContributionWizard
-        open={wizardOpen}
-        onOpenChange={handleClose}
-        timelineId={timelineId}
-      />
+      {timelineId && (
+        <ContributionWizard
+          open={wizardOpen}
+          onOpenChange={handleClose}
+          timelineId={timelineId}
+        />
+      )}
     </div>
   );
 };

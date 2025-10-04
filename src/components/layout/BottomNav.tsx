@@ -107,11 +107,13 @@ export const BottomNav = () => {
         })}
       </div>
 
-      <ContributionWizard
-        open={contributionWizardOpen}
-        onOpenChange={setContributionWizardOpen}
-        timelineId={defaultTimelineId}
-      />
+      {defaultTimelineId && (
+        <ContributionWizard
+          open={contributionWizardOpen}
+          onOpenChange={setContributionWizardOpen}
+          timelineId={defaultTimelineId}
+        />
+      )}
     </nav>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { ContributionsList } from '@/components/contributions/ContributionsList';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ContributionWizard } from '@/components/contributions/ContributionWizard';
 import { ContributionCategory, ContributionStatus, ContributionDirection } from '@/types/contribution';
+import { supabase } from '@/integrations/supabase/client';
 
 const Contributions = () => {
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -15,9 +16,32 @@ const Contributions = () => {
   const [selectedDirection, setSelectedDirection] = useState<ContributionDirection | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'valuation' | 'status'>('date');
-  
-  // Mock timeline ID - in real app, get from user's portfolio
-  const timelineId = '00000000-0000-0000-0000-000000000000';
+  const [timelineId, setTimelineId] = useState<string>('');
+
+  useEffect(() => {
+    loadDefaultTimeline();
+  }, []);
+
+  const loadDefaultTimeline = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: timelines } = await supabase
+        .from('timelines')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('timeline_type', 'personal')
+        .limit(1)
+        .maybeSingle();
+
+      if (timelines) {
+        setTimelineId(timelines.id);
+      }
+    } catch (error) {
+      console.error('Error loading timeline:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,11 +88,13 @@ const Contributions = () => {
 
       <BottomNav />
       
-      <ContributionWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        timelineId={timelineId}
-      />
+      {timelineId && (
+        <ContributionWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          timelineId={timelineId}
+        />
+      )}
     </div>
   );
 };
