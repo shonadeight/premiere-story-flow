@@ -64,6 +64,13 @@ export const Portfolio = () => {
     loadPortfolioData();
   }, []);
 
+  useEffect(() => {
+    // Set loading to false after data loads
+    if (rootTimeline) {
+      setLoading(false);
+    }
+  }, [rootTimeline]);
+
   const loadPortfolioData = async () => {
     try {
       setLoading(true);
@@ -226,6 +233,30 @@ export const Portfolio = () => {
   const handleShare = () => {
     console.log('Sharing timeline');
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading portfolio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!rootTimeline) {
+    return (
+      <div className="container mx-auto px-6 py-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">Unable to load portfolio. Please try again.</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Reload Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-1 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-6 pb-20 lg:pb-6">

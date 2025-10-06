@@ -80,61 +80,59 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
           />
         );
       case 5:
-        return savedContributionId ? (
+        if (!savedContributionId) {
+          return (
+            <div className="text-center py-8">
+              <p className="text-destructive">Error: Contribution not saved. Please go back to Step 4.</p>
+            </div>
+          );
+        }
+        return (
           <Step5Insights
             selectedSubtypes={wizard.selectedSubtypes}
             currentTab={wizard.currentTab}
             setCurrentTab={wizard.setCurrentTab}
             contributionId={savedContributionId}
           />
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Loading contribution data...</p>
-          </div>
         );
       case 6:
-        return savedContributionId ? (
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return (
           <Step6Valuation
             selectedSubtypes={wizard.selectedSubtypes}
             contributionId={savedContributionId}
           />
-        ) : null;
+        );
       case 7:
-        return savedContributionId ? (
-          <Step7Followup contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step7Followup contributionId={savedContributionId} />;
       case 8:
-        return savedContributionId ? (
-          <Step8SmartRules contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step8SmartRules contributionId={savedContributionId} />;
       case 9:
-        return savedContributionId ? (
-          <Step9Ratings contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step9Ratings contributionId={savedContributionId} />;
       case 10:
-        return savedContributionId ? (
-          <Step10Files contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step10Files contributionId={savedContributionId} />;
       case 11:
-        return savedContributionId ? (
-          <Step11Knots contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step11Knots contributionId={savedContributionId} />;
       case 12:
-        return savedContributionId ? (
-          <Step12Contributors contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step12Contributors contributionId={savedContributionId} />;
       case 13:
-        return savedContributionId ? (
-          <Step13AdminUsers contributionId={savedContributionId} />
-        ) : null;
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step13AdminUsers contributionId={savedContributionId} />;
       case 14:
-        return savedContributionId ? (
+        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return (
           <Step14Preview
             contributionId={savedContributionId}
             selectedSubtypes={wizard.selectedSubtypes}
             onPublish={handleClose}
           />
-        ) : null;
+        );
       default:
         return null;
     }
@@ -162,14 +160,20 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         hasSubtypes={wizard.hasSubtypes}
         onNext={async () => {
           // Step 4 needs to save before proceeding
-          if (wizard.currentStep === 4 && step4Ref.current) {
-            try {
-              await step4Ref.current.save();
-              // Wait for savedContributionId to be set before proceeding
-              await new Promise(resolve => setTimeout(resolve, 100));
-              wizard.goToNextStep();
-            } catch (error) {
-              // Error already handled in Step4Confirmation
+          if (wizard.currentStep === 4) {
+            if (step4Ref.current) {
+              try {
+                await step4Ref.current.save();
+                // Wait a bit for savedContributionId to be set
+                await new Promise(resolve => setTimeout(resolve, 200));
+                if (!savedContributionId) {
+                  throw new Error('Failed to save contribution');
+                }
+                wizard.goToNextStep();
+              } catch (error) {
+                // Error already handled in Step4Confirmation
+                console.error('Failed to save contribution:', error);
+              }
             }
           } else {
             wizard.goToNextStep();
