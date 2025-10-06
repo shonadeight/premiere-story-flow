@@ -141,7 +141,11 @@ export const Dashboard = () => {
         rating: 0,
         views: 0,
         investedMembers: 0,
-        matchedTimelines: 0
+        matchedTimelines: 0,
+        status: 'active',
+        likes: 0,
+        comments: 0,
+        isPublic: t.is_public || false
       }));
 
       setTimelines(transformed);
@@ -442,10 +446,10 @@ export const Dashboard = () => {
 
         <div className="flex flex-wrap gap-2 mt-4">
           <Badge variant="secondary" className="cursor-pointer">
-            Invested ({mockTimelines.filter(t => t.invested).length})
+            Invested ({timelines.filter(t => t.invested).length})
           </Badge>
           <Badge variant="outline" className="cursor-pointer">
-            Active ({mockTimelines.filter(t => t.status === 'active').length})
+            Active ({timelines.filter(t => t.status === 'active').length})
           </Badge>
           <Badge variant="outline" className="cursor-pointer">
             High Performance (3)

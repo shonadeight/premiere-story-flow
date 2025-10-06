@@ -170,7 +170,11 @@ export const Portfolio = () => {
         rating: 0,
         views: 0,
         investedMembers: 0,
-        matchedTimelines: 0
+        matchedTimelines: 0,
+        status: 'active',
+        likes: 0,
+        comments: 0,
+        isPublic: t.is_public || false
       }));
 
       setTimelines(transformedTimelines);
@@ -184,6 +188,7 @@ export const Portfolio = () => {
     } finally {
       setLoading(false);
     }
+  };
 
   const tabs = [
     { id: 'subtimelines', label: 'My Timelines', icon: GitBranch, count: timelines.length },
@@ -284,7 +289,7 @@ export const Portfolio = () => {
                 Invest Now
               </Button>
               <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
-                <span>{membersCount} investors</span>
+                <span>0 investors</span>
                 <span>{rootTimeline.views || 0} views</span>
               </div>
             </div>
@@ -382,7 +387,7 @@ export const Portfolio = () => {
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mx-1 sm:mx-0">
-                  {sortedTimelines.map((timeline) => (
+                  {timelines.map((timeline) => (
                     <TimelineCard 
                       key={timeline.id} 
                       timeline={timeline}
@@ -404,7 +409,7 @@ export const Portfolio = () => {
 
               <TabsContent value="invested-users" className="m-0 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Invested Users ({membersCount})</h3>
+                  <h3 className="text-lg font-semibold">Invested Users (0)</h3>
                 </div>
                 <div className="space-y-3">
                   {Array.from({ length: 6 }, (_, i) => (
