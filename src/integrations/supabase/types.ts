@@ -496,6 +496,164 @@ export type Database = {
         }
         Relationships: []
       }
+      negotiation_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          session_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          session_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiation_audit_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "negotiation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      negotiation_messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          message_type: string
+          metadata: Json | null
+          sender_user_id: string
+          session_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          message_type: string
+          metadata?: Json | null
+          sender_user_id: string
+          session_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_user_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiation_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "negotiation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      negotiation_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          proposal_data: Json
+          proposed_by: string
+          session_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          proposal_data: Json
+          proposed_by: string
+          session_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          proposal_data?: Json
+          proposed_by?: string
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiation_proposals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "negotiation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      negotiation_sessions: {
+        Row: {
+          contribution_id: string
+          created_at: string
+          current_proposal_id: string | null
+          giver_user_id: string
+          id: string
+          mode: string
+          receiver_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contribution_id: string
+          created_at?: string
+          current_proposal_id?: string | null
+          giver_user_id: string
+          id?: string
+          mode: string
+          receiver_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contribution_id?: string
+          created_at?: string
+          current_proposal_id?: string | null
+          giver_user_id?: string
+          id?: string
+          mode?: string
+          receiver_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negotiation_sessions_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
