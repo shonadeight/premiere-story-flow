@@ -1,502 +1,157 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Wallet as WalletIcon, 
-  CreditCard, 
-  ArrowUpRight, 
-  ArrowDownLeft,
-  DollarSign,
-  TrendingUp,
-  Settings,
-  Plus,
-  Minus,
-  RefreshCw,
-  Eye,
-  EyeOff,
-  Smartphone,
-  Calendar,
-  Shield,
-  BarChart3
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { WithdrawModal } from '@/components/ui/dialog-modal';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Navbar } from "@/components/layout/Navbar";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, Plus, Wallet as WalletIcon } from "lucide-react";
+import { useWallet } from "@/hooks/useWallet";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
+import { PaymentMethodCard } from "@/components/wallet/PaymentMethodCard";
+import { AddPaymentMethodModal } from "@/components/wallet/AddPaymentMethodModal";
+import { TransactionHistory } from "@/components/wallet/TransactionHistory";
+import { supabase } from "@/integrations/supabase/client";
 
-interface Transaction {
-  id: string;
-  type: 'deposit' | 'withdrawal' | 'investment' | 'return' | 'fee';
-  amount: number;
-  description: string;
-  timestamp: string;
-  status: 'completed' | 'pending' | 'failed';
-  method: 'card' | 'mpesa' | 'airtel' | 'bank';
-  timeline?: string;
-}
+const Wallet = () => {
+  const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [addMethodOpen, setAddMethodOpen] = useState(false);
+  
+  const { balance, transactions, loading: walletLoading } = useWallet();
+  const { 
+    paymentMethods, 
+    loading: methodsLoading, 
+    addPaymentMethod, 
+    setPrimaryMethod, 
+    deletePaymentMethod 
+  } = usePaymentMethods();
 
-export const Wallet = () => {
-  const [showBalance, setShowBalance] = useState(true);
-  const [selectedMethod, setSelectedMethod] = useState('card');
-  const [amount, setAmount] = useState('');
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const { toast } = useToast();
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    loadUser();
+  }, []);
 
-  const walletBalance = 12750;
-  const availableBalance = 10500;
-  const pendingTransactions = 2250;
-
-  const mockTransactions: Transaction[] = [
-    {
-      id: '1',
-      type: 'return',
-      amount: 2400,
-      description: 'Outcome share from AI SaaS Platform',
-      timestamp: '2024-08-01T10:30:00Z',
-      status: 'completed',
-      method: 'card',
-      timeline: 'AI SaaS Platform'
-    },
-    {
-      id: '2',
-      type: 'investment',
-      amount: -5000,
-      description: 'Investment in Mobile App Development',
-      timestamp: '2024-07-30T14:20:00Z',
-      status: 'completed',
-      method: 'card',
-      timeline: 'Mobile App Development'
-    },
-    {
-      id: '3',
-      type: 'deposit',
-      amount: 10000,
-      description: 'Wallet top-up via M-Pesa',
-      timestamp: '2024-07-28T09:15:00Z',
-      status: 'completed',
-      method: 'mpesa'
-    },
-    {
-      id: '4',
-      type: 'return',
-      amount: 1200,
-      description: 'Revenue share from Sarah Chen Partnership',
-      timestamp: '2024-07-25T16:45:00Z',
-      status: 'completed',
-      method: 'card',
-      timeline: 'Sarah Chen Partnership'
-    },
-    {
-      id: '5',
-      type: 'withdrawal',
-      amount: -3000,
-      description: 'Withdrawal to bank account',
-      timestamp: '2024-07-22T11:30:00Z',
-      status: 'pending',
-      method: 'bank'
-    },
-    {
-      id: '6',
-      type: 'fee',
-      amount: -25,
-      description: 'Transaction processing fee',
-      timestamp: '2024-07-20T13:10:00Z',
-      status: 'completed',
-      method: 'card'
-    }
-  ];
-
-  const paymentMethods = [
-    { id: 'card', name: 'Credit/Debit Card', icon: CreditCard, fees: '2.9%' },
-    { id: 'mpesa', name: 'M-Pesa', icon: Smartphone, fees: '1.5%' },
-    { id: 'airtel', name: 'Airtel Money', icon: Smartphone, fees: '1.5%' },
-    { id: 'bank', name: 'Bank Transfer', icon: DollarSign, fees: 'Free' }
-  ];
-
-  const handleTransaction = (type: 'deposit' | 'withdraw') => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: "Please enter a valid amount" });
-      return;
-    }
-
-    const transactionAmount = parseFloat(amount);
-    if (type === 'withdraw' && transactionAmount > availableBalance) {
-      toast({ 
-        title: "Insufficient funds",
-        description: "You don't have enough available balance for this withdrawal."
-      });
-      return;
-    }
-
-    toast({ 
-      title: `${type === 'deposit' ? 'Deposit' : 'Withdrawal'} initiated`,
-      description: `$${transactionAmount.toLocaleString()} ${type} request has been processed.`
-    });
-    setAmount('');
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case 'deposit':
-      case 'return':
-        return ArrowDownLeft;
-      case 'withdrawal':
-      case 'investment':
-        return ArrowUpRight;
-      case 'fee':
-        return Minus;
-      default:
-        return DollarSign;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-success';
-      case 'pending': return 'text-accent';
-      case 'failed': return 'text-destructive';
-      default: return 'text-muted-foreground';
-    }
-  };
+  if (walletLoading || methodsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-20 pb-24">
+          <p>Loading wallet...</p>
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-6 pb-20 lg:pb-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <WalletIcon className="h-6 w-6" />
-            Wallet & Payments
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your funds, investments, and outcome distributions
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <main className="container mx-auto px-4 pt-20 pb-24">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold">Wallet</h1>
+          <Button onClick={() => setAddMethodOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Payment Method
           </Button>
         </div>
-      </div>
-
-      {/* Wallet Overview */}
-      <div className="space-y-6 mb-8">
-        {/* Balance Card */}
-        <Card className="bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <WalletIcon className="h-6 w-6" />
-                <span className="text-lg font-medium opacity-90">Total Balance</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-primary-foreground/80 hover:text-primary-foreground"
-                onClick={() => setShowBalance(!showBalance)}
-              >
-                {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="text-4xl font-bold mb-2">
-              {showBalance ? formatCurrency(walletBalance) : '****'}
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-sm opacity-90">+8.5% this month</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
           <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Available</div>
-              <div className="text-lg font-bold text-success">{formatCurrency(availableBalance)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Pending</div>
-              <div className="text-lg font-bold text-accent">{formatCurrency(pendingTransactions)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Invested</div>
-              <div className="text-lg font-bold text-primary">{formatCurrency(8500)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <div className="text-sm text-muted-foreground mb-1">Returns</div>
-              <div className="text-lg font-bold text-success">+{formatCurrency(2250)}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <Button size="lg" className="h-14">
-            <Plus className="h-5 w-5 mr-2" />
-            Invest
-          </Button>
-          <Button variant="outline" size="lg" className="h-14" onClick={() => setShowWithdrawModal(true)}>
-            <Minus className="h-5 w-5 mr-2" />
-            Withdraw
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <Tabs defaultValue="transactions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="deposit">Deposit</TabsTrigger>
-          <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Available Balance
+              </CardTitle>
+              <WalletIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockTransactions.map((transaction) => {
-                  const Icon = getTransactionIcon(transaction.type);
-                  const isPositive = transaction.amount > 0;
-                  
-                  return (
-                    <div key={transaction.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                      <div className={`p-2 rounded-lg ${
-                        isPositive ? 'bg-success/10' : 'bg-primary/10'
-                      }`}>
-                        <Icon className={`h-4 w-4 ${
-                          isPositive ? 'text-success' : 'text-primary'
-                        }`} />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium">{transaction.description}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          {formatTimestamp(transaction.timestamp)}
-                          {transaction.timeline && (
-                            <>
-                              <span>•</span>
-                              <span className="text-primary">{transaction.timeline}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <div className={`font-semibold ${
-                          isPositive ? 'text-success' : 'text-foreground'
-                        }`}>
-                          {isPositive ? '+' : ''}{formatCurrency(transaction.amount)}
-                        </div>
-                        <Badge 
-                          variant={transaction.status === 'completed' ? 'default' : 'secondary'}
-                          className={`text-xs ${getStatusColor(transaction.status)}`}
-                        >
-                          {transaction.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="text-2xl font-bold">
+                {balance?.currency} {balance?.available_balance.toFixed(2) || '0.00'}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Ready to use
+              </p>
             </CardContent>
           </Card>
-        </TabsContent>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Pending Balance
+              </CardTitle>
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {balance?.currency} {balance?.pending_balance.toFixed(2) || '0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                In processing
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Escrowed Balance
+              </CardTitle>
+              <WalletIcon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {balance?.currency} {balance?.escrowed_balance.toFixed(2) || '0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Held in escrow
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <TabsContent value="deposit" className="space-y-4">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Timeline Gains & Revenue Sharing
-              </CardTitle>
+              <CardTitle>Payment Methods</CardTitle>
+              <CardDescription>Manage your payment methods</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
-                <h4 className="font-medium text-success mb-2">Automatic Deposits from Timeline Outcomes</h4>
-                <p className="text-sm text-muted-foreground">
-                  Funds are automatically deposited from your timeline investments and outcome sharing agreements.
+            <CardContent className="space-y-4">
+              {paymentMethods.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No payment methods added yet
                 </p>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Recent Timeline Deposits</h4>
-                {[
-                  { timeline: 'AI SaaS Platform', amount: 2400, type: 'Revenue Share', date: '2024-08-01' },
-                  { timeline: 'Sarah Chen Partnership', amount: 1200, type: 'Outcome Share', date: '2024-07-25' },
-                  { timeline: 'DeFi Protocol', amount: 800, type: 'Profit Distribution', date: '2024-07-20' },
-                  { timeline: 'Mobile App Dev', amount: 650, type: 'Milestone Payout', date: '2024-07-15' }
-                ].map((deposit, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-success/10 rounded-lg">
-                        <TrendingUp className="h-4 w-4 text-success" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{deposit.timeline}</div>
-                        <div className="text-sm text-muted-foreground">{deposit.type}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-success">+{formatCurrency(deposit.amount)}</div>
-                      <div className="text-xs text-muted-foreground">{deposit.date}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-3">
-                <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                  <h4 className="font-medium mb-2">Pending Revenue Shares</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Green Energy Project</span>
-                      <span className="text-accent">+$1,500 (pending verification)</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Blockchain Analytics</span>
-                      <span className="text-accent">+$750 (processing)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-success">{formatCurrency(5050)}</div>
-                    <div className="text-sm text-muted-foreground">This Month</div>
-                  </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-primary">{formatCurrency(18750)}</div>
-                    <div className="text-sm text-muted-foreground">Total Earned</div>
-                  </div>
-                </div>
-              </div>
-
-              <Button 
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={() => window.open('/portfolio', '_blank')}
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Timeline Performance
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="withdraw" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Minus className="h-5 w-5" />
-                Withdraw Funds
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-accent/10 rounded-lg border border-accent/20">
-                <div className="text-sm font-medium text-accent mb-1">Available for Withdrawal</div>
-                <div className="text-2xl font-bold">{formatCurrency(availableBalance)}</div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Amount (USD)</label>
-                  <Input
-                    type="number"
-                    placeholder="500"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="1"
-                    max={availableBalance}
-                    className="mt-1"
+              ) : (
+                paymentMethods.map((method) => (
+                  <PaymentMethodCard
+                    key={method.id}
+                    method={method}
+                    onSetPrimary={setPrimaryMethod}
+                    onDelete={deletePaymentMethod}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Minimum withdrawal: $10 • Processing time: 1-3 business days
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Withdrawal Method</label>
-                  <Select value={selectedMethod} onValueChange={setSelectedMethod}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((method) => {
-                        const Icon = method.icon;
-                        return (
-                          <SelectItem key={method.id} value={method.id}>
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              <span>{method.name}</span>
-                              <Badge variant="outline" className="ml-auto text-xs">
-                                {method.fees}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => handleTransaction('withdraw')}
-                className="w-full"
-                size="lg"
-                variant="outline"
-              >
-                <Minus className="h-4 w-4 mr-2" />
-                Withdraw {amount && `$${parseFloat(amount).toLocaleString()}`}
-              </Button>
+                ))
+              )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
 
-      {/* Withdraw Modal */}
-      <WithdrawModal 
-        isOpen={showWithdrawModal}
-        onClose={() => setShowWithdrawModal(false)}
-        availableBalance={availableBalance}
+          <TransactionHistory 
+            transactions={transactions} 
+            currentUserId={currentUserId}
+          />
+        </div>
+      </main>
+
+      <AddPaymentMethodModal
+        open={addMethodOpen}
+        onOpenChange={setAddMethodOpen}
+        onAdd={addPaymentMethod}
       />
+
+      <BottomNav />
     </div>
   );
 };
+
+export default Wallet;

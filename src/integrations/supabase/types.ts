@@ -496,6 +496,135 @@ export type Database = {
         }
         Relationships: []
       }
+      escrow_holds: {
+        Row: {
+          amount: number
+          beneficiary_user_id: string
+          contribution_id: string
+          created_at: string
+          currency: string
+          holder_user_id: string
+          id: string
+          release_condition: Json | null
+          released_at: string | null
+          status: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          beneficiary_user_id: string
+          contribution_id: string
+          created_at?: string
+          currency?: string
+          holder_user_id: string
+          id?: string
+          release_condition?: Json | null
+          released_at?: string | null
+          status: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          beneficiary_user_id?: string
+          contribution_id?: string
+          created_at?: string
+          currency?: string
+          holder_user_id?: string
+          id?: string
+          release_condition?: Json | null
+          released_at?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_holds_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_holds_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          contribution_id: string | null
+          created_at: string
+          currency: string
+          error_message: string | null
+          external_transaction_id: string | null
+          id: string
+          metadata: Json | null
+          payee_user_id: string
+          payer_user_id: string
+          payment_method_id: string | null
+          processed_at: string | null
+          status: string
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          contribution_id?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          payee_user_id: string
+          payer_user_id: string
+          payment_method_id?: string | null
+          processed_at?: string | null
+          status: string
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          contribution_id?: string | null
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          payee_user_id?: string
+          payer_user_id?: string
+          payment_method_id?: string | null
+          processed_at?: string | null
+          status?: string
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       negotiation_audit_log: {
         Row: {
           action: string
@@ -650,6 +779,92 @@ export type Database = {
             columns: ["contribution_id"]
             isOneToOne: false
             referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          account_details: Json
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          method_type: string
+          provider: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_details: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          method_type: string
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_details?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          method_type?: string
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payout_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          error_message: string | null
+          external_transaction_id: string | null
+          id: string
+          payment_method_id: string
+          processed_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          payment_method_id: string
+          processed_at?: string | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          payment_method_id?: string
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_requests_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -817,6 +1032,39 @@ export type Database = {
           created_at?: string
           id?: string
           outcome_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_balances: {
+        Row: {
+          available_balance: number
+          created_at: string
+          currency: string
+          escrowed_balance: number
+          id: string
+          pending_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          escrowed_balance?: number
+          id?: string
+          pending_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          escrowed_balance?: number
+          id?: string
+          pending_balance?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

@@ -15,7 +15,7 @@ import { Assistant } from "./pages/Assistant";
 import { Portfolio } from "./pages/Portfolio";
 import { Profile } from "./pages/Profile";
 import { Notifications } from "./pages/Notifications";
-import { Wallet } from "./pages/Wallet";
+import Wallet from "./pages/Wallet";
 import { Marketplace } from "./pages/Marketplace";
 import { Train } from "./pages/Train";
 import { Settings } from "./pages/Settings";
