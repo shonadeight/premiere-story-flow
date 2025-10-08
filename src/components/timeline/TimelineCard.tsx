@@ -387,11 +387,15 @@ export const TimelineCard = ({ timeline, view = 'grid', onTimelineClick }: Timel
         timeline={timeline}
       />
 
-      <ContributionWizard
-        open={contributionWizardOpen}
-        onOpenChange={setContributionWizardOpen}
-        timelineId={timeline.id}
-      />
+      {contributionWizardOpen && (
+        <ContributionWizard
+          open={contributionWizardOpen}
+          onOpenChange={(open) => {
+            setContributionWizardOpen(open);
+          }}
+          timelineId={timeline.id}
+        />
+      )}
     </Card>
   );
 };

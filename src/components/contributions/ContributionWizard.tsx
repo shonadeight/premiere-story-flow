@@ -150,7 +150,7 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         )}
       </div>
       
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 min-h-0">
         {renderStep()}
       </div>
 
@@ -188,8 +188,8 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={handleClose}>
-        <DrawerContent className="max-h-[95vh] flex flex-col p-0">
+      <Drawer open={open} onOpenChange={handleClose} dismissible={false}>
+        <DrawerContent className="flex flex-col p-0">
           {content}
         </DrawerContent>
       </Drawer>
