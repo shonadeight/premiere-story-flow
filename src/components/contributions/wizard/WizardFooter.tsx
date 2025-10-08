@@ -25,7 +25,7 @@ export const WizardFooter = ({
   const isConfigurableStep = currentStep >= 5 && currentStep <= 13;
 
   return (
-    <div className="border-t px-6 py-4 flex items-center justify-between bg-muted/30">
+    <div className="border-t px-6 py-4 flex items-center justify-between bg-muted/30 flex-shrink-0">
       <Button
         variant="outline"
         onClick={onPrev}
@@ -43,12 +43,7 @@ export const WizardFooter = ({
           </Button>
         )}
 
-        {isLastStep ? (
-          <Button onClick={onComplete}>
-            <Check className="mr-2 h-4 w-4" />
-            Complete
-          </Button>
-        ) : (
+        {!isLastStep && (
           <Button onClick={onNext} disabled={!canProceed}>
             Next
             <ArrowRight className="ml-2 h-4 w-4" />

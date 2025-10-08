@@ -164,11 +164,7 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
             if (step4Ref.current) {
               try {
                 await step4Ref.current.save();
-                // Wait a bit for savedContributionId to be set
-                await new Promise(resolve => setTimeout(resolve, 200));
-                if (!savedContributionId) {
-                  throw new Error('Failed to save contribution');
-                }
+                // savedContributionId will be set by the onComplete callback
                 wizard.goToNextStep();
               } catch (error) {
                 // Error already handled in Step4Confirmation
@@ -181,7 +177,15 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         }}
         onPrev={wizard.goToPrevStep}
         onSkip={wizard.skipStep}
-        onComplete={handleClose}
+        onComplete={async () => {
+          // On step 14, the publish button will handle the close
+          // For all other steps, just close
+          if (wizard.currentStep === 14) {
+            // Do nothing - Step14Preview's onPublish will call handleClose
+          } else {
+            handleClose();
+          }
+        }}
       />
     </>
   );

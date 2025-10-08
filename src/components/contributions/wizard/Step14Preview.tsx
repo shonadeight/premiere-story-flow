@@ -98,7 +98,8 @@ export const Step14Preview = ({ contributionId, selectedSubtypes, onPublish }: S
         description: `Your contribution is now ${newStatus.replace('_', ' ')} and visible to others.`,
       });
       
-      onPublish();
+      // Close wizard after successful publish
+      setTimeout(() => onPublish(), 500);
     } catch (error) {
       console.error('Error publishing:', error);
       toast({
