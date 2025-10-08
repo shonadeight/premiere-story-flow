@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RatingsAdder } from '../adders/RatingsAdder';
 import { Plus, Star } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Step9RatingsProps {
   contributionId: string;
@@ -12,9 +14,53 @@ interface Step9RatingsProps {
 export const Step9Ratings = ({ contributionId }: Step9RatingsProps) => {
   const [adderOpen, setAdderOpen] = useState(false);
   const [ratingConfigs, setRatingConfigs] = useState<any[]>([]);
+  const { toast } = useToast();
 
-  const handleSaveConfig = (config: any) => {
-    setRatingConfigs([...ratingConfigs, config]);
+  // Load existing rating configs
+  useEffect(() => {
+    loadRatingConfigs();
+  }, [contributionId]);
+
+  const loadRatingConfigs = async () => {
+    const { data, error } = await supabase
+      .from('contribution_rating_configs')
+      .select('*')
+      .eq('contribution_id', contributionId);
+
+    if (error) {
+      console.error('Error loading rating configs:', error);
+      return;
+    }
+
+    setRatingConfigs(data || []);
+  };
+
+  const handleSaveConfig = async (config: any) => {
+    try {
+      const { error } = await supabase
+        .from('contribution_rating_configs')
+        .insert({
+          contribution_id: contributionId,
+          criteria: config.criteria,
+          max_rating: config.max_rating,
+          scale_type: config.scale_type,
+        });
+
+      if (error) throw error;
+
+      await loadRatingConfigs();
+      toast({
+        title: "Success",
+        description: "Rating criteria added successfully",
+      });
+    } catch (error) {
+      console.error('Error saving rating config:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save rating criteria",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -37,8 +83,8 @@ export const Step9Ratings = ({ contributionId }: Step9RatingsProps) => {
         </p>
       )}
 
-      {ratingConfigs.map((config, i) => (
-        <Card key={i} className="p-3">
+      {ratingConfigs.map((config) => (
+        <Card key={config.id} className="p-3">
           <div className="space-y-1">
             <p className="font-medium">{config.criteria}</p>
             <p className="text-sm text-muted-foreground">

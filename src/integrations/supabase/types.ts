@@ -211,6 +211,41 @@ export type Database = {
           },
         ]
       }
+      contribution_rating_configs: {
+        Row: {
+          contribution_id: string
+          created_at: string
+          criteria: string
+          id: string
+          max_rating: number
+          scale_type: string
+        }
+        Insert: {
+          contribution_id: string
+          created_at?: string
+          criteria: string
+          id?: string
+          max_rating: number
+          scale_type?: string
+        }
+        Update: {
+          contribution_id?: string
+          created_at?: string
+          criteria?: string
+          id?: string
+          max_rating?: number
+          scale_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contribution_rating_configs_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contribution_ratings: {
         Row: {
           comment: string | null
