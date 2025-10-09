@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ContributionCategory, SelectedSubtype, ContributionDirection } from '@/types/contribution';
 
 export const useContributionWizard = () => {
@@ -9,6 +9,7 @@ export const useContributionWizard = () => {
   const [completeLater, setCompleteLater] = useState(false);
   const [selectedSubtypes, setSelectedSubtypes] = useState<SelectedSubtype[]>([]);
   const [currentTab, setCurrentTab] = useState<ContributionDirection>('to_give');
+  const savedContributionId = useRef<string | undefined>();
 
   const addSubtype = (subtype: SelectedSubtype) => {
     setSelectedSubtypes(prev => [...prev, subtype]);
@@ -35,6 +36,10 @@ export const useContributionWizard = () => {
   };
 
   const goToNextStep = () => {
+    if (currentStep === 4 && !savedContributionId.current) {
+      console.warn('Cannot proceed from step 4 without saved contribution');
+      return;
+    }
     setCurrentStep(prev => Math.min(prev + 1, 14));
   };
 
@@ -54,6 +59,7 @@ export const useContributionWizard = () => {
     setCompleteLater(false);
     setSelectedSubtypes([]);
     setCurrentTab('to_give');
+    savedContributionId.current = undefined;
   };
 
   return {
@@ -64,12 +70,14 @@ export const useContributionWizard = () => {
     completeLater,
     selectedSubtypes,
     currentTab,
+    savedContributionId: savedContributionId.current,
     setCurrentStep,
     setIsTimeline,
     setTimelineTitle,
     setTimelineDescription,
     setCompleteLater,
     setCurrentTab,
+    setSavedContributionId: (id: string) => { savedContributionId.current = id; },
     addSubtype,
     removeSubtype,
     goToNextStep,

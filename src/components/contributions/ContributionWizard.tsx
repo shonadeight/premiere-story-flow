@@ -30,7 +30,6 @@ interface ContributionWizardProps {
 export const ContributionWizard = ({ open, onOpenChange, timelineId }: ContributionWizardProps) => {
   const isMobile = useIsMobile();
   const wizard = useContributionWizard();
-  const [savedContributionId, setSavedContributionId] = useState<string | undefined>();
   const step4Ref = useRef<Step4ConfirmationHandle>(null);
 
   const handleClose = () => {
@@ -74,13 +73,11 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
             isTimeline={wizard.isTimeline}
             timelineTitle={wizard.timelineTitle}
             timelineDescription={wizard.timelineDescription}
-            onComplete={(contributionId) => {
-              setSavedContributionId(contributionId);
-            }}
+            onComplete={wizard.setSavedContributionId}
           />
         );
       case 5:
-        if (!savedContributionId) {
+        if (!wizard.savedContributionId) {
           return (
             <div className="text-center py-8">
               <p className="text-destructive">Error: Contribution not saved. Please go back to Step 4.</p>
@@ -92,43 +89,43 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
             selectedSubtypes={wizard.selectedSubtypes}
             currentTab={wizard.currentTab}
             setCurrentTab={wizard.setCurrentTab}
-            contributionId={savedContributionId}
+            contributionId={wizard.savedContributionId}
           />
         );
       case 6:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
         return (
           <Step6Valuation
             selectedSubtypes={wizard.selectedSubtypes}
-            contributionId={savedContributionId}
+            contributionId={wizard.savedContributionId}
           />
         );
       case 7:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step7Followup contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step7Followup contributionId={wizard.savedContributionId} />;
       case 8:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step8SmartRules contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step8SmartRules contributionId={wizard.savedContributionId} />;
       case 9:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step9Ratings contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step9Ratings contributionId={wizard.savedContributionId} />;
       case 10:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step10Files contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step10Files contributionId={wizard.savedContributionId} />;
       case 11:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step11Knots contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step11Knots contributionId={wizard.savedContributionId} />;
       case 12:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step12Contributors contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step12Contributors contributionId={wizard.savedContributionId} />;
       case 13:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step13AdminUsers contributionId={savedContributionId} />;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        return <Step13AdminUsers contributionId={wizard.savedContributionId} />;
       case 14:
-        if (!savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
+        if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
         return (
           <Step14Preview
-            contributionId={savedContributionId}
+            contributionId={wizard.savedContributionId}
             selectedSubtypes={wizard.selectedSubtypes}
             onPublish={handleClose}
           />
@@ -142,10 +139,10 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
     <>
       <div className="flex items-center justify-between px-4 sm:px-6 pt-4">
         <WizardHeader currentStep={wizard.currentStep} />
-        {wizard.currentStep >= 4 && savedContributionId && (
+        {wizard.currentStep >= 4 && wizard.savedContributionId && (
           <SchemaPreview 
             selectedSubtypes={wizard.selectedSubtypes}
-            contributionId={savedContributionId}
+            contributionId={wizard.savedContributionId}
           />
         )}
       </div>
