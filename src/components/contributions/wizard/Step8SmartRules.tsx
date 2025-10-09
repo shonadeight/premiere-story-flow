@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { SmartRulesAdder } from '../adders/SmartRulesAdder';
-import { Plus, Zap } from 'lucide-react';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
+import { Plus, Zap, HandshakeIcon, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,8 @@ interface Step8SmartRulesProps {
 
 export const Step8SmartRules = ({ contributionId }: Step8SmartRulesProps) => {
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [rules, setRules] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -47,13 +50,32 @@ export const Step8SmartRules = ({ contributionId }: Step8SmartRulesProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <Zap className="h-4 w-4" />
         <AlertDescription>
           Create automated rules that execute when specific conditions are met.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Button onClick={() => setAdderOpen(true)} className="w-full">
         <Plus className="mr-2 h-4 w-4" />
@@ -91,6 +113,15 @@ export const Step8SmartRules = ({ contributionId }: Step8SmartRulesProps) => {
         open={adderOpen}
         onOpenChange={setAdderOpen}
         onSave={handleSaveRule}
+      />
+
+      <NegotiationAdder
+        open={negotiationOpen}
+        onOpenChange={setNegotiationOpen}
+        contributionId={contributionId}
+        mode="flexible"
+        giverUserId=""
+        receiverUserId=""
       />
     </div>
   );

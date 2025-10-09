@@ -3,8 +3,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ValuationAdder } from '../adders/ValuationAdder';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
 import { SelectedSubtype } from '@/types/contribution';
-import { Plus, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, Trash2, HandshakeIcon, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +18,8 @@ interface Step6ValuationProps {
 export const Step6Valuation = ({ selectedSubtypes, contributionId }: Step6ValuationProps) => {
   const [currentTab, setCurrentTab] = useState<'to_give' | 'to_receive'>('to_give');
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [valuations, setValuations] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -54,13 +57,32 @@ export const Step6Valuation = ({ selectedSubtypes, contributionId }: Step6Valuat
   const toReceiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_receive');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <DollarSign className="h-4 w-4" />
         <AlertDescription>
           Set valuation for your contributions. You can use fixed amounts, custom formulas, or percentage-based valuation.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Tabs value={currentTab} onValueChange={(v: any) => setCurrentTab(v)}>
         <TabsList className="grid w-full grid-cols-2">
@@ -129,6 +151,15 @@ export const Step6Valuation = ({ selectedSubtypes, contributionId }: Step6Valuat
         onSave={handleSaveValuation}
         selectedSubtypes={selectedSubtypes}
         direction={currentTab}
+      />
+
+      <NegotiationAdder
+        open={negotiationOpen}
+        onOpenChange={setNegotiationOpen}
+        contributionId={contributionId}
+        mode="flexible"
+        giverUserId=""
+        receiverUserId=""
       />
     </div>
   );

@@ -3,9 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Info, Plus, Settings } from 'lucide-react';
+import { Info, Plus, Settings, HandshakeIcon, Users } from 'lucide-react';
 import { ContributionDirection, SelectedSubtype } from '@/types/contribution';
 import { InsightsAdder } from '../adders/InsightsAdder';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +41,8 @@ export const Step5Insights = ({
 }: Step5InsightsProps) => {
   const { toast } = useToast();
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [currentSubtype, setCurrentSubtype] = useState<string>('');
   const [currentDirection, setCurrentDirection] = useState<ContributionDirection>('to_give');
   const [subtypeInsights, setSubtypeInsights] = useState<SubtypeInsights>({});
@@ -247,13 +250,32 @@ export const Step5Insights = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
           Configure expected insights for your selected contribution types. You can skip this step and configure it later.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as ContributionDirection)}>
         <TabsList className="grid w-full grid-cols-2">
@@ -278,6 +300,17 @@ export const Step5Insights = ({
         existingInsights={getInsightsForSubtype(currentSubtype, currentDirection)}
         onSave={handleSaveInsights}
       />
+
+      {contributionId && (
+        <NegotiationAdder
+          open={negotiationOpen}
+          onOpenChange={setNegotiationOpen}
+          contributionId={contributionId}
+          mode="flexible"
+          giverUserId=""
+          receiverUserId=""
+        />
+      )}
     </div>
   );
 };

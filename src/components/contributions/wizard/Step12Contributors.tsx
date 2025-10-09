@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ContributorsAdder } from '../adders/ContributorsAdder';
-import { Plus, Users } from 'lucide-react';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
+import { Plus, Users, HandshakeIcon, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,8 @@ interface Step12ContributorsProps {
 
 export const Step12Contributors = ({ contributionId }: Step12ContributorsProps) => {
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [contributors, setContributors] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -46,13 +49,32 @@ export const Step12Contributors = ({ contributionId }: Step12ContributorsProps) 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <Users className="h-4 w-4" />
         <AlertDescription>
           Add and manage contributors who can participate in this contribution.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Button onClick={() => setAdderOpen(true)} className="w-full">
         <Plus className="mr-2 h-4 w-4" />
@@ -81,6 +103,15 @@ export const Step12Contributors = ({ contributionId }: Step12ContributorsProps) 
         open={adderOpen}
         onOpenChange={setAdderOpen}
         onSave={handleSaveContributor}
+      />
+
+      <NegotiationAdder
+        open={negotiationOpen}
+        onOpenChange={setNegotiationOpen}
+        contributionId={contributionId}
+        mode="flexible"
+        giverUserId=""
+        receiverUserId=""
       />
     </div>
   );

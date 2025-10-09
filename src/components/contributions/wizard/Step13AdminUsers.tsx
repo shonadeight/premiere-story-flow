@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AdminUsersAdder } from '../adders/AdminUsersAdder';
-import { Plus, UserCog, Shield } from 'lucide-react';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
+import { Plus, UserCog, Shield, HandshakeIcon, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,8 @@ interface Step13AdminUsersProps {
 
 export const Step13AdminUsers = ({ contributionId }: Step13AdminUsersProps) => {
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [admins, setAdmins] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -46,13 +49,32 @@ export const Step13AdminUsers = ({ contributionId }: Step13AdminUsersProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <UserCog className="h-4 w-4" />
         <AlertDescription>
           Add admin users who can manage this contribution with specific permissions.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Button onClick={() => setAdderOpen(true)} className="w-full">
         <Plus className="mr-2 h-4 w-4" />
@@ -94,6 +116,15 @@ export const Step13AdminUsers = ({ contributionId }: Step13AdminUsersProps) => {
         open={adderOpen}
         onOpenChange={setAdderOpen}
         onSave={handleSaveAdmin}
+      />
+
+      <NegotiationAdder
+        open={negotiationOpen}
+        onOpenChange={setNegotiationOpen}
+        contributionId={contributionId}
+        mode="flexible"
+        giverUserId=""
+        receiverUserId=""
       />
     </div>
   );

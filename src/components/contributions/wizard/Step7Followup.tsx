@@ -3,7 +3,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FollowupAdder } from '../adders/FollowupAdder';
-import { Plus, Calendar } from 'lucide-react';
+import { NegotiationAdder } from '../negotiation/NegotiationAdder';
+import { Plus, Calendar, HandshakeIcon, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +17,8 @@ interface Step7FollowupProps {
 export const Step7Followup = ({ contributionId }: Step7FollowupProps) => {
   const [currentTab, setCurrentTab] = useState<'to_give' | 'to_receive'>('to_give');
   const [adderOpen, setAdderOpen] = useState(false);
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
   const [followups, setFollowups] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -48,13 +51,32 @@ export const Step7Followup = ({ contributionId }: Step7FollowupProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <Calendar className="h-4 w-4" />
         <AlertDescription>
           Configure follow-up procedures and schedules for tracking contribution progress.
         </AlertDescription>
       </Alert>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={bulkMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => setBulkMode(!bulkMode)}
+        >
+          <Users className="h-4 w-4 mr-2" />
+          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setNegotiationOpen(true)}
+        >
+          <HandshakeIcon className="h-4 w-4 mr-2" />
+          Negotiate
+        </Button>
+      </div>
 
       <Tabs value={currentTab} onValueChange={(v: any) => setCurrentTab(v)}>
         <TabsList className="grid w-full grid-cols-2">
@@ -110,6 +132,15 @@ export const Step7Followup = ({ contributionId }: Step7FollowupProps) => {
         onOpenChange={setAdderOpen}
         onSave={handleSaveFollowup}
         direction={currentTab}
+      />
+
+      <NegotiationAdder
+        open={negotiationOpen}
+        onOpenChange={setNegotiationOpen}
+        contributionId={contributionId}
+        mode="flexible"
+        giverUserId=""
+        receiverUserId=""
       />
     </div>
   );
