@@ -87,8 +87,6 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         return (
           <Step5Insights
             selectedSubtypes={wizard.selectedSubtypes}
-            currentTab={wizard.currentTab}
-            setCurrentTab={wizard.setCurrentTab}
             contributionId={wizard.savedContributionId}
           />
         );

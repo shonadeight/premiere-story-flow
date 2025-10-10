@@ -1,53 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Info, Plus, Settings, HandshakeIcon, Users } from 'lucide-react';
-import { ContributionDirection, SelectedSubtype } from '@/types/contribution';
+import { Info, Plus, CheckCircle2 } from 'lucide-react';
 import { InsightsAdder } from '../adders/InsightsAdder';
 import { NegotiationAdder } from '../negotiation/NegotiationAdder';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-interface InsightConfig {
-  id: string;
-  insightType: string;
-  source: 'timeline_schema' | 'api' | 'uploaded_report';
-  apiEndpoint?: string;
-  expectedOutput: string;
-  description?: string;
-}
-
-interface SubtypeInsights {
-  [subtypeName: string]: {
-    to_give: InsightConfig[];
-    to_receive: InsightConfig[];
-  };
-}
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SelectedSubtype } from '@/types/contribution';
+import { getTemplatesBySubtype } from '@/lib/templates/contributionTemplates';
+import { Badge } from '@/components/ui/badge';
 
 interface Step5InsightsProps {
   selectedSubtypes: SelectedSubtype[];
-  currentTab: ContributionDirection;
-  setCurrentTab: (tab: ContributionDirection) => void;
   contributionId?: string;
 }
 
-export const Step5Insights = ({
+export const Step5Insights = ({ 
   selectedSubtypes,
-  currentTab,
-  setCurrentTab,
-  contributionId,
+  contributionId 
 }: Step5InsightsProps) => {
-  const { toast } = useToast();
   const [adderOpen, setAdderOpen] = useState(false);
   const [negotiationOpen, setNegotiationOpen] = useState(false);
-  const [bulkMode, setBulkMode] = useState(false);
   const [currentSubtype, setCurrentSubtype] = useState<string>('');
-  const [currentDirection, setCurrentDirection] = useState<ContributionDirection>('to_give');
-  const [subtypeInsights, setSubtypeInsights] = useState<SubtypeInsights>({});
+  const [currentDirection, setCurrentDirection] = useState<'to_give' | 'to_receive'>('to_give');
+  const [loadedInsights, setLoadedInsights] = useState<Record<string, any[]>>({});
+  const [enabledTemplates, setEnabledTemplates] = useState<Record<string, boolean>>({});
 
-  // Load existing insights from database
   useEffect(() => {
     if (contributionId) {
       loadInsights();
@@ -56,256 +35,210 @@ export const Step5Insights = ({
 
   const loadInsights = async () => {
     if (!contributionId) return;
-
-    const { data, error } = await supabase
-      .from('contribution_insights')
-      .select('*')
-      .eq('contribution_id', contributionId);
-
-    if (error) {
-      console.error('Error loading insights:', error);
-      return;
-    }
-
-    // Organize insights by subtype and direction
-    const organized: SubtypeInsights = {};
-    data?.forEach((insight) => {
-      const subtypeName = insight.subtype_name || 'general';
-      if (!organized[subtypeName]) {
-        organized[subtypeName] = { to_give: [], to_receive: [] };
-      }
+    
+    try {
+      const { data, error } = await supabase
+        .from('contribution_insights')
+        .select('*')
+        .eq('contribution_id', contributionId);
       
-      const config = insight.configuration as any;
-      const insightConfig: InsightConfig = {
-        id: insight.id,
-        insightType: insight.insight_type,
-        source: config?.source || 'timeline_schema',
-        apiEndpoint: config?.apiEndpoint,
-        expectedOutput: config?.expectedOutput || '',
-        description: config?.description,
-      };
-
-      // Determine direction from configuration or default to both
-      const direction = config?.direction || 'to_give';
-      organized[subtypeName][direction as ContributionDirection].push(insightConfig);
-    });
-
-    setSubtypeInsights(organized);
+      if (error) throw error;
+      
+      const grouped = data?.reduce((acc: Record<string, any[]>, insight) => {
+        const key = `${insight.subtype_name}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(insight);
+        return acc;
+      }, {}) || {};
+      
+      setLoadedInsights(grouped);
+    } catch (error) {
+      console.error('Error loading insights:', error);
+    }
   };
 
-  const openAdder = (subtypeName: string, direction: ContributionDirection) => {
-    setCurrentSubtype(subtypeName);
-    setCurrentDirection(direction);
-    setAdderOpen(true);
-  };
-
-  const handleSaveInsights = async (insights: InsightConfig[]) => {
-    if (!contributionId) {
-      toast({
-        title: 'Error',
-        description: 'Contribution ID not found',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Delete existing insights for this subtype and direction
-    const { error: deleteError } = await supabase
-      .from('contribution_insights')
-      .delete()
-      .eq('contribution_id', contributionId)
-      .eq('subtype_name', currentSubtype);
-
-    if (deleteError) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update insights',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Insert new insights
-    if (insights.length > 0) {
-      const insightsToInsert = insights.map((insight) => ({
+  const handleSaveInsights = async (insights: any[]) => {
+    if (!contributionId) return;
+    
+    try {
+      const insightsToInsert = insights.map(insight => ({
         contribution_id: contributionId,
         subtype_name: currentSubtype,
-        insight_type: insight.insightType,
-        configuration: {
-          source: insight.source,
-          apiEndpoint: insight.apiEndpoint,
-          expectedOutput: insight.expectedOutput,
-          description: insight.description,
-          direction: currentDirection,
-        },
+        insight_type: insight.insight_type || insight.type,
+        configuration: insight
       }));
-
-      const { error: insertError } = await supabase
+      
+      const { error } = await supabase
         .from('contribution_insights')
         .insert(insightsToInsert);
-
-      if (insertError) {
-        toast({
-          title: 'Error',
-          description: 'Failed to save insights',
-          variant: 'destructive',
-        });
-        return;
-      }
+      
+      if (error) throw error;
+      
+      toast.success('Insights saved successfully');
+      setAdderOpen(false);
+      loadInsights();
+    } catch (error) {
+      console.error('Error saving insights:', error);
+      toast.error('Failed to save insights');
     }
-
-    // Update local state
-    setSubtypeInsights({
-      ...subtypeInsights,
-      [currentSubtype]: {
-        ...subtypeInsights[currentSubtype],
-        [currentDirection]: insights,
-      },
-    });
-
-    toast({
-      title: 'Success',
-      description: 'Insights saved successfully',
-    });
   };
 
-  const getInsightsForSubtype = (subtypeName: string, direction: ContributionDirection) => {
-    return subtypeInsights[subtypeName]?.[direction] || [];
-  };
-
-  const getSubtypesByDirection = (direction: ContributionDirection) => {
-    return selectedSubtypes.filter((s) => s.direction === direction);
-  };
-
-  const renderSubtypeInsights = (direction: ContributionDirection) => {
-    const subtypes = getSubtypesByDirection(direction);
-
-    if (subtypes.length === 0) {
-      return (
-        <div className="p-8 border-2 border-dashed rounded-lg text-center">
-          <p className="text-muted-foreground">
-            No subtypes selected for {direction === 'to_give' ? 'giving' : 'receiving'}
-          </p>
-        </div>
-      );
+  const handleEnableTemplate = async (subtypeName: string, direction: string) => {
+    if (!contributionId) return;
+    
+    const templates = getTemplatesBySubtype(subtypeName);
+    const template = templates[0];
+    
+    if (!template?.presets?.insights) {
+      toast.error('No template insights available');
+      return;
     }
+    
+    try {
+      const insightsToInsert = template.presets.insights.map((insight: any) => ({
+        contribution_id: contributionId,
+        subtype_name: subtypeName,
+        insight_type: insight.insight_type,
+        configuration: insight
+      }));
+      
+      const { error } = await supabase
+        .from('contribution_insights')
+        .insert(insightsToInsert);
+      
+      if (error) throw error;
+      
+      setEnabledTemplates(prev => ({ ...prev, [`${subtypeName}-${direction}`]: true }));
+      toast.success('Template enabled successfully');
+      loadInsights();
+    } catch (error) {
+      console.error('Error enabling template:', error);
+      toast.error('Failed to enable template');
+    }
+  };
 
+  const renderSubtypeCard = (subtype: SelectedSubtype) => {
+    const key = `${subtype.name}-${subtype.direction}`;
+    const insights = loadedInsights[subtype.name] || [];
+    const templates = getTemplatesBySubtype(subtype.name);
+    const hasTemplate = templates.length > 0 && templates[0].presets?.insights;
+    const isEnabled = enabledTemplates[key];
+    
     return (
-      <div className="space-y-4">
-        {subtypes.map((subtype) => {
-          const insights = getInsightsForSubtype(subtype.name, direction);
-          return (
-            <div key={subtype.name} className="p-4 border rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold">{subtype.displayName}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {insights.length} insight{insights.length !== 1 ? 's' : ''} configured
-                  </p>
-                </div>
+      <Card key={key} className="mb-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">{subtype.displayName}</CardTitle>
+              <Badge variant="outline" className="mt-1">
+                {subtype.direction === 'to_give' ? 'To Give' : 'To Receive'}
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              {hasTemplate && !isEnabled && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => openAdder(subtype.name, direction)}
+                  onClick={() => handleEnableTemplate(subtype.name, subtype.direction)}
                 >
-                  {insights.length > 0 ? (
-                    <>
-                      <Settings className="h-4 w-4 mr-2" />
-                      Edit
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </>
-                  )}
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Use Template
                 </Button>
-              </div>
-
-              {insights.length > 0 && (
-                <div className="space-y-2">
-                  {insights.map((insight) => (
-                    <div
-                      key={insight.id}
-                      className="p-2 bg-muted/50 rounded text-sm space-y-1"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{insight.insightType}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {insight.source}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Output: {insight.expectedOutput}
-                      </p>
-                    </div>
-                  ))}
-                </div>
               )}
+              {hasTemplate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNegotiationOpen(true)}
+                >
+                  Negotiate
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCurrentSubtype(subtype.name);
+                  setCurrentDirection(subtype.direction);
+                  setAdderOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Custom
+              </Button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {insights.length > 0 ? (
+            <div className="space-y-2">
+              {insights.map((insight: any, idx: number) => (
+                <div key={idx} className="p-3 bg-muted rounded-md text-sm">
+                  <div className="font-medium">{insight.insight_type}</div>
+                  <div className="text-muted-foreground mt-1">
+                    Source: {insight.configuration?.source || 'Not specified'}
+                  </div>
+                  {insight.configuration?.expected_output && (
+                    <div className="text-muted-foreground">
+                      Output: {insight.configuration.expected_output}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : hasTemplate ? (
+            <div className="text-sm text-muted-foreground">
+              <p className="mb-2">Template available with:</p>
+              <ul className="list-disc list-inside space-y-1">
+                {templates[0].presets.insights?.map((insight: any, idx: number) => (
+                  <li key={idx}>{insight.insight_type} - {insight.source}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No insights configured yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="space-y-6 min-h-0 flex-1 overflow-y-auto">
+    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Configure expected insights for your selected contribution types. You can skip this step and configure it later.
+          Configure insights for each selected subtype. Use templates or create custom configurations.
         </AlertDescription>
       </Alert>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={bulkMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setBulkMode(!bulkMode)}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setNegotiationOpen(true)}
-        >
-          <HandshakeIcon className="h-4 w-4 mr-2" />
-          Negotiate
-        </Button>
+      <div className="space-y-4">
+        {selectedSubtypes.map(renderSubtypeCard)}
+        
+        {selectedSubtypes.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No subtypes selected. Please go back to Step 3 to select subtypes.
+          </p>
+        )}
       </div>
 
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as ContributionDirection)}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="to_give">To Give</TabsTrigger>
-          <TabsTrigger value="to_receive">To Receive</TabsTrigger>
-        </TabsList>
+      {adderOpen && (
+        <InsightsAdder
+          open={adderOpen}
+          onOpenChange={setAdderOpen}
+          subtypeName={currentSubtype}
+          direction={currentDirection}
+          onSave={handleSaveInsights}
+        />
+      )}
 
-        <TabsContent value="to_give" className="space-y-4 mt-6">
-          {renderSubtypeInsights('to_give')}
-        </TabsContent>
-
-        <TabsContent value="to_receive" className="space-y-4 mt-6">
-          {renderSubtypeInsights('to_receive')}
-        </TabsContent>
-      </Tabs>
-
-      <InsightsAdder
-        open={adderOpen}
-        onOpenChange={setAdderOpen}
-        subtypeName={currentSubtype}
-        direction={currentDirection}
-        existingInsights={getInsightsForSubtype(currentSubtype, currentDirection)}
-        onSave={handleSaveInsights}
-      />
-
-      {contributionId && (
+      {contributionId && negotiationOpen && (
         <NegotiationAdder
+          contributionId={contributionId}
           open={negotiationOpen}
           onOpenChange={setNegotiationOpen}
-          contributionId={contributionId}
           mode="flexible"
           giverUserId=""
           receiverUserId=""
