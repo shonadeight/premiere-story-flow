@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DollarSign, CheckCircle2 } from 'lucide-react';
 import { ValuationAdder } from '../adders/ValuationAdder';
 import { NegotiationAdder } from '../negotiation/NegotiationAdder';
 import { SelectedSubtype } from '@/types/contribution';
-import { Plus, DollarSign, Trash2, HandshakeIcon, Users, BarChart3 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { getValuationTemplates } from '@/lib/templates/contributionTemplates';
 
 interface Step6ValuationProps {
   selectedSubtypes: SelectedSubtype[];
@@ -18,219 +17,228 @@ interface Step6ValuationProps {
 }
 
 export const Step6Valuation = ({ selectedSubtypes, contributionId }: Step6ValuationProps) => {
-  const [currentTab, setCurrentTab] = useState<'to_give' | 'to_receive'>('to_give');
   const [adderOpen, setAdderOpen] = useState(false);
   const [negotiationOpen, setNegotiationOpen] = useState(false);
-  const [bulkMode, setBulkMode] = useState(false);
-  const [selectedSubtype, setSelectedSubtype] = useState<string>('all');
-  const [valuations, setValuations] = useState<any[]>([]);
+  const [activeSubtype, setActiveSubtype] = useState<SelectedSubtype | null>(null);
+  const [valuations, setValuations] = useState<Record<string, any[]>>({});
   const { toast } = useToast();
 
-  const handleSaveValuation = async (valuation: any) => {
+  useEffect(() => {
+    loadValuations();
+  }, [contributionId]);
+
+  const loadValuations = async () => {
+    const { data, error } = await supabase
+      .from('contribution_valuations')
+      .select('*')
+      .eq('contribution_id', contributionId);
+
+    if (error) {
+      console.error('Error loading valuations:', error);
+      return;
+    }
+
+    const grouped = (data || []).reduce((acc, val) => {
+      const key = `${val.subtype_name}-${val.direction}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(val);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    setValuations(grouped);
+  };
+
+  const handleEnableTemplate = async (subtype: SelectedSubtype, template: any) => {
     try {
-      const subtypeToApply = selectedSubtype === 'all' 
-        ? selectedSubtypes.filter(s => s.direction === currentTab).map(s => s.name)
-        : [selectedSubtype];
-
-      const insertData = subtypeToApply.map(subtypeName => ({
+      const { error } = await supabase.from('contribution_valuations').insert({
         contribution_id: contributionId,
-        valuation_type: valuation.type,
-        amount: valuation.amount,
-        currency: valuation.currency,
-        formula: valuation.formula,
-        direction: currentTab,
-        subtype_name: subtypeName,
-      }));
-
-      const { error } = await supabase
-        .from('contribution_valuations')
-        .insert(insertData);
+        subtype_name: subtype.name,
+        direction: subtype.direction,
+        valuation_type: template.type,
+        amount: template.amount,
+        currency: template.currency,
+        formula: template.formula,
+      });
 
       if (error) throw error;
 
-      setValuations([...valuations, { ...valuation, subtypes: subtypeToApply }]);
       toast({
-        title: "Success",
-        description: `Valuation saved for ${selectedSubtype === 'all' ? 'all subtypes' : selectedSubtype}`,
+        title: 'Template enabled',
+        description: `Valuation template applied for ${subtype.displayName}`,
       });
+      
+      loadValuations();
     } catch (error) {
-      console.error('Error saving valuation:', error);
+      console.error('Error enabling template:', error);
       toast({
-        title: "Error",
-        description: "Failed to save valuation",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to enable template',
+        variant: 'destructive',
       });
     }
   };
 
-  const toGiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_give');
-  const toReceiveSubtypes = selectedSubtypes.filter(s => s.direction === 'to_receive');
+  const handleSaveValuation = async (valuationData: any) => {
+    if (!activeSubtype) return;
+
+    try {
+      const { error } = await supabase.from('contribution_valuations').insert({
+        contribution_id: contributionId,
+        subtype_name: activeSubtype.name,
+        direction: activeSubtype.direction,
+        ...valuationData,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Valuation saved successfully',
+      });
+      
+      loadValuations();
+      setAdderOpen(false);
+    } catch (error) {
+      console.error('Error saving valuation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save valuation',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const calculateTotal = (direction: 'to_give' | 'to_receive') => {
-    const directionValuations = valuations.filter(v => v.direction === direction);
-    const total = directionValuations.reduce((sum, v) => {
-      if (v.type === 'fixed' && v.amount) {
-        return sum + parseFloat(v.amount);
-      }
-      return sum;
-    }, 0);
-    return total;
+    return Object.entries(valuations)
+      .filter(([key]) => key.endsWith(`-${direction}`))
+      .flatMap(([_, vals]) => vals)
+      .filter(v => v.valuation_type === 'fixed')
+      .reduce((sum, v) => sum + Number(v.amount || 0), 0);
+  };
+
+  const renderSubtypeCard = (subtype: SelectedSubtype) => {
+    const key = `${subtype.name}-${subtype.direction}`;
+    const subtypeValuations = valuations[key] || [];
+    const templates = getValuationTemplates(subtype.category, subtype.name);
+
+    return (
+      <Card key={key}>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span>{subtype.displayName}</span>
+            <Badge variant={subtype.direction === 'to_give' ? 'default' : 'secondary'}>
+              {subtype.direction === 'to_give' ? 'To Give' : 'To Receive'}
+            </Badge>
+          </CardTitle>
+          <CardDescription>{subtype.category}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {subtypeValuations.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Configured Valuations:</p>
+              {subtypeValuations.map((val, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 bg-muted rounded">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">
+                    {val.valuation_type === 'fixed' 
+                      ? `${val.currency} ${val.amount}` 
+                      : val.formula || 'Custom formula'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {templates.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Suggested Templates:</p>
+                  {templates.map((template, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm">
+                        {template.type === 'fixed' 
+                          ? `${template.currency} ${template.amount}` 
+                          : template.formula}
+                      </span>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEnableTemplate(subtype, template)}
+                      >
+                        Use Template
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setActiveSubtype(subtype);
+                setNegotiationOpen(true);
+              }}
+            >
+              Negotiate
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setActiveSubtype(subtype);
+                setAdderOpen(true);
+              }}
+            >
+              Custom
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
-    <div className="space-y-4 min-h-0 flex-1 overflow-y-auto">
+    <div className="space-y-6 min-h-0 flex-1 overflow-y-auto">
       <Alert>
         <DollarSign className="h-4 w-4" />
         <AlertDescription>
-          Set valuation for your contributions. You can use fixed amounts, custom formulas, or percentage-based valuation.
+          Configure valuations for each selected subtype. Use templates or create custom valuations.
         </AlertDescription>
       </Alert>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={bulkMode ? "default" : "outline"}
-          size="sm"
-          onClick={() => setBulkMode(!bulkMode)}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          {bulkMode ? 'Individual Mode' : 'Bulk Setup'}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setNegotiationOpen(true)}
-        >
-          <HandshakeIcon className="h-4 w-4 mr-2" />
-          Negotiate
-        </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Total Valuation Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex justify-between">
+            <span className="font-medium">To Give:</span>
+            <span className="text-lg font-bold">
+              ${calculateTotal('to_give').toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-medium">To Receive:</span>
+            <span className="text-lg font-bold">
+              ${calculateTotal('to_receive').toFixed(2)}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        {selectedSubtypes.map(subtype => renderSubtypeCard(subtype))}
       </div>
-
-      {!bulkMode && (
-        <div className="space-y-2">
-          <Label>Select Subtype</Label>
-          <Select value={selectedSubtype} onValueChange={setSelectedSubtype}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Subtypes (Aggregate)</SelectItem>
-              {selectedSubtypes.filter(s => s.direction === currentTab).map((subtype) => (
-                <SelectItem key={subtype.name} value={subtype.name}>
-                  {subtype.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <Tabs value={currentTab} onValueChange={(v: any) => setCurrentTab(v)}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="to_give">To Give</TabsTrigger>
-          <TabsTrigger value="to_receive">To Receive</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="to_give" className="space-y-3">
-          <Button onClick={() => setAdderOpen(true)} className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Valuation
-          </Button>
-
-          {calculateTotal('to_give') > 0 && (
-            <Card className="p-4 bg-primary/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Total Valuation</p>
-                    <p className="text-xs text-muted-foreground">Aggregate Fixed Amounts</p>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold">USD {calculateTotal('to_give').toFixed(2)}</p>
-              </div>
-            </Card>
-          )}
-
-          {valuations.filter(v => v.direction === 'to_give').length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No valuations configured yet
-            </p>
-          )}
-
-          {valuations.filter(v => v.direction === 'to_give').map((val, i) => (
-            <Card key={i} className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="font-medium">{val.type === 'fixed' ? `${val.currency} ${val.amount}` : val.formula || `${val.percentage}%`}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{val.type} Valuation</p>
-                  {val.subtypes && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Applied to: {val.subtypes.length === selectedSubtypes.filter(s => s.direction === 'to_give').length ? 'All subtypes' : val.subtypes.join(', ')}
-                    </p>
-                  )}
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="to_receive" className="space-y-3">
-          <Button onClick={() => setAdderOpen(true)} className="w-full">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Valuation
-          </Button>
-
-          {calculateTotal('to_receive') > 0 && (
-            <Card className="p-4 bg-primary/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">Total Valuation</p>
-                    <p className="text-xs text-muted-foreground">Aggregate Fixed Amounts</p>
-                  </div>
-                </div>
-                <p className="text-2xl font-bold">USD {calculateTotal('to_receive').toFixed(2)}</p>
-              </div>
-            </Card>
-          )}
-
-          {valuations.filter(v => v.direction === 'to_receive').length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No valuations configured yet
-            </p>
-          )}
-
-          {valuations.filter(v => v.direction === 'to_receive').map((val, i) => (
-            <Card key={i} className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="font-medium">{val.type === 'fixed' ? `${val.currency} ${val.amount}` : val.formula || `${val.percentage}%`}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{val.type} Valuation</p>
-                  {val.subtypes && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Applied to: {val.subtypes.length === selectedSubtypes.filter(s => s.direction === 'to_receive').length ? 'All subtypes' : val.subtypes.join(', ')}
-                    </p>
-                  )}
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
 
       <ValuationAdder
         open={adderOpen}
         onOpenChange={setAdderOpen}
         onSave={handleSaveValuation}
         selectedSubtypes={selectedSubtypes}
-        direction={currentTab}
+        direction={activeSubtype?.direction || 'to_give'}
       />
 
       <NegotiationAdder
