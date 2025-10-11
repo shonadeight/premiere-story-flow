@@ -100,7 +100,7 @@ export const ContributionWizard = ({ open, onOpenChange, timelineId }: Contribut
         );
       case 7:
         if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
-        return <Step7Followup contributionId={wizard.savedContributionId} />;
+        return <Step7Followup contributionId={wizard.savedContributionId} selectedSubtypes={wizard.selectedSubtypes} />;
       case 8:
         if (!wizard.savedContributionId) return <div className="text-center py-8"><p className="text-destructive">Please complete Step 4 first.</p></div>;
         return <Step8SmartRules contributionId={wizard.savedContributionId} />;

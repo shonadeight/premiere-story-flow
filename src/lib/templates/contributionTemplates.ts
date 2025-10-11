@@ -282,3 +282,38 @@ export const getTemplatesByCategory = (category: ContributionCategory): Contribu
 export const getTemplatesBySubtype = (subtype: string): ContributionTemplate[] => {
   return ALL_TEMPLATES.filter(t => t.subtype === subtype);
 };
+
+export const getInsightsTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.insights || [];
+};
+
+export const getValuationTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.valuation ? [template.presets.valuation] : [];
+};
+
+export const getFollowupTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.followups || [];
+};
+
+export const getSmartRulesTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.smartRules || [];
+};
+
+export const getRatingsTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.ratings ? [template.presets.ratings] : [];
+};
+
+export const getFilesTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.files || [];
+};
+
+export const getKnotsTemplates = (category: string, subtype: string) => {
+  const template = ALL_TEMPLATES.find(t => t.category === category && t.subtype === subtype);
+  return template?.presets?.knots || [];
+};
